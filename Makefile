@@ -12,3 +12,10 @@ COPTS = -O3 -fopenmp -Wall -DUSE_INT128_T
 
 bch: bch.h bch.c phi.c lyndon.c goldberg.c
 	$(CC) $(COPTS) phi.c goldberg.c lyndon.c bch.c -o bch
+
+bch_goldberg_30.txt: bch
+	./bch goldberg_coefficients=1 N=30 > bch_goldberg_30.txt
+
+bch_lyndon_20.txt: bch
+	./bch N=20 M=14 verbosity_level=1 > bch_lyndon_20.txt
+
