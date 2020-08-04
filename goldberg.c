@@ -3,12 +3,23 @@
 #include<stdio.h>
 #include<assert.h>
 
+
+/* n_partitions[n] = number of partitions of given number n, hardcoded for simplicity.
+ * See: https://oeis.org/A000041
+ */
 static int n_partitions[33] = {1, 1, 2, 3, 5, 7, 11, 15, 22, 30, 42, 56, 77, 
            101, 135, 176, 231, 297, 385, 490, 627, 792, 1002, 1255, 1575, 1958, 
            2436, 3010, 3718, 4565, 5604, 6842, 8349};
 
 
 static void partitions(int n, uint8_t **P) {
+    /* INPUT: n
+     * OUTPUT: P[j][i]=a[i] for the jth partition 
+     *     a[0]+...+a[m-1]=n, a[0]>=a[1]>=...>=a[m-1]>=1
+     *     of n, where  0<=j<n_partitions[n], P[j][m]=0.
+     * METHOD: Algorithm P in Section 7.2.14 of
+     *    D.E. Knuth: The Art of Computer Programming, Volume 4A
+     */
     /* P1: Initialize */
     int np = 0;
     int a[n+1]; 
