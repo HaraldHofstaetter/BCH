@@ -25,10 +25,10 @@ static uint32_t *DI=NULL;    /* DI[i] = multi degree index of W[i] */
 
 static size_t N_LYNDON;      /* number of Lyndon words of length <=N, N_LYNDON = ii[N] */
 
-static size_t M = 0;             /* maximum lookup length */ 
+static size_t M = 0;         /* maximum lookup length */ 
 
 typedef int32_t TINT_t ;
-static TINT_t **T = NULL;       /* precomputed lookup table: word with index i has coefficient 
+static TINT_t **T = NULL;    /* precomputed lookup table: word with index i has coefficient 
                                 T[i][T_P[j]]  in basis element with number j.  */
 static uint32_t *T_P = NULL;
 
@@ -300,7 +300,7 @@ static void genLW(size_t K, size_t n, size_t t, size_t p, generator_t a[], size_
     if (t>n) {
         if (p==n) {
             int H = 0;
-            size_t j2;
+            size_t j2 = 0;
             while ((longest_right_lyndon_factor(a, H+1, n)==H+2) && (a[H+1]==0)) { 
                 H++;
             }
@@ -656,17 +656,10 @@ static inline size_t get_right_factors(size_t i, size_t J[], size_t kmax) {
     return k;
 }
 
-static void compute_lie_series(expr_t* ex, INTEGER c[], INTEGER denom, int shortcut_for_classical_bch) {
+static void compute_lie_series(int N, expr_t* ex, INTEGER c[], INTEGER denom) {
     if (VERBOSITY_LEVEL>=1) {
         printf("#expression="); print_expr(ex); printf("\n"); 
         printf("#denominator="); print_INTEGER(denom); printf("\n");
-        printf("#divisibility checks are "
-#ifdef NO_DIVISIBILITY_CHECKS    
-            "off"
-#else
-            "on"
-#endif
-        "\n");
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }
@@ -702,10 +695,6 @@ static void compute_lie_series(expr_t* ex, INTEGER c[], INTEGER denom, int short
 
     #pragma omp for schedule(dynamic,256) 
     for (int i=i1; i<=i2; i++) {
-             if (shortcut_for_classical_bch && !(N%2) && p1[i]!=0) {
-                c[i] = 0;
-                continue;
-            }
             generator_t *w = W[i];
             int m = phi(t, N+1, w, ex, e);
             size_t kW = get_right_factors(i, JW, N);
@@ -790,10 +779,6 @@ static void compute_lie_series(expr_t* ex, INTEGER c[], INTEGER denom, int short
             int i = jj[x];
             {
                 h_n[k]++;
-                if (shortcut_for_classical_bch && !(N%2) && p1[i]!=0) {
-                    c[i] = 0;
-                    continue;
-                }
 
                 size_t kW = get_right_factors(i, JW, N);
                 generator_t *w = W[i];
@@ -840,6 +825,101 @@ static void compute_lie_series(expr_t* ex, INTEGER c[], INTEGER denom, int short
     }
 }
 
+/* tables beta_num_h, beta_num_l, beta_den_h, beta_den_l defined such that the 
+   rational numbers
+      beta[k] = (H*beta_num_h[k]+beta_num_l[k])/(H*beta_den_h[k]+beta_den_l[k])
+   (where H = 1000000000000000000) are the coefficients of the power series 
+   of the function f(x)=tanh(x/2), i.e., 
+   beta[] = {           1/2,                                   
+                       -1/24,                                  
+                        1/240,                                 
+                      -17/40320,                               
+                       31/725760,                              
+                     -691/159667200,                           
+                     5461/12454041600,                         
+                  -929569/20922789888000,                      
+                  3202291/711374856192000,                     
+               -221930581/486580401635328000,                  
+               4722116521/102181884343418880000,               
+             -56963745931/12165654935945871360000,             
+           14717667114151/31022420086661971968000000,          
+        -2093660879252671/43555477801673408643072000000,       
+        86125672563201181/17683523987479403909087232000000,    
+   -129848163681107301953/263130836933693530167218012160000000}
+
+   This data was computed with the following Julia code:
+   
+   n=16
+   A = zeros(Rational{BigInt}, 2*n+1)
+   B = similar(A)
+   for k = 0:2*n 
+       A[k+1] = 1//(k+1)
+       for j = k:-1:1
+           A[j] = j*(A[j] - A[j+1])
+       end
+       B[k+1] =  A[1]
+   end
+   beta = [2*(2^(2*k)-1)*B[2*k+1]/factorial(BigInt(2*k)) for k=1:n]
+*/   
+
+static long long int beta_num_h[16] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -129};
+    
+static long long int beta_num_l[16] = {
+    1, -1, 1, -17, 31, -691, 5461, -929569, 3202291, -221930581, 4722116521, -56963745931, 14717667114151,
+    -2093660879252671, 86125672563201181, -848163681107301953};
+
+static long long int beta_den_h[16] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102, 12165, 31022420, 43555477801, 17683523987479, 263130836933693530};
+
+static long long int beta_den_l[16] = {
+    2, 24, 240, 40320, 725760, 159667200, 12454041600, 20922789888000, 711374856192000, 
+    486580401635328000, 181884343418880000, 654935945871360000, 86661971968000000, 673408643072000000, 
+    403909087232000000, 167218012160000000};
+
+
+static void  compute_BCH_terms_of_order_N(INTEGER c[], INTEGER denom) {
+    double t0 = tic();
+    assert(!(N&1));
+    int N2 = N/2;
+    INTEGER beta_num[N2];
+    INTEGER beta_den[N2];
+    INTEGER H = 1000000000000000000;
+    for (int k=0; k<N2; k++) {
+        beta_num[k] = beta_num_h[k]*H + beta_num_l[k];
+        beta_den[k] = beta_den_h[k]*H + beta_den_l[k];
+    }
+
+    #pragma omp parallel for schedule(dynamic,256)
+    for (int i=ii[N-1]; i<=ii[N]-1; i++) {
+        c[i] = 0;
+        int k = 0;
+        int l = 0;
+        int q = i;
+        while (p1[q]==0) {
+            k += 1;
+            q = p2[q];
+            if (k&1) {
+                INTEGER d = c[q]/beta_den[l];
+                if (d*beta_den[l]!=c[q]) {
+                    fprintf(stderr, "ERROR: divisibility check failed in compute_BCH_terms_of_order_N");
+                    exit(EXIT_FAILURE);
+                }
+                c[i] += beta_num[l]*d; 
+                l += 1;
+            }
+        }
+    } 
+
+    if (VERBOSITY_LEVEL>=1) {
+        double t1 = toc(t0);
+        printf("#compute terms of order %li: time=%g sec\n", N, t1);
+        if (VERBOSITY_LEVEL>=2) {
+            fflush(stdout);
+        }
+    }
+}
+
 
 static void init_all(size_t number_of_generators, size_t order, size_t max_lookup_length) {
     K = number_of_generators;
@@ -873,7 +953,7 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M)
     init_all(K, N, M);
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
     INTEGER denom = common_denominator(N)*fac;
-    compute_lie_series(expr, c, denom, 0);
+    compute_lie_series(N, expr, c, denom);
     lie_series_t LS = gen_result(c, denom);
     free_all();
     if (VERBOSITY_LEVEL>=1) {
@@ -894,7 +974,13 @@ lie_series_t BCH(size_t N, size_t M) {
     init_all(2, N, M);
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
     INTEGER denom = common_denominator(N);
-    compute_lie_series(expr, c, denom, 1);
+    if (N%2) {
+        compute_lie_series(N, expr, c, denom);
+    }
+    else {
+        compute_lie_series(N-1, expr, c, denom);
+        compute_BCH_terms_of_order_N(c, denom);
+    }
     lie_series_t LS = gen_result(c, denom);
     free_all();
     free_expr(A);
@@ -922,9 +1008,10 @@ lie_series_t symBCH(size_t N, size_t M) {
     if (VERBOSITY_LEVEL>=1) {
         printf("#NOTE: in the following expression, A stands for A/2\n");
         if (VERBOSITY_LEVEL>=2) {
+            fflush(stdout);
         }
     }
-    compute_lie_series(expr, c, denom, 0);
+    compute_lie_series(N, expr, c, denom);
     lie_series_t LS = gen_result(c, denom);
     for (int i=0; i<N_LYNDON; i++) {
         int nA = get_degree_of_generator(&LS, i, 0);
