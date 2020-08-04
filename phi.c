@@ -407,7 +407,7 @@ int phi(INTEGER y[], int m, generator_t w[], expr_t* ex, INTEGER v[]) {
                     return m;
                 }
                 m1 = m3;
-                int f = (k%2 ? +1 : -1)*k; /* f = (-1)^(k+1)*k */ 
+                int f = k%2 ? +k : -k; /* f = (-1)^(k+1)*k */ 
                 for (int j=0; j<m1; j++) {
                     INTEGER d = z[j]/f;
                     check_for_divisibility_by_int(z[j], f, d);
