@@ -54,6 +54,7 @@ typedef struct goldberg_t {
 } goldberg_t;
 
 goldberg_t goldberg(size_t N);
+INTEGER goldberg_coefficient(int n, generator_t w[], goldberg_t *G);
 void print_goldberg(goldberg_t *G);
 void free_goldberg(goldberg_t G);
 
@@ -73,7 +74,11 @@ lie_series_t BCH(size_t N, size_t M);
 lie_series_t symBCH(size_t N, size_t M);
 
 void set_verbosity_level(unsigned int verbosity_level);
+unsigned int get_verbosity_level(void);
 void set_max_lookup_size(size_t M);
+double tic(void); 
+double toc(double t0);
+
 
 void print_lie_series(lie_series_t *LS);
 

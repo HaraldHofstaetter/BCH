@@ -65,6 +65,8 @@ static void partitions(int n, uint8_t **P) {
 }
 
 goldberg_t goldberg(size_t n) {
+    double t0 = tic();
+
     goldberg_t G;
     int jj[n];
     for (int j=0; j<n; j++) {
@@ -147,14 +149,72 @@ goldberg_t goldberg(size_t n) {
     }
 
     free_factorial();
+
+    if (get_verbosity_level()>=1) {
+        double t1 = toc(t0);
+        printf("#compute goldberg coefficients time=%g sec\n", t1);
+        if (get_verbosity_level()>=2) {
+            fflush(stdout);
+        }
+    }
+
     return G;
 }
 
 
-void free_goldberg(goldberg_t G) {
-    free(G.P[0]);
-    free(G.P);
-    free(G.c);
+static int cumsum_partitions[33] = {1, 2, 4, 7, 12, 19, 30, 45, 67, 97, 139, 195, 272, 
+    373, 508, 684, 915, 1212, 1597, 2087, 2714, 3506, 4508, 5763, 7338, 9296, 11732, 
+    14742, 18460, 23025, 28629, 35471, 43820};
+
+INTEGER goldberg_coefficient(int n, generator_t w[], goldberg_t *G) {
+    int x[n];
+    for (int i=0; i<n; i++) {
+        x[i] = 0;
+    }
+    int k = 0;
+    for (int i=1; i<n; i++) {
+        if (w[i-1]==w[i]) {
+            k++;
+        }
+        else {
+            x[k]++;
+            k = 0;
+        }
+    }
+    x[k]++;
+    
+    uint8_t p[n+1];
+    k = 0;
+    for (int i=n-1; i>=0; i--) {
+        for (int j=0; j<x[i]; j++) {
+            p[k] = i+1;
+            k++;
+        }
+    }
+    for (; k<n+1; k++) {
+        p[k] = 0;
+    }
+
+    int a = cumsum_partitions[n-1]-1;
+    int b = a + n_partitions[n] - 1;
+    while (a<=b) {
+        int c = a + (b-a)/2;
+        int i = 0;
+        while (p[i]==G->P[c][i]) {
+            if (p[i]==0) {
+                return ((w[1]==1) && !(n&1)) ? +G->c[c] : G->c[c];
+            }
+            i+=1;
+        }
+        if (p[i]>G->P[c][i]) {
+            b = c-1;
+        }
+        else {
+            a = c+1;
+        }
+    }
+    fprintf(stderr, "ERROR: partition not found"); 
+    exit(EXIT_FAILURE);
 }
 
 
@@ -169,4 +229,10 @@ void print_goldberg(goldberg_t *G) {
     }
 }
 
+
+void free_goldberg(goldberg_t G) {
+    free(G.P[0]);
+    free(G.P);
+    free(G.c);
+}
 

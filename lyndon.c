@@ -35,7 +35,7 @@ static uint32_t *T_P = NULL;
 static unsigned int VERBOSITY_LEVEL = 0;
 
 
-static double tic(void) {
+double tic(void) {
 #ifdef _OPENMP
     return omp_get_wtime();
 #else
@@ -45,7 +45,7 @@ static double tic(void) {
 #endif
 }
 
-static double toc(double t0) {
+double toc(double t0) {
 #ifdef _OPENMP
     double t1 = omp_get_wtime();
 #else
@@ -342,6 +342,7 @@ static void genLW(size_t K, size_t n, size_t t, size_t p, generator_t a[], size_
     }
 }
 
+
 static void init_lyndon_words(void) {
     double t0 = tic();
     size_t nLW[N];
@@ -598,7 +599,6 @@ static void free_lookup_table(void) {
 }
 
 
-
 static int coeff_word_in_basis_element(/* generator_t w[], */ size_t l, size_t r, size_t j, size_t N1, size_t D[], TINT_t **TWI) {  
     /* computes the coefficient of the word with index wi=W2I[l+r*N] in the basis element
      * with number j.
@@ -617,8 +617,10 @@ static int coeff_word_in_basis_element(/* generator_t w[], */ size_t l, size_t r
         return TWI[l + r*N1][T_P[j]]; 
     }
 
+
     size_t j1 = p1[j];
     size_t j2 = p2[j];
+
     size_t m1 = nn[j1];
     size_t m2 = r-l+1-m1;
 
@@ -643,7 +645,6 @@ static int coeff_word_in_basis_element(/* generator_t w[], */ size_t l, size_t r
 }
 
 
-
 static inline size_t get_right_factors(size_t i, size_t J[], size_t kmax) {
     size_t k = 0;
     J[0] = i;
@@ -656,7 +657,7 @@ static inline size_t get_right_factors(size_t i, size_t J[], size_t kmax) {
     return k;
 }
 
-static void compute_lie_series(int N, expr_t* ex, INTEGER c[], INTEGER denom) {
+static void compute_lie_series(int N, expr_t* ex, INTEGER c[], INTEGER denom, int classical_bch) {
     if (VERBOSITY_LEVEL>=1) {
         printf("#expression="); print_expr(ex); printf("\n"); 
         printf("#denominator="); print_INTEGER(denom); printf("\n");
@@ -666,42 +667,59 @@ static void compute_lie_series(int N, expr_t* ex, INTEGER c[], INTEGER denom) {
     }
     double t0 = tic();
 
-    INTEGER e[N+1];
-
-    /* c[0] needs special handling */
-    INTEGER t1[2];
-    e[0] = 0;
-    e[1] = denom;
-    int  m = phi(t1, 2, W[0], ex, e);
-    c[0] = m>0 ? t1[0] : 0;
-
-    /* now the other coeffs */
-    for (int j=0; j<N; j++){
-        e[j] = 0;
-    }
-    e[N] = denom;
-
     size_t i1 = ii[N-1];
     size_t i2 = ii[N]-1;
 
-    size_t h1 = DI[i1];
-    size_t h2 = DI[i2];
+    if (classical_bch) {
+        goldberg_t G = goldberg(N);        
+        int f = denom/G.denom;
+        if (f!=1) {
+            #pragma omp for schedule(dynamic,256) 
+            for (int i=ii[N]-1; i>=0; i--) {
+                c[i] = f*goldberg_coefficient(nn[i], W[i], &G); 
+            }       
+        }
+        else {
+            #pragma omp for schedule(dynamic,256) 
+            for (int i=ii[N]-1; i>=0; i--) {
+                c[i] = goldberg_coefficient(nn[i], W[i], &G); 
+            }       
+        }
 
-    #pragma omp parallel 
-    {
-    
-    size_t JW[N];
-    INTEGER t[N+1];
-
-    #pragma omp for schedule(dynamic,256) 
-    for (int i=i1; i<=i2; i++) {
-            generator_t *w = W[i];
-            int m = phi(t, N+1, w, ex, e);
-            size_t kW = get_right_factors(i, JW, N);
-            for (int k=0; k<=kW; k++) {
-                c[JW[k]] = k<m ? t[k] : 0;
-            }
+        free_goldberg(G);
     }
+    else {
+        INTEGER e[N+1];
+
+        /* c[0] needs special handling */
+        INTEGER t1[2];
+        e[0] = 0;
+        e[1] = denom;
+        int  m = phi(t1, 2, W[0], ex, e);
+        c[0] = m>0 ? t1[0] : 0;
+    
+        /* now the other coeffs */
+        for (int j=0; j<N; j++){
+            e[j] = 0;
+        }
+        e[N] = denom;
+    
+        #pragma omp parallel 
+        {
+    
+        size_t JW[N];
+        INTEGER t[N+1];
+
+        #pragma omp for schedule(dynamic,256) 
+        for (int i=i1; i<=i2; i++) {
+                generator_t *w = W[i];
+                int m = phi(t, N+1, w, ex, e);
+                size_t kW = get_right_factors(i, JW, N);
+                for (int k=0; k<=kW; k++) {
+                    c[JW[k]] = k<m ? t[k] : 0;
+                }
+        }
+        }
     }
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
@@ -710,8 +728,8 @@ static void compute_lie_series(int N, expr_t* ex, INTEGER c[], INTEGER denom) {
             fflush(stdout);
         }
     }
-    t0 = tic();
 
+    t0 = tic();
     if (VERBOSITY_LEVEL>=2) {
 #ifdef _OPENMP
         printf("# degree     #basis        time thread\n");
@@ -719,6 +737,9 @@ static void compute_lie_series(int N, expr_t* ex, INTEGER c[], INTEGER denom) {
         printf("# degree     #basis        time\n");
 #endif
     }
+
+    size_t h1 = DI[i1];
+    size_t h2 = DI[i2];
 
     double h_time[h2-h1+1];
     int h_n[h2-h1+1];
@@ -792,7 +813,7 @@ static void compute_lie_series(int N, expr_t* ex, INTEGER c[], INTEGER denom) {
                 for (int y=0; y<=x-1; y++) {
                     int j = jj[y];
                     size_t kB = get_right_factors(j, JB, N);
-                    if (D[kB-kW1 + (N1-1)*N1] == DI[JB[kB]]) { // check if multi degrees match
+                    if (D[kB-kW1 + (N1-1)*N1] == DI[JB[kB]]) { /* check if multi degrees match */
                         int d = coeff_word_in_basis_element(/* w+kW1, */ kB-kW1, N1-1, JB[kB], N1, D, TWI);
                         if (d!=0) {
                             for (int k=0; k<=kB && k<=kW; k++) {
@@ -953,7 +974,7 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M)
     init_all(K, N, M);
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
     INTEGER denom = common_denominator(N)*fac;
-    compute_lie_series(N, expr, c, denom);
+    compute_lie_series(N, expr, c, denom, 0);
     lie_series_t LS = gen_result(c, denom);
     free_all();
     if (VERBOSITY_LEVEL>=1) {
@@ -975,10 +996,10 @@ lie_series_t BCH(size_t N, size_t M) {
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
     INTEGER denom = common_denominator(N);
     if (N%2) {
-        compute_lie_series(N, expr, c, denom);
+        compute_lie_series(N, expr, c, denom, 1);
     }
     else {
-        compute_lie_series(N-1, expr, c, denom);
+        compute_lie_series(N-1, expr, c, denom, 1);
         compute_BCH_terms_of_order_N(c, denom);
     }
     lie_series_t LS = gen_result(c, denom);
@@ -1011,7 +1032,7 @@ lie_series_t symBCH(size_t N, size_t M) {
             fflush(stdout);
         }
     }
-    compute_lie_series(N, expr, c, denom);
+    compute_lie_series(N, expr, c, denom, 0);
     lie_series_t LS = gen_result(c, denom);
     for (int i=0; i<N_LYNDON; i++) {
         int nA = get_degree_of_generator(&LS, i, 0);
@@ -1049,6 +1070,11 @@ void free_lie_series(lie_series_t LS) {
 void set_verbosity_level(unsigned int level) {
     VERBOSITY_LEVEL = level;
 }
+
+unsigned int get_verbosity_level(void) {
+    return VERBOSITY_LEVEL;
+}
+
 
 void print_word(lie_series_t *LS,  size_t i) {
     if (i<LS->K) {

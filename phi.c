@@ -3,7 +3,8 @@
 #include<stdio.h>
 
 
-static INTEGER *FACTORIAL=NULL;
+//static INTEGER *FACTORIAL=NULL;
+static INTEGER FACTORIAL[33];
 
 /* table den_fac obtained with the following Julia code:
 n = 33
@@ -24,7 +25,7 @@ static int den_fac[33] = {1, 1, 1, 2, 1, 6, 2, 6, 3, 10, 2, 6, 2, 210, 30, 12, 3
 
 
 void init_factorial(int n) {
-    FACTORIAL = malloc((n+1)*sizeof(INTEGER)); 
+    //FACTORIAL = malloc((n+1)*sizeof(INTEGER)); 
     FACTORIAL[0] = 1;
     for (int k=1; k<=n; k++) {
         FACTORIAL[k] = k*FACTORIAL[k-1];
@@ -32,7 +33,7 @@ void init_factorial(int n) {
 }
 
 void free_factorial(void) {
-    free(FACTORIAL);
+    //free(FACTORIAL);
 }
 
 INTEGER common_denominator(int n) {

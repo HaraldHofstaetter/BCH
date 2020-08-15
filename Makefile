@@ -1,7 +1,7 @@
 all: bch 
 
-CC = gcc
-#CC = clang
+#CC = gcc
+CC = clang
 
 #-ftrapv: This option generates traps for signed overflow on addition, subtraction, multiplication operations. 
 #COPTS = -O3 -fopenmp -ftrapv   -Wall -DUSE_INT128_T 

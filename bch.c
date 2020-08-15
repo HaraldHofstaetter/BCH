@@ -45,6 +45,7 @@ int main(int argc, char*argv[]) {
 #else
     size_t N = get_arg(argc, argv, "N", 5, 1, 16);
 #endif 
+    set_verbosity_level(get_arg(argc, argv ,"verbosity_level", 0, 0, 9));
 
     if (get_arg(argc, argv, "goldberg_coefficients", 0, 0, 1)) {
         goldberg_t G = goldberg(N);
@@ -54,7 +55,6 @@ int main(int argc, char*argv[]) {
     }
 
     size_t M = get_arg(argc, argv, "M", 0, 0, N>20 ? 20 : N);
-    set_verbosity_level(get_arg(argc, argv ,"verbosity_level", 0, 0, 9));
 
     expr_t *A = generator(0);
     expr_t *B = generator(1);
