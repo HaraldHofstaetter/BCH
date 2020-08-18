@@ -54,6 +54,8 @@ int main(int argc, char*argv[]) {
         return EXIT_SUCCESS;
     }
 
+    int rightnormed = get_arg(argc, argv, "rightnormed_basis", 0, 0, 1);
+
     size_t M = get_arg(argc, argv, "M", 0, 0, N>20 ? 20 : N);
 
     expr_t *A = generator(0);
@@ -62,33 +64,33 @@ int main(int argc, char*argv[]) {
     expr_t *ex = NULL;
     lie_series_t LS;
     switch(get_arg(argc, argv, "expression", 0, 0, 6)) {
-        case 0:  /* log(exp(A)*exp(B)), exploit a priori knowledge about zero coefficients */
-            LS = BCH(N, M);
+        case 0:  /* log(exp(A)*exp(B)), with optimizations spezific for this expression */ 
+            LS = BCH(N, M, rightnormed);
             break;
         case 1: 
-            LS = symBCH(N, M); /* log(exp(A/2)*exp(B)*exp(A/2) */
+            LS = symBCH(N, M, rightnormed); /* log(exp(A/2)*exp(B)*exp(A/2), with optimizations spezific for this expression */  
             break;
         case 2: /* log(exp(A)*exp(B)*exp(A)) */
             ex = logarithm(product(product(exponential(A), exponential(B)), 
                                    exponential(A)));
-            LS = lie_series(2, ex, N, 1, M);
+            LS = lie_series(2, ex, N, 1, M, rightnormed);
             break;
         case 3: /* log(exp(A)*exp(B)*exp(C)), 3 generators */
             ex = logarithm(product(product(exponential(A), exponential(B)), exponential(C)));
-            LS = lie_series(3, ex, N, 1, M);
+            LS = lie_series(3, ex, N, 1, M, rightnormed);
             break;
         case 4: /* log(exp(A)*exp(B)*exp(-A)*exp(-B)) */
             ex = logarithm(product(product(exponential(A), exponential(B)),
                            product(exponential(negation(A)),exponential(negation(B)))));
-            LS = lie_series(2, ex, N, 1, M);
+            LS = lie_series(2, ex, N, 1, M, rightnormed);
             break;
         case 5: /* log(exp(A)*exp(B)) computed in Lie algebra over 3 generators */
             ex = logarithm(product(exponential(A), exponential(B)));
-            LS = lie_series(3, ex, N, 1, M); /* SIC! K=3 */
+            LS = lie_series(3, ex, N, 1, M, rightnormed); /* SIC! K=3 */
             break;
-        case 6: /* same as case 0 but doesn't exploit a priori knowledge about zero coefficients */
+        case 6: /* same as case 0 but without specific optimizations */
             ex = logarithm(product(exponential(A), exponential(B)));
-            LS = lie_series(2, ex, N, 1, M); 
+            LS = lie_series(2, ex, N, 1, M, rightnormed); 
             break;
     }
     if ( (get_verbosity_level()>0) || (get_arg(argc, argv, "print_statistics", 0, 0, 1)) ) {
@@ -106,9 +108,9 @@ int main(int argc, char*argv[]) {
                 PRINT_INDEX        *get_arg(argc, argv, "print_index",         1, 0, 1) |
                 PRINT_DEGREE       *get_arg(argc, argv, "print_degree",        1, 0, 1) |
                 PRINT_MULTI_DEGREE *get_arg(argc, argv, "print_multi_degree",  0, 0, 1) |
-                PRINT_FACTORS      *get_arg(argc, argv, "print_factors",       1, 0, 1) |
+                PRINT_FACTORS      *get_arg(argc, argv, "print_factors",       rightnormed ? 0 : 1, 0, 1) |
                 PRINT_WORD         *get_arg(argc, argv, "print_word",          0, 0, 1) |
-                PRINT_BASIS_ELEMENT*get_arg(argc, argv, "print_basis_element", 0, 0, 1) |
+                PRINT_BASIS_ELEMENT*get_arg(argc, argv, "print_basis_element", rightnormed ? 1 : 0, 0, 1) |
                 PRINT_COEFFICIENT  *get_arg(argc, argv, "print_coefficient",   1, 0, 1); 
             print_lists(&LS, what);
             break;

@@ -10,7 +10,7 @@ typedef __int128_t INTEGER;
 typedef int64_t INTEGER;
 #endif
 
-typedef uint64_t generator_t;
+typedef uint8_t generator_t;
 
 enum expr_type { UNDEFINED, IDENTITY, GENERATOR, SUM, DIFFERENCE, PRODUCT, 
                  NEGATION, TERM, EXPONENTIAL, LOGARITHM };
@@ -62,16 +62,18 @@ void free_goldberg(goldberg_t G);
 typedef struct lie_series_t {
     size_t K;
     size_t N;
-    size_t n_lyndon;
+    size_t dim;
     uint32_t *p1;
     uint32_t *p2;
+    uint8_t *nn;
+    generator_t **R;
     INTEGER denom;
     INTEGER *c;
 } lie_series_t;
 
-lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M);
-lie_series_t BCH(size_t N, size_t M);
-lie_series_t symBCH(size_t N, size_t M);
+lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M, int rightnormed);
+lie_series_t BCH(size_t N, size_t M, int rightnormed);
+lie_series_t symBCH(size_t N, size_t M, int rightnormed);
 
 void set_verbosity_level(unsigned int verbosity_level);
 unsigned int get_verbosity_level(void);
@@ -101,5 +103,10 @@ void print_word(lie_series_t *LS,  size_t i);
 void print_basis_element(lie_series_t *LS,  size_t i);
 
 void free_lie_series(lie_series_t LS);
+
+void lyndon2rightnormed(int lw, generator_t w[], generator_t r[]);
+int coeff_word_in_rightnormed(generator_t w[], generator_t c[], int l1, int r1, int l2);
+void integer_lu_solve(int n, int *A, int *x);
+
 
 #endif /*BCH_H */

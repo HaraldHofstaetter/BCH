@@ -12,8 +12,9 @@
 
 static size_t K;             /* number of generators */
 static size_t N;             /* maximum length of Lyndon words (=maximum order of Lie series expansion) */
-static generator_t **W=NULL; /* W[i] ... nth Lyndon word, ordered primarily by length and 
+static generator_t **W=NULL; /* W[i] ... ith Lyndon word, ordered primarily by length and 
                                 secondarily by lexicographical order */
+static generator_t **R=NULL; /* R[i] ... ith rightnormed basis element corresponding to ith Lyndon word */
 static uint32_t *p1=NULL;    /* standard factorization of W[i] is W[p1[i]]*W[p2[i]] */
 static uint32_t *p2=NULL;
 static uint8_t  *nn=NULL;    /* nn[i] = length of W[i] */
@@ -343,7 +344,7 @@ static void genLW(size_t K, size_t n, size_t t, size_t p, generator_t a[], size_
 }
 
 
-static void init_lyndon_words(void) {
+static void init_lyndon_words(int rightnormed) {
     double t0 = tic();
     size_t nLW[N];
     number_of_lyndon_words(K, N, nLW);
@@ -353,7 +354,11 @@ static void init_lyndon_words(void) {
         N_LYNDON += nLW[n-1];
         mem_len += n*nLW[n-1];
     }
-    W = malloc(N_LYNDON*sizeof(generator_t *)); 
+    W = malloc(N_LYNDON*sizeof(generator_t *));
+    R = NULL;
+    if (rightnormed) {
+        R = malloc(N_LYNDON*sizeof(generator_t *));
+    }
     p1 = malloc(N_LYNDON*sizeof(uint32_t)); 
     p2 = malloc(N_LYNDON*sizeof(uint32_t)); 
     nn = malloc(N_LYNDON*sizeof(uint8_t)); 
@@ -361,6 +366,9 @@ static void init_lyndon_words(void) {
     DI = malloc(N_LYNDON*sizeof(uint32_t));
     ii = malloc((N+1)*sizeof(uint32_t)); 
     W[0] = malloc(mem_len*sizeof(generator_t)); 
+    if (rightnormed) {
+        R[0] = malloc(mem_len*sizeof(generator_t)); 
+    }
     ii[0] = 0;
     int m=0;
     for (int n=1; n<=N; n++) {
@@ -368,6 +376,9 @@ static void init_lyndon_words(void) {
         for (int k=0; k<nLW[n-1]; k++) {            
             if (m<N_LYNDON-1) { /* avoiding illegal W[N_LYNDON] */
                 W[m+1] = W[m]+n;
+                if (rightnormed) {
+                    R[m+1] = R[m]+n;
+                }
             }
             nn[m] = n;
             m++;
@@ -403,16 +414,32 @@ static void init_lyndon_words(void) {
             fflush(stdout);
         }
     }
+
+    if (rightnormed) {
+        double t0 = tic();
+
+        #pragma omp for schedule(dynamic,256) 
+        for (int i=0; i<N_LYNDON; i++) {
+            lyndon2rightnormed(nn[i], W[i], R[i]);
+        }
+        
+        if (VERBOSITY_LEVEL>=1) {
+            double t1 = toc(t0);
+            printf("#compute righnormed basis elements: time=%g sec\n", t1);
+            if (VERBOSITY_LEVEL>=2) {
+                fflush(stdout);
+            }
+        }
+    }
 }
 
 static void free_lyndon_words(void) {
     free(W[0]);
     free(W);
-    free(nn);
     free(ii);
     free(WI);
     free(DI);
-    /* Note: p1 and p2 are taken over by a lie_series_t struct
+    /* Note: p1, p2, and nn are taken over by a lie_series_t struct
        and are eventually freed by free_lie_series */
 }
 
@@ -942,13 +969,19 @@ static void  compute_BCH_terms_of_order_N(INTEGER c[], INTEGER denom) {
 }
 
 
-static void init_all(size_t number_of_generators, size_t order, size_t max_lookup_length) {
+static void init_all(size_t number_of_generators, size_t order, 
+                     size_t max_lookup_length, int rightnormed) {
     K = number_of_generators;
     N = order;
-    M = max_lookup_length;
     init_factorial(N);
-    init_lyndon_words();
-    init_lookup_table();
+    init_lyndon_words(rightnormed);
+    //if (rightnormed) {
+    //    M = 0;
+    //}
+    //else {
+        M = max_lookup_length;
+        init_lookup_table();
+    //}
 }
 
 static void free_all(void) {
@@ -961,17 +994,19 @@ static lie_series_t gen_result(INTEGER *c, INTEGER denom) {
     lie_series_t LS;
     LS.K = K;
     LS.N = N;
-    LS.n_lyndon = N_LYNDON;
+    LS.dim = N_LYNDON;
     LS.p1 = p1;
     LS.p2 = p2;
+    LS.nn = nn;
+    LS.R = R;
     LS.denom = denom;
     LS.c = c;
     return LS;
 }
 
-lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M) {
+lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M, int rightnormed) {
     double t0 = tic();
-    init_all(K, N, M);
+    init_all(K, N, M, rightnormed);
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
     INTEGER denom = common_denominator(N)*fac;
     compute_lie_series(N, expr, c, denom, 0);
@@ -987,12 +1022,12 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M)
     return LS;
 }
 
-lie_series_t BCH(size_t N, size_t M) {
+lie_series_t BCH(size_t N, size_t M, int rightnormed) {
     double t0 = tic();
     expr_t *A = generator(0);
     expr_t *B = generator(1);
     expr_t *expr = logarithm(product(exponential(A), exponential(B)));
-    init_all(2, N, M);
+    init_all(2, N, M, rightnormed);
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
     INTEGER denom = common_denominator(N);
     if (N%2) {
@@ -1017,13 +1052,13 @@ lie_series_t BCH(size_t N, size_t M) {
     return LS;
 }
 
-lie_series_t symBCH(size_t N, size_t M) {
+lie_series_t symBCH(size_t N, size_t M, int rightnormed) {
     double t0 = tic();
     expr_t *halfA = generator(0);
     expr_t *B = generator(1);
     expr_t *expr = logarithm(product(product(exponential(halfA), exponential(B)), 
                                      exponential(halfA)));
-    init_all(2, N, M);
+    init_all(2, N, M, rightnormed);
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
     INTEGER denom = common_denominator(N);
     if (VERBOSITY_LEVEL>=1) {
@@ -1063,6 +1098,8 @@ lie_series_t symBCH(size_t N, size_t M) {
 void free_lie_series(lie_series_t LS) {
     free(LS.p1);
     free(LS.p2);
+    free(LS.nn);
+    free(LS.R);
     free(LS.c);
 }
 
@@ -1091,16 +1128,27 @@ void print_basis_element(lie_series_t *LS,  size_t i) {
         printf("%c", (char) ('A'+i));
     }
     else {
-        printf("[");
-        print_basis_element(LS, LS->p1[i]);
-        printf(",");
-        print_basis_element(LS, LS->p2[i]);
-        printf("]");
+        if (LS->R) { /* rightnormed basis element */
+            for (int j=0; j < LS->nn[i]-1; j++) {
+                printf("[%c,", (char) ('A'+LS->R[i][j]));
+            }
+            printf("%c", (char) ('A'+LS->R[i][LS->nn[i]-1]));
+            for (int j=0; j < LS->nn[i]-1; j++) {
+                printf("]");
+            }
+        }
+        else { /* Lyndon basis element */
+            printf("[");
+            print_basis_element(LS, LS->p1[i]);
+            printf(",");
+            print_basis_element(LS, LS->p2[i]);
+            printf("]");
+        }
     }
 }
 
 void print_lie_series(lie_series_t *LS) {
-    for (int i=0; i<LS->n_lyndon; i++) {
+    for (int i=0; i<LS->dim; i++) {
         if (LS->c[i]!=0) {
             if (LS->c[i]>0) {
                 printf("+");
@@ -1120,8 +1168,8 @@ void print_lie_series_statistics(lie_series_t *LS) {
     int nonzero_n = 0;
     int nonzero = 0;
     printf("# degree         dim    #nonzero   dim(cum.)   #nz(cum.)\n");
-    for (int i=0; i<LS->n_lyndon; i++) {
-        int nn =get_degree(LS,i);
+    for (int i=0; i<LS->dim; i++) {
+        int nn = get_degree(LS,i);
         if (nn > n) { 
             dim += dim_n;
             nonzero += nonzero_n;
@@ -1142,12 +1190,15 @@ void print_lie_series_statistics(lie_series_t *LS) {
 }
 
 int get_degree(lie_series_t *LS, size_t i) {
+    return LS->nn[i];
+/*    
     if (i<LS->K) {
         return 1;
     }
     else {
         return get_degree(LS, LS->p1[i])+get_degree(LS, LS->p2[i]);
     }
+*/
 }
 
 int get_degree_of_generator(lie_series_t *LS, size_t i, uint8_t g) {
@@ -1172,7 +1223,7 @@ void print_lists(lie_series_t *LS, unsigned int what) {
         if (what & PRINT_COEFFICIENT) printf("\tcoefficient"); 
         printf("\n");
     }
-    for (int i=0; i<LS->n_lyndon; i++) {
+    for (int i=0; i<LS->dim; i++) {
         if (what & PRINT_INDEX) printf("%i", i);
         if (what & PRINT_DEGREE) printf("\t%i", get_degree(LS, i));
         if (what & PRINT_MULTI_DEGREE) {
