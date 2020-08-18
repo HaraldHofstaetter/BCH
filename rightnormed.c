@@ -280,53 +280,6 @@ void lyndon2rightnormed(int lw, generator_t w[], generator_t r[]) {
 }
 
 
-int coeff_word_in_rightnormed(generator_t w[], generator_t c[], int l1, int r1, int l2) {
-    if (l1==r1) {
-        return w[l1]==c[l2] ? 1 : 0;
-    }
-    else {
-        return (w[l1]==c[l2] ? coeff_word_in_rightnormed(w, c, l1+1, r1, l2+1) : 0) -
-               (w[r1]==c[l2] ? coeff_word_in_rightnormed(w, c, l1, r1-1, l2+1) : 0);
-    }
-}
-
-
-void integer_lu_solve(int n, int *A, INTEGER *x) {    
-    /* LU factorization */
-    for (int k=0; k<n; k++) {
-        int s = A[k+n*k];
-        if ((s!=1) && (s!=-1)) {
-            fprintf(stderr, "ERROR: integer LU factorization does not exist"); 
-            exit(EXIT_FAILURE);
-        }
-        for (int i=k+1; i<n; i++) {
-            A[i+n*k] *= s;
-            for (int j=k+1; j<n; j++) { 
-                A[i+n*j] -= A[i+n*k]*A[k+n*j];
-            }
-        }
-    }
-        
-    /* forward substitution */
-    for (int i=1; i<n; i++) {
-        INTEGER s=0;
-        for (int j=0; j<i; j++) {
-            s += A[i+n*j]*x[j];
-        }
-        x[i] -= s;
-    }
-    
-    /* back substitution */
-    x[n] *=  A[n-1 +n*(n-1)];
-    for (int i=n-2; i>=0; i--) {
-        INTEGER s=0;
-        for (int j=i+1; j<n; j++) {
-            s += A[i+n*j] * x[j];
-        }
-        x[i] = (x[i] - s)*A[i+n*i];
-    }
-}
-
 /*
 int main(void) {
     generator_t w[] = {0, 0, 1, 2, 0, 2, 0, 1, 1};

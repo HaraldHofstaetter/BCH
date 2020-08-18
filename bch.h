@@ -105,8 +105,6 @@ void print_basis_element(lie_series_t *LS,  size_t i);
 void free_lie_series(lie_series_t LS);
 
 void lyndon2rightnormed(int lw, generator_t w[], generator_t r[]);
-int coeff_word_in_rightnormed(generator_t w[], generator_t c[], int l1, int r1, int l2);
-void integer_lu_solve(int n, int *A, int *x);
 
 
 #endif /*BCH_H */

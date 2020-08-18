@@ -425,7 +425,7 @@ static void init_lyndon_words(int rightnormed) {
         
         if (VERBOSITY_LEVEL>=1) {
             double t1 = toc(t0);
-            printf("#compute righnormed basis elements: time=%g sec\n", t1);
+            printf("#compute rightnormed basis elements: time=%g sec\n", t1);
             if (VERBOSITY_LEVEL>=2) {
                 fflush(stdout);
             }
@@ -442,8 +442,6 @@ static void free_lyndon_words(void) {
     /* Note: p1, p2, and nn are taken over by a lie_series_t struct
        and are eventually freed by free_lie_series */
 }
-
-
 
 
 
@@ -975,6 +973,60 @@ static void  compute_BCH_terms_of_order_N(INTEGER c[], INTEGER denom) {
 }
 
 
+static int coeff_word_in_rightnormed(generator_t w[], generator_t c[], int l1, int r1, int l2) {
+    if (l1==r1) {
+        return w[l1]==c[l2] ? 1 : 0;
+    }
+    else {
+        return (w[l1]==c[l2] ? coeff_word_in_rightnormed(w, c, l1+1, r1, l2+1) : 0) -
+               (w[r1]==c[l2] ? coeff_word_in_rightnormed(w, c, l1, r1-1, l2+1) : 0);
+    }
+}
+
+
+static void integer_lu_solve(int n, int *A, INTEGER *x) {    
+    /* LU factorization */
+    for (int k=0; k<n; k++) {
+        int s = A[k+n*k];
+        if ((s!=1) && (s!=-1)) {
+            fprintf(stderr, "ERROR: integer LU factorization does not exist"); 
+            exit(EXIT_FAILURE);
+        }
+        for (int i=k+1; i<n; i++) {
+            A[i+n*k] *= s;
+            for (int j=k+1; j<n; j++) { 
+                A[i+n*j] -= A[i+n*k]*A[k+n*j];
+            }
+        }
+    }
+        
+    /* forward substitution */
+    for (int i=1; i<n; i++) {
+        INTEGER s=0;
+        for (int j=0; j<i; j++) {
+            s += A[i+n*j]*x[j];
+        }
+        x[i] -= s;
+    }
+    
+    /* back substitution */
+    x[n] *=  A[n-1 +n*(n-1)];
+    for (int i=n-2; i>=0; i--) {
+        INTEGER s=0;
+        for (int j=i+1; j<n; j++) {
+            s += A[i+n*j] * x[j];
+        }
+        x[i] = (x[i] - s)*A[i+n*i];
+    }
+}
+
+static void convert_to_rightnormed_lie_series(int N, INTEGER c[]) {
+    /* T.B.D. */
+}
+
+
+
+
 static void init_all(size_t number_of_generators, size_t order, 
                      size_t max_lookup_length, int rightnormed) {
     K = number_of_generators;
@@ -1016,7 +1068,12 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M,
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
     INTEGER denom = common_denominator(N)*fac;
     compute_word_coefficients(N, expr, c, denom, 0);
-    convert_to_lie_series(N, c);
+    if (rightnormed) {
+        convert_to_rightnormed_lie_series(N, c);
+    }
+    else {
+        convert_to_lie_series(N, c);
+    }
     lie_series_t LS = gen_result(c, denom);
     free_all();
     if (VERBOSITY_LEVEL>=1) {
