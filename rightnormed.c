@@ -58,7 +58,9 @@ static void print_word(generator_t w[], int lw) {
 }
 */
 
-static generator_t digits[] =  { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+static generator_t digits[] =  {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+                                 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                                 20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
 
 
 typedef struct list_t {
@@ -233,8 +235,8 @@ void lyndon2rightnormed(int lw, generator_t w[], generator_t r[]) {
 
     generator_t w1[lw];
     int lw1;
-    generator_t* tt[lw];
-    int ltt[lw];
+    generator_t* tt[2*lw]; //TODO: Check that this is large enough...
+    int ltt[2*lw];
     int m;
     analyze_lyndon_word(w, lw, w1, &lw1, tt, ltt, &m);
 
@@ -289,7 +291,7 @@ int coeff_word_in_rightnormed(generator_t w[], generator_t c[], int l1, int r1, 
 }
 
 
-void integer_lu_solve(int n, int *A, int *x) {    
+void integer_lu_solve(int n, int *A, INTEGER *x) {    
     /* LU factorization */
     for (int k=0; k<n; k++) {
         int s = A[k+n*k];
@@ -307,7 +309,7 @@ void integer_lu_solve(int n, int *A, int *x) {
         
     /* forward substitution */
     for (int i=1; i<n; i++) {
-        int s=0;
+        INTEGER s=0;
         for (int j=0; j<i; j++) {
             s += A[i+n*j]*x[j];
         }
@@ -317,7 +319,7 @@ void integer_lu_solve(int n, int *A, int *x) {
     /* back substitution */
     x[n] *=  A[n-1 +n*(n-1)];
     for (int i=n-2; i>=0; i--) {
-        int s=0;
+        INTEGER s=0;
         for (int j=i+1; j<n; j++) {
             s += A[i+n*j] * x[j];
         }

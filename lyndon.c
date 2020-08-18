@@ -684,7 +684,7 @@ static inline size_t get_right_factors(size_t i, size_t J[], size_t kmax) {
     return k;
 }
 
-static void compute_lie_series(int N, expr_t* ex, INTEGER c[], INTEGER denom, int classical_bch) {
+static void compute_word_coefficients(int N, expr_t* ex, INTEGER c[], INTEGER denom, int classical_bch) {
     if (VERBOSITY_LEVEL>=1) {
         printf("#expression="); print_expr(ex); printf("\n"); 
         printf("#denominator="); print_INTEGER(denom); printf("\n");
@@ -755,8 +755,10 @@ static void compute_lie_series(int N, expr_t* ex, INTEGER c[], INTEGER denom, in
             fflush(stdout);
         }
     }
+}    
 
-    t0 = tic();
+
+static void convert_to_lie_series(int N, INTEGER c[]) {
     if (VERBOSITY_LEVEL>=2) {
 #ifdef _OPENMP
         printf("# degree     #basis        time thread\n");
@@ -764,6 +766,10 @@ static void compute_lie_series(int N, expr_t* ex, INTEGER c[], INTEGER denom, in
         printf("# degree     #basis        time\n");
 #endif
     }
+    double t0 = tic();
+
+    size_t i1 = ii[N-1];
+    size_t i2 = ii[N]-1;
 
     size_t h1 = DI[i1];
     size_t h2 = DI[i2];
@@ -1009,7 +1015,8 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M,
     init_all(K, N, M, rightnormed);
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
     INTEGER denom = common_denominator(N)*fac;
-    compute_lie_series(N, expr, c, denom, 0);
+    compute_word_coefficients(N, expr, c, denom, 0);
+    convert_to_lie_series(N, c);
     lie_series_t LS = gen_result(c, denom);
     free_all();
     if (VERBOSITY_LEVEL>=1) {
@@ -1031,10 +1038,12 @@ lie_series_t BCH(size_t N, size_t M, int rightnormed) {
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
     INTEGER denom = common_denominator(N);
     if (N%2) {
-        compute_lie_series(N, expr, c, denom, 1);
+        compute_word_coefficients(N, expr, c, denom, 1);
+        convert_to_lie_series(N, c);
     }
     else {
-        compute_lie_series(N-1, expr, c, denom, 1);
+        compute_word_coefficients(N-1, expr, c, denom, 1);
+        convert_to_lie_series(N-1, c);
         compute_BCH_terms_of_order_N(c, denom);
     }
     lie_series_t LS = gen_result(c, denom);
@@ -1067,7 +1076,8 @@ lie_series_t symBCH(size_t N, size_t M, int rightnormed) {
             fflush(stdout);
         }
     }
-    compute_lie_series(N, expr, c, denom, 0);
+    compute_word_coefficients(N, expr, c, denom, 0);
+    convert_to_lie_series(N, c);
     lie_series_t LS = gen_result(c, denom);
     for (int i=0; i<N_LYNDON; i++) {
         int nA = get_degree_of_generator(&LS, i, 0);
