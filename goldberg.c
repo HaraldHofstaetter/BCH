@@ -202,7 +202,7 @@ INTEGER goldberg_coefficient(int n, generator_t w[], goldberg_t *G) {
         int i = 0;
         while (p[i]==G->P[c][i]) {
             if (p[i]==0) {
-                return ((w[1]==1) && !(n&1)) ? +G->c[c] : G->c[c];
+                return ((w[0]==1) && !(n&1)) ? -G->c[c] : G->c[c];
             }
             i+=1;
         }
