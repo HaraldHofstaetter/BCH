@@ -81,6 +81,7 @@ double toc(double t0);
 
 
 void print_lie_series(lie_series_t *LS);
+void print_lie_series_statistics(lie_series_t *LS);
 
 enum {
     PRINT_INDEX =         1 << 0, 

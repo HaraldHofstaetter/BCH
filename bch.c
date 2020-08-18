@@ -91,6 +91,9 @@ int main(int argc, char*argv[]) {
             LS = lie_series(2, ex, N, 1, M); 
             break;
     }
+    if ( (get_verbosity_level()>0) || (get_arg(argc, argv, "print_statistics", 0, 0, 1)) ) {
+        print_lie_series_statistics(&LS);
+    }
 
     /* output result: */
     switch(get_arg(argc, argv, "lists_output", N<=10 ? 0 : 1, 0, 1)) {

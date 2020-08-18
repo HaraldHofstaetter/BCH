@@ -1112,6 +1112,35 @@ void print_lie_series(lie_series_t *LS) {
     }
 }
 
+
+void print_lie_series_statistics(lie_series_t *LS) {
+    int n = 1;
+    int dim_n = 0;
+    int dim = 0;
+    int nonzero_n = 0;
+    int nonzero = 0;
+    printf("# degree         dim    #nonzero   dim(cum.)   #nz(cum.)\n");
+    for (int i=0; i<LS->n_lyndon; i++) {
+        int nn =get_degree(LS,i);
+        if (nn > n) { 
+            dim += dim_n;
+            nonzero += nonzero_n;
+            printf("#  %5i  %10i  %10i  %10i  %10i\n", n, dim_n, nonzero_n, dim, nonzero);
+            dim_n = 0;
+            nonzero_n = 0;
+            n++;
+        }
+        dim_n++;
+        if (LS->c[i]!=0) {
+            nonzero_n++;
+        }
+    }
+    dim += dim_n;
+    nonzero += nonzero_n;
+    printf("#  %5i  %10i  %10i  %10i  %10i\n", n, dim_n, nonzero_n, dim, nonzero);
+    printf("#\n");
+}
+
 int get_degree(lie_series_t *LS, size_t i) {
     if (i<LS->K) {
         return 1;
