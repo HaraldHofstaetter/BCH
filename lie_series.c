@@ -1011,9 +1011,9 @@ static void integer_lu_solve(int n, int *A, INTEGER *x) {
         }
         x[i] -= s;
     }
-    
+
     /* back substitution */
-    x[n-1] *=  A[n-1 +n*(n-1)];
+    x[n-1] *= A[n-1 +n*(n-1)];
     for (int i=n-2; i>=0; i--) {
         INTEGER s=0;
         for (int j=i+1; j<n; j++) {
@@ -1037,6 +1037,9 @@ static void convert_to_rightnormed_lie_series(int N, INTEGER c[]) {
                 if (DI[j]==h) {
                     m++;
                 }
+            }
+            if (m==0) {
+                continue;
             }
 
             /* set up matrix and right-hand side */
