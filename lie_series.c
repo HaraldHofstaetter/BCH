@@ -992,14 +992,17 @@ static void integer_lu_solve(int n, int *A, INTEGER *x) {
             fprintf(stderr, "ERROR: integer LU factorization does not exist"); 
             exit(EXIT_FAILURE);
         }
+        #pragma omp parallel for schedule(static, 32) 
         for (int i=k+1; i<n; i++) {
-            A[i+n*k] *= s;
-            for (int j=k+1; j<n; j++) { 
-                A[i+n*j] -= A[i+n*k]*A[k+n*j];
+            if (A[i+n*k]!=0) {
+                A[i+n*k] *= s;
+                for (int j=k+1; j<n; j++) { 
+                    A[i+n*j] -= A[i+n*k]*A[k+n*j];
+                }
             }
         }
     }
-        
+
     /* forward substitution */
     for (int i=1; i<n; i++) {
         INTEGER s=0;
@@ -1010,7 +1013,7 @@ static void integer_lu_solve(int n, int *A, INTEGER *x) {
     }
     
     /* back substitution */
-    x[n] *=  A[n-1 +n*(n-1)];
+    x[n-1] *=  A[n-1 +n*(n-1)];
     for (int i=n-2; i>=0; i--) {
         INTEGER s=0;
         for (int j=i+1; j<n; j++) {
@@ -1021,10 +1024,62 @@ static void integer_lu_solve(int n, int *A, INTEGER *x) {
 }
 
 static void convert_to_rightnormed_lie_series(int N, INTEGER c[]) {
-    /* T.B.D. */
+    double t0 = tic();
+    for (int n=2; n<=N; n++) { /* over all word sizes */
+        size_t i1 = ii[n-1];
+        size_t i2 = ii[n]-1;
+        size_t h1 = DI[i1];
+        size_t h2 = DI[i2];
+        for (int h=h1; h<=h2; h++) { /* over all multi-degrees */
+            /* get dimension */
+            int m=0;
+            for (int j=i1; j<=i2; j++) {
+                if (DI[j]==h) {
+                    m++;
+                }
+            }
+
+            /* set up matrix and right-hand side */
+            INTEGER *x = calloc(m, sizeof(INTEGER));
+            int *A = calloc(m*m, sizeof(int));
+            int jj=0;
+            for (int j=i1; j<=i2; j++) {
+                if (DI[j]==h) {
+                    int ii=0;
+                    for (int i=i1; i<=i2; i++) {
+                        if (DI[i]==h) {
+                            A[ii+jj*m] = coeff_word_in_rightnormed(W[i], R[j], 0, n-1, 0);
+                            ii++;
+                        }
+                    }
+                    x[jj] = c[j];
+                    jj++;
+                }
+            }
+
+            integer_lu_solve(m, A, x);
+
+            /* copy result */
+            jj=0;
+            for (int j=i1; j<=i2; j++) {
+                if (DI[j]==h) {
+                    c[j] = x[jj];
+                    jj++;
+                }
+            }
+
+            free(x);
+            free(A);
+        }
+    }
+    if (VERBOSITY_LEVEL>=1) {
+        double t1 = toc(t0);
+        printf("#convert to rightnormed lie series: time=%g sec\n", t1);
+        if (VERBOSITY_LEVEL>=2) {
+            fflush(stdout);
+        }
+    }
 }
-
-
 
 
 static void init_all(size_t number_of_generators, size_t order, 
@@ -1033,13 +1088,13 @@ static void init_all(size_t number_of_generators, size_t order,
     N = order;
     init_factorial(N);
     init_lyndon_words(rightnormed);
-    //if (rightnormed) {
-    //    M = 0;
-    //}
-    //else {
+    if (rightnormed) {
+        M = 0;
+    }
+    else {
         M = max_lookup_length;
         init_lookup_table();
-    //}
+    }
 }
 
 static void free_all(void) {
@@ -1094,14 +1149,20 @@ lie_series_t BCH(size_t N, size_t M, int rightnormed) {
     init_all(2, N, M, rightnormed);
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
     INTEGER denom = common_denominator(N);
-    if (N%2) {
+    if (rightnormed) {
         compute_word_coefficients(N, expr, c, denom, 1);
-        convert_to_lie_series(N, c);
+        convert_to_rightnormed_lie_series(N, c);
     }
     else {
-        compute_word_coefficients(N-1, expr, c, denom, 1);
-        convert_to_lie_series(N-1, c);
-        compute_BCH_terms_of_order_N(c, denom);
+        if (N%2) {
+            compute_word_coefficients(N, expr, c, denom, 1);
+            convert_to_lie_series(N, c);
+        }
+        else {
+            compute_word_coefficients(N-1, expr, c, denom, 1);
+            convert_to_lie_series(N-1, c);
+            compute_BCH_terms_of_order_N(c, denom);
+        }
     }
     lie_series_t LS = gen_result(c, denom);
     free_all();
@@ -1134,7 +1195,12 @@ lie_series_t symBCH(size_t N, size_t M, int rightnormed) {
         }
     }
     compute_word_coefficients(N, expr, c, denom, 0);
-    convert_to_lie_series(N, c);
+    if (rightnormed) {
+        convert_to_rightnormed_lie_series(N, c);
+    }
+    else {
+        convert_to_lie_series(N, c);
+    }
     lie_series_t LS = gen_result(c, denom);
     for (int i=0; i<N_LYNDON; i++) {
         int nA = get_degree_of_generator(&LS, i, 0);
