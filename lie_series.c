@@ -1076,6 +1076,52 @@ static void convert_to_rightnormed_lie_series(int N, INTEGER c[], int odd_orders
 }
 
 
+static void  compute_rightnormed_BCH_terms_of_even_orders(INTEGER c[]) {
+    double t0 = tic();
+
+    for(int n=2; n<=N; n+=2) {
+        #pragma omp parallel for schedule(dynamic,256)
+        for (int i=ii[n-1]; i<=ii[n]-1; i++) {
+            c[i] = 0;
+            int k=0;
+            int l=0;
+            while (R[i][k]==K-1) {
+                k += 1;
+                if (k&1) {
+                    int q = ii[n-1-k];
+                    for (; q<=ii[n-k]-1; q++) {
+                        int m=0;
+                        for (; (m<n-k) && (R[q][m]==R[i][k+m]) ; m++) {}
+                        if (m==n-k) {
+                            break;
+                        }
+                    }
+                    if (q>ii[n-k]) {
+                        fprintf(stderr, "ERROR: basis element not found in compute_rightnormed_BCH_terms_of_even_orders");
+                        exit(EXIT_FAILURE);
+                    }
+                    INTEGER d = c[q]/beta_den[l];
+                    if (d*beta_den[l]!=c[q]) {
+                        fprintf(stderr, "ERROR: divisibility check failed in compute_rightnormed_BCH_terms_of_even_orders");
+                        exit(EXIT_FAILURE);
+                    }
+                    c[i] -= beta_num[l]*d; 
+                    l += 1;
+                }
+            }
+        }
+    }
+
+    if (VERBOSITY_LEVEL>=1) {
+        double t1 = toc(t0);
+        printf("#compute terms of even orders: time=%g sec\n", t1);
+        if (VERBOSITY_LEVEL>=2) {
+            fflush(stdout);
+        }
+    }
+}
+
+
 static void init_all(size_t number_of_generators, size_t order, 
                      size_t max_lookup_length, int rightnormed) {
     K = number_of_generators;
@@ -1090,9 +1136,6 @@ static void init_all(size_t number_of_generators, size_t order,
     }
 }
 
-static void  compute_rightnormed_BCH_terms_of_even_order(int n, INTEGER c[]) {
-    assert(!(n&1));
-}
 
 static void free_all(void) {
     free_lookup_table();
@@ -1147,7 +1190,8 @@ lie_series_t BCH(size_t N, size_t M, int rightnormed) {
     INTEGER denom = common_denominator(N);
     if (rightnormed) {
         compute_word_coefficients(N, expr, c, denom, 1);
-        convert_to_rightnormed_lie_series(N, c, 0);
+        convert_to_rightnormed_lie_series(N, c, 1);
+        compute_rightnormed_BCH_terms_of_even_orders(c);
     }
     else {
         if (N%2) {
