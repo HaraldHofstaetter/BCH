@@ -37,8 +37,6 @@ expr_t* commutator(expr_t* arg1, expr_t* arg2);
 void print_expr(expr_t* ex);
 void free_expr(expr_t* ex);
 
-void init_factorial(int n);
-void free_factorial(void);
 int phi(INTEGER y[], int m, generator_t w[], expr_t* ex, INTEGER v[]);
 INTEGER common_denominator(int n);
 void print_INTEGER(INTEGER x);

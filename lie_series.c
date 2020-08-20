@@ -877,12 +877,9 @@ static void convert_to_lie_series(int N, INTEGER c[]) {
     }
 }
 
-/* tables beta_num_h, beta_num_l, beta_den_h, beta_den_l defined such that the 
-   rational numbers
-      beta[k] = (H*beta_num_h[k]+beta_num_l[k])/(H*beta_den_h[k]+beta_den_l[k])
-   (where H = 1000000000000000000) are the coefficients of the power series 
-   of the function f(x)=tanh(x/2), i.e., 
-   beta[] = {           1/2,                                   
+/* tables beta_num[] and beta_den[]: numerators and denominators of
+   the coefficients of the power series of the function f(x)=tanh(x/2), 
+   i.e., beta[] = {     1/2,                                   
                        -1/24,                                  
                         1/240,                                 
                       -17/40320,                               
@@ -914,33 +911,20 @@ static void convert_to_lie_series(int N, INTEGER c[]) {
    beta = [2*(2^(2*k)-1)*B[2*k+1]/factorial(BigInt(2*k)) for k=1:n]
 */   
 
-static long long int beta_num_h[16] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -129};
-    
-static long long int beta_num_l[16] = {
-    1, -1, 1, -17, 31, -691, 5461, -929569, 3202291, -221930581, 4722116521, -56963745931, 14717667114151,
-    -2093660879252671, 86125672563201181, -848163681107301953};
+static const INTEGER H =  1000000000000000000;
 
-static long long int beta_den_h[16] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 102, 12165, 31022420, 43555477801, 17683523987479, 263130836933693530};
+static INTEGER beta_num[16] = {1, -1, 1, -17, 31, -691, 5461, -929569, 3202291, -221930581, 4722116521, 
+    -56963745931, 14717667114151, -2093660879252671, 86125672563201181, -129*H-848163681107301953};
 
-static long long int beta_den_l[16] = {
-    2, 24, 240, 40320, 725760, 159667200, 12454041600, 20922789888000, 711374856192000, 
-    486580401635328000, 181884343418880000, 654935945871360000, 86661971968000000, 673408643072000000, 
-    403909087232000000, 167218012160000000};
+static INTEGER beta_den[16] = {2, 24, 240, 40320, 725760, 159667200, 12454041600, 20922789888000, 
+    711374856192000, 486580401635328000, 102*H+181884343418880000, 12165*H+654935945871360000, 
+    31022420*H+86661971968000000, 43555477801*H+673408643072000000, 17683523987479*H+403909087232000000, 
+    263130836933693530*H+167218012160000000};
 
 
-static void  compute_BCH_terms_of_order_N(INTEGER c[], INTEGER denom) {
+static void  compute_BCH_terms_of_even_order_N(INTEGER c[]) {
     double t0 = tic();
     assert(!(N&1));
-    int N2 = N/2;
-    INTEGER beta_num[N2];
-    INTEGER beta_den[N2];
-    INTEGER H = 1000000000000000000;
-    for (int k=0; k<N2; k++) {
-        beta_num[k] = beta_num_h[k]*H + beta_num_l[k];
-        beta_den[k] = beta_den_h[k]*H + beta_den_l[k];
-    }
 
     #pragma omp parallel for schedule(dynamic,256)
     for (int i=ii[N-1]; i<=ii[N]-1; i++) {
@@ -1023,9 +1007,10 @@ static void integer_lu_solve(int n, int *A, INTEGER *x) {
     }
 }
 
-static void convert_to_rightnormed_lie_series(int N, INTEGER c[]) {
+static void convert_to_rightnormed_lie_series(int N, INTEGER c[], int odd_orders_only) {
     double t0 = tic();
     for (int n=2; n<=N; n++) { /* over all word sizes */
+    if ((!odd_orders_only)||(n&1)) {
         size_t i1 = ii[n-1];
         size_t i2 = ii[n]-1;
         size_t h1 = DI[i1];
@@ -1075,6 +1060,12 @@ static void convert_to_rightnormed_lie_series(int N, INTEGER c[]) {
             free(A);
         }
     }
+    else {
+        for (int j=ii[n-1]; j<=ii[n]-1; j++) {
+            c[j] = 0;
+        }
+    }
+    }
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
         printf("#convert to rightnormed lie series: time=%g sec\n", t1);
@@ -1089,7 +1080,6 @@ static void init_all(size_t number_of_generators, size_t order,
                      size_t max_lookup_length, int rightnormed) {
     K = number_of_generators;
     N = order;
-    init_factorial(N);
     init_lyndon_words(rightnormed);
     if (rightnormed) {
         M = 0;
@@ -1100,8 +1090,11 @@ static void init_all(size_t number_of_generators, size_t order,
     }
 }
 
+static void  compute_rightnormed_BCH_terms_of_even_order(int n, INTEGER c[]) {
+    assert(!(n&1));
+}
+
 static void free_all(void) {
-    free_factorial();
     free_lookup_table();
     free_lyndon_words();
 }
@@ -1127,7 +1120,7 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M,
     INTEGER denom = common_denominator(N)*fac;
     compute_word_coefficients(N, expr, c, denom, 0);
     if (rightnormed) {
-        convert_to_rightnormed_lie_series(N, c);
+        convert_to_rightnormed_lie_series(N, c, 0);
     }
     else {
         convert_to_lie_series(N, c);
@@ -1154,7 +1147,7 @@ lie_series_t BCH(size_t N, size_t M, int rightnormed) {
     INTEGER denom = common_denominator(N);
     if (rightnormed) {
         compute_word_coefficients(N, expr, c, denom, 1);
-        convert_to_rightnormed_lie_series(N, c);
+        convert_to_rightnormed_lie_series(N, c, 0);
     }
     else {
         if (N%2) {
@@ -1164,7 +1157,7 @@ lie_series_t BCH(size_t N, size_t M, int rightnormed) {
         else {
             compute_word_coefficients(N-1, expr, c, denom, 1);
             convert_to_lie_series(N-1, c);
-            compute_BCH_terms_of_order_N(c, denom);
+            compute_BCH_terms_of_even_order_N(c);
         }
     }
     lie_series_t LS = gen_result(c, denom);
@@ -1199,7 +1192,7 @@ lie_series_t symBCH(size_t N, size_t M, int rightnormed) {
     }
     compute_word_coefficients(N, expr, c, denom, 0);
     if (rightnormed) {
-        convert_to_rightnormed_lie_series(N, c);
+        convert_to_rightnormed_lie_series(N, c, 1);
     }
     else {
         convert_to_lie_series(N, c);

@@ -100,7 +100,6 @@ goldberg_t goldberg(size_t n) {
     uint8_t **Pn = G.P+ii[n-1];
     partitions(n, Pn);
 
-    init_factorial(n);
     G.denom = common_denominator(n);
 
     expr_t *A = generator(0);
@@ -147,8 +146,6 @@ goldberg_t goldberg(size_t n) {
             q--;
         }
     }
-
-    free_factorial();
 
     if (get_verbosity_level()>=1) {
         double t1 = toc(t0);

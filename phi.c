@@ -2,9 +2,42 @@
 #include<stdlib.h>
 #include<stdio.h>
 
+static const INTEGER H =  1000000000000000000;
 
-//static INTEGER *FACTORIAL=NULL;
-static INTEGER FACTORIAL[33];
+static INTEGER FACTORIAL[33] =  {      1,
+                                       1,
+                                       2,
+                                       6,
+                                      24,
+                                     120,
+                                     720,
+                                    5040,
+                                   40320,
+                                  362880,
+                                 3628800,
+                                39916800,
+                               479001600,
+                              6227020800,
+                             87178291200,
+                           1307674368000,
+                          20922789888000,
+                         355687428096000,
+                        6402373705728000,
+                      121645100408832000,
+                  2*H+432902008176640000,
+                 51*H+ 90942171709440000,
+               1124*H+   727777607680000,
+              25852*H+ 16738884976640000,
+             620448*H+401733239439360000,
+           15511210*H+ 43330985984000000,
+          403291461*H+126605635584000000,
+        10888869450*H+418352160768000000,
+       304888344611*H+713860501504000000,
+      8841761993739*H+701954543616000000,
+    265252859812191*H+ 58636308480000000,
+   8222838654177922*H+817725562880000000,
+ 263130836933693530*H+167218012160000000 };
+
 
 /* table den_fac obtained with the following Julia code:
 n = 33
@@ -23,18 +56,6 @@ den_fac = [div(D[i],F[i]) for i=1:n]
 static int den_fac[33] = {1, 1, 1, 2, 1, 6, 2, 6, 3, 10, 2, 6, 2, 210, 30, 12, 3, 30, 10, 
                           210, 42, 330, 30, 60, 30, 546, 42, 28, 2, 60, 4, 924, 231};
 
-
-void init_factorial(int n) {
-    //FACTORIAL = malloc((n+1)*sizeof(INTEGER)); 
-    FACTORIAL[0] = 1;
-    for (int k=1; k<=n; k++) {
-        FACTORIAL[k] = k*FACTORIAL[k-1];
-    }
-}
-
-void free_factorial(void) {
-    //free(FACTORIAL);
-}
 
 INTEGER common_denominator(int n) {
     return FACTORIAL[n]*den_fac[n];
