@@ -968,10 +968,10 @@ static int coeff_word_in_rightnormed(generator_t w[], generator_t c[], int l1, i
 }
 
 
-static void integer_lu_solve(int n, int *A, INTEGER *x) {    
+static void integer_lu(int n, int64_t *A) {    
     /* LU factorization */
     for (int k=0; k<n; k++) {
-        int s = A[k+n*k];
+        int64_t s = A[k+n*k];
         if ((s!=1) && (s!=-1)) {
             fprintf(stderr, "ERROR: integer LU factorization does not exist"); 
             exit(EXIT_FAILURE);
@@ -986,7 +986,10 @@ static void integer_lu_solve(int n, int *A, INTEGER *x) {
             }
         }
     }
+}
 
+
+static void integer_lu_solve(int n, int64_t *A, INTEGER *x) {    
     /* forward substitution */
     for (int i=1; i<n; i++) {
         INTEGER s=0;
@@ -1006,6 +1009,7 @@ static void integer_lu_solve(int n, int *A, INTEGER *x) {
         x[i] = (x[i] - s)*A[i+n*i];
     }
 }
+
 
 static void convert_to_rightnormed_lie_series(int N, INTEGER c[], int odd_orders_only) {
     double t0 = tic();
@@ -1029,7 +1033,7 @@ static void convert_to_rightnormed_lie_series(int N, INTEGER c[], int odd_orders
 
             /* set up matrix and right-hand side */
             INTEGER *x = calloc(m, sizeof(INTEGER));
-            int *A = calloc(m*m, sizeof(int));
+            int64_t *A = calloc(m*m, sizeof(int64_t));
             int jj=0;
             for (int j=i1; j<=i2; j++) {
                 if (DI[j]==h) {
@@ -1045,6 +1049,7 @@ static void convert_to_rightnormed_lie_series(int N, INTEGER c[], int odd_orders
                 }
             }
 
+            integer_lu(m, A);
             integer_lu_solve(m, A, x);
 
             /* copy result */
