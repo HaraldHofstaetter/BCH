@@ -207,7 +207,7 @@ static void analyze_lyndon_word(generator_t w[], int lw, generator_t w2[], int *
     }
     generator_t vv[lw];
     int lvv = list2arrays(L, tt, ltt, vv);
-    generator_t pp[lw];
+    generator_t pp[lw+2];
     invperm(lvv, vv, pp);
     for (int j=0; j<lw1; j++) {
         w2[j] = pp[w1[j]-1];

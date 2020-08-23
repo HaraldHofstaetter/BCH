@@ -1,12 +1,10 @@
 all: bch 
 
-#CC = gcc
-CC = clang
+CC = gcc
 
-#-ftrapv: This option generates traps for signed overflow on addition, subtraction, multiplication operations. 
-#COPTS = -O3 -fopenmp -ftrapv   -Wall -DUSE_INT128_T 
 
-COPTS = -O3 -fopenmp -Wall -DUSE_INT128_T 
+COPTS = -O3 -fopenmp -fsanitize=signed-integer-overflow -Wall -DUSE_INT128_T 
+#COPTS = -O3 -fopenmp -fsanitize=signed-integer-overflow -fsanitize=undefined   -Wall -DUSE_INT128_T 
 
 #COPTS = -g -Wall -DUSE_INT128_T 
 
@@ -18,4 +16,7 @@ bch_goldberg_30.txt: bch
 
 bch_lyndon_20.txt: bch
 	./bch N=20 M=14 verbosity_level=1 > bch_lyndon_20.txt
+
+bch_rightnormed_20.txt: bch
+	./bch N=20 rightnormed_basis=1 verbosity_level=1 > bch_rightnormed_20.txt
 
