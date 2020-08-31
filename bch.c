@@ -105,13 +105,14 @@ int main(int argc, char*argv[]) {
             break;
         case 1: {
             int what = 
-                PRINT_INDEX        *get_arg(argc, argv, "print_index",         1, 0, 1) |
-                PRINT_DEGREE       *get_arg(argc, argv, "print_degree",        1, 0, 1) |
-                PRINT_MULTI_DEGREE *get_arg(argc, argv, "print_multi_degree",  0, 0, 1) |
-                PRINT_FACTORS      *get_arg(argc, argv, "print_factors",       rightnormed ? 0 : 1, 0, 1) |
-                PRINT_WORD         *get_arg(argc, argv, "print_word",          0, 0, 1) |
-                PRINT_BASIS_ELEMENT*get_arg(argc, argv, "print_basis_element", rightnormed ? 1 : 0, 0, 1) |
-                PRINT_COEFFICIENT  *get_arg(argc, argv, "print_coefficient",   1, 0, 1); 
+                PRINT_INDEX           *get_arg(argc, argv, "print_index",         1, 0, 1) |
+                PRINT_DEGREE          *get_arg(argc, argv, "print_degree",        1, 0, 1) |
+                PRINT_MULTI_DEGREE    *get_arg(argc, argv, "print_multi_degree",  0, 0, 1) |
+                PRINT_FACTORS         *get_arg(argc, argv, "print_factors",       rightnormed ? 0 : 1, 0, 1) |
+                PRINT_LYNDON_WORD     *get_arg(argc, argv, "print_lyndon_word",   0, 0, 1) |
+                PRINT_RIGHTNORMED_WORD*get_arg(argc, argv, "print_rightnormed_word", rightnormed ? 1 : 0, 0, 1) |
+                PRINT_BASIS_ELEMENT   *get_arg(argc, argv, "print_basis_element", 0, 0, 1) |
+                PRINT_COEFFICIENT     *get_arg(argc, argv, "print_coefficient",   1, 0, 1); 
             print_lists(&LS, what);
             break;
         }

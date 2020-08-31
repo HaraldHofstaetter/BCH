@@ -2,10 +2,8 @@ all: bch
 
 CC = gcc
 
-
 COPTS = -O3 -fopenmp -fsanitize=signed-integer-overflow -Wall -DUSE_INT128_T 
-#COPTS = -O3 -fopenmp -fsanitize=signed-integer-overflow -fsanitize=undefined   -Wall -DUSE_INT128_T 
-
+#COPTS = -O3 -fopenmp -fsanitize=signed-integer-overflow -fsanitize=undefined -Wall -DUSE_INT128_T 
 #COPTS = -g -Wall -DUSE_INT128_T 
 
 bch: bch.h bch.c phi.c lie_series.c rightnormed.c goldberg.c

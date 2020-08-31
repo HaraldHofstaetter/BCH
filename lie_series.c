@@ -1291,15 +1291,23 @@ unsigned int get_verbosity_level(void) {
 }
 
 
-void print_word(lie_series_t *LS,  size_t i) {
+void print_lyndon_word(lie_series_t *LS,  size_t i) {
     if (i<LS->K) {
         printf("%c", (char) ('A'+i));
     }
     else {
-        print_word(LS, LS->p1[i]);
-        print_word(LS, LS->p2[i]);
+        print_lyndon_word(LS, LS->p1[i]);
+        print_lyndon_word(LS, LS->p2[i]);
     }
 }   
+
+void print_rightnormed_word(lie_series_t *LS,  size_t i) {
+    if (LS->R) {
+        for (int j=0; j < LS->nn[i]; j++) {
+            printf("%c", (char) ('A'+LS->R[i][j]));
+        }
+    }
+}
 
 void print_basis_element(lie_series_t *LS,  size_t i) {
     if (i<LS->K) {
@@ -1396,7 +1404,8 @@ void print_lists(lie_series_t *LS, unsigned int what) {
         if (what & PRINT_DEGREE) printf("\t|i|");
         if (what & PRINT_MULTI_DEGREE) printf("\tmulti degree"); 
         if (what & PRINT_FACTORS) printf("\ti'\ti\"");
-        if (what & PRINT_WORD) printf("\tword");
+        if (what & PRINT_LYNDON_WORD) printf("\tLyndon word");
+        if ((LS->R) && (what & PRINT_RIGHTNORMED_WORD)) printf("\trightnormed word");
         if (what & PRINT_BASIS_ELEMENT) printf("\tbasis element");
         if (what & PRINT_COEFFICIENT) printf("\tcoefficient"); 
         printf("\n");
@@ -1412,9 +1421,13 @@ void print_lists(lie_series_t *LS, unsigned int what) {
             printf(")");
         }
         if (what & PRINT_FACTORS) printf("\t%i\t%i", LS->p1[i], LS->p2[i]);
-        if (what & PRINT_WORD) {
+        if (what & PRINT_LYNDON_WORD) {
             printf("\t");
-            print_word(LS, i);
+            print_lyndon_word(LS, i);
+        }
+        if ((LS->R) && (what & PRINT_RIGHTNORMED_WORD)) {
+            printf("\t");
+            print_rightnormed_word(LS, i);
         }
         if (what & PRINT_BASIS_ELEMENT) {
             printf("\t");
