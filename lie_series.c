@@ -682,7 +682,45 @@ static inline size_t get_right_factors(size_t i, size_t J[], size_t kmax) {
     return k;
 }
 
-static void compute_word_coefficients(int N, expr_t* ex, INTEGER c[], INTEGER denom, int classical_bch) {
+
+static void compute_goldberg_coefficients(int N, INTEGER c[], INTEGER denom) {
+    if (VERBOSITY_LEVEL>=1) {
+        printf("#expression=log(exp(A)*exp(A))\n");
+        printf("#denominator="); print_INTEGER(denom); printf("\n");
+        if (VERBOSITY_LEVEL>=2) {
+            fflush(stdout);
+        }
+    }
+    double t0 = tic();
+    
+    goldberg_t G = goldberg(N);        
+    int f = denom/G.denom;
+    if (f!=1) {
+        #pragma omp for schedule(dynamic,256) 
+        for (int i=ii[N]-1; i>=0; i--) {
+            c[i] = f*goldberg_coefficient(nn[i], W[i], &G); 
+        }       
+    }
+    else {
+        #pragma omp for schedule(dynamic,256) 
+        for (int i=ii[N]-1; i>=0; i--) {
+            c[i] = goldberg_coefficient(nn[i], W[i], &G); 
+        }       
+    }
+
+    free_goldberg(G);
+
+    if (VERBOSITY_LEVEL>=1) {
+        double t1 = toc(t0);
+        printf("#compute coeffs of words: time=%g sec\n", t1);
+        if (VERBOSITY_LEVEL>=2) {
+            fflush(stdout);
+        }
+    }
+}
+
+
+static void compute_word_coefficients(int N, expr_t* ex, INTEGER c[], INTEGER denom) {
     if (VERBOSITY_LEVEL>=1) {
         printf("#expression="); print_expr(ex); printf("\n"); 
         printf("#denominator="); print_INTEGER(denom); printf("\n");
@@ -695,57 +733,38 @@ static void compute_word_coefficients(int N, expr_t* ex, INTEGER c[], INTEGER de
     size_t i1 = ii[N-1];
     size_t i2 = ii[N]-1;
 
-    if (classical_bch) {
-        goldberg_t G = goldberg(N);        
-        int f = denom/G.denom;
-        if (f!=1) {
-            #pragma omp for schedule(dynamic,256) 
-            for (int i=ii[N]-1; i>=0; i--) {
-                c[i] = f*goldberg_coefficient(nn[i], W[i], &G); 
-            }       
-        }
-        else {
-            #pragma omp for schedule(dynamic,256) 
-            for (int i=ii[N]-1; i>=0; i--) {
-                c[i] = goldberg_coefficient(nn[i], W[i], &G); 
-            }       
-        }
+    INTEGER e[N+1];
 
-        free_goldberg(G);
+    /* c[0] needs special handling */
+    INTEGER t1[2];
+    e[0] = 0;
+    e[1] = denom;
+    int  m = phi(t1, 2, W[0], ex, e);
+    c[0] = m>0 ? t1[0] : 0;
+
+    /* now the other coeffs */
+    for (int j=0; j<N; j++){
+        e[j] = 0;
     }
-    else {
-        INTEGER e[N+1];
+    e[N] = denom;
 
-        /* c[0] needs special handling */
-        INTEGER t1[2];
-        e[0] = 0;
-        e[1] = denom;
-        int  m = phi(t1, 2, W[0], ex, e);
-        c[0] = m>0 ? t1[0] : 0;
-    
-        /* now the other coeffs */
-        for (int j=0; j<N; j++){
-            e[j] = 0;
-        }
-        e[N] = denom;
-    
-        #pragma omp parallel 
-        {
-    
-        size_t JW[N];
-        INTEGER t[N+1];
+    #pragma omp parallel 
+    {
 
-        #pragma omp for schedule(dynamic,256) 
-        for (int i=i1; i<=i2; i++) {
-                generator_t *w = W[i];
-                int m = phi(t, N+1, w, ex, e);
-                size_t kW = get_right_factors(i, JW, N);
-                for (int k=0; k<=kW; k++) {
-                    c[JW[k]] = k<m ? t[k] : 0;
-                }
-        }
-        }
+    size_t JW[N];
+    INTEGER t[N+1];
+
+    #pragma omp for schedule(dynamic,256) 
+    for (int i=i1; i<=i2; i++) {
+            generator_t *w = W[i];
+            int m = phi(t, N+1, w, ex, e);
+            size_t kW = get_right_factors(i, JW, N);
+            for (int k=0; k<=kW; k++) {
+                c[JW[k]] = k<m ? t[k] : 0;
+            }
     }
+    }
+
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
         printf("#compute coeffs of words: time=%g sec\n", t1);
@@ -1166,7 +1185,7 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M,
     init_all(K, N, M, rightnormed);
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
     INTEGER denom = common_denominator(N)*fac;
-    compute_word_coefficients(N, expr, c, denom, 0);
+    compute_word_coefficients(N, expr, c, denom);
     if (rightnormed) {
         convert_to_rightnormed_lie_series(N, c, 0);
     }
@@ -1187,33 +1206,27 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M,
 
 lie_series_t BCH(size_t N, size_t M, int rightnormed) {
     double t0 = tic();
-    expr_t *A = generator(0);
-    expr_t *B = generator(1);
-    expr_t *expr = logarithm(product(exponential(A), exponential(B)));
     init_all(2, N, M, rightnormed);
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
     INTEGER denom = common_denominator(N);
     if (rightnormed) {
-        compute_word_coefficients(N, expr, c, denom, 1);
+        compute_goldberg_coefficients(N, c, denom);
         convert_to_rightnormed_lie_series(N, c, 1);
         compute_rightnormed_BCH_terms_of_even_orders(c);
     }
     else {
         if (N%2) {
-            compute_word_coefficients(N, expr, c, denom, 1);
+            compute_goldberg_coefficients(N, c, denom);
             convert_to_lie_series(N, c);
         }
         else {
-            compute_word_coefficients(N-1, expr, c, denom, 1);
+            compute_goldberg_coefficients(N-1, c, denom);
             convert_to_lie_series(N-1, c);
             compute_BCH_terms_of_even_order_N(c);
         }
     }
     lie_series_t LS = gen_result(c, denom);
     free_all();
-    free_expr(A);
-    free_expr(B);
-    free_expr(expr);
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
         printf("#total time=%g sec\n", t1);
@@ -1239,7 +1252,7 @@ lie_series_t symBCH(size_t N, size_t M, int rightnormed) {
             fflush(stdout);
         }
     }
-    compute_word_coefficients(N, expr, c, denom, 0);
+    compute_word_coefficients(N, expr, c, denom);
     if (rightnormed) {
         convert_to_rightnormed_lie_series(N, c, 1);
     }
