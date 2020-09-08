@@ -38,7 +38,7 @@ void print_expr(expr_t* ex);
 void free_expr(expr_t* ex);
 
 int phi(INTEGER y[], int m, generator_t w[], expr_t* ex, INTEGER v[]);
-INTEGER common_denominator(int n);
+INTEGER common_denominator(int n, expr_t* ex);
 void print_INTEGER(INTEGER x);
 void print_RATIONAL(INTEGER p, INTEGER q);
 
@@ -69,7 +69,7 @@ typedef struct lie_series_t {
     INTEGER *c;
 } lie_series_t;
 
-lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M, int rightnormed);
+lie_series_t lie_series(size_t K, expr_t* expr, size_t N, size_t M, int rightnormed);
 lie_series_t BCH(size_t N, size_t M, int rightnormed);
 lie_series_t symBCH(size_t N, size_t M, int rightnormed);
 

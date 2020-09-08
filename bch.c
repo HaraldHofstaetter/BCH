@@ -63,7 +63,7 @@ int main(int argc, char*argv[]) {
     expr_t *C = generator(2);
     expr_t *ex = NULL;
     lie_series_t LS;
-    switch(get_arg(argc, argv, "expression", 0, 0, 6)) {
+    switch(get_arg(argc, argv, "expression", 0, 0, 7)) {
         case 0:  /* log(exp(A)*exp(B)), with optimizations spezific for this expression */ 
             LS = BCH(N, M, rightnormed);
             break;
@@ -90,6 +90,11 @@ int main(int argc, char*argv[]) {
             break;
         case 6: /* same as case 0 but without specific optimizations */
             ex = logarithm(product(exponential(A), exponential(B)));
+            LS = lie_series(2, ex, N, 1, M, rightnormed); 
+            break;
+        case 7: /* same as case 1 but without specific optimizations */
+            ex = logarithm(product(product(exponential(term(1, 2, A)), exponential(B)), 
+                                   exponential(term(1, 2, A))));
             LS = lie_series(2, ex, N, 1, M, rightnormed); 
             break;
     }

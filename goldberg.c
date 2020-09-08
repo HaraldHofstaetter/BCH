@@ -100,7 +100,7 @@ goldberg_t goldberg(size_t n) {
     uint8_t **Pn = G.P+ii[n-1];
     partitions(n, Pn);
 
-    G.denom = common_denominator(n);
+    G.denom = common_denominator(n, 0);
 
     expr_t *A = generator(0);
     expr_t *B = generator(1);

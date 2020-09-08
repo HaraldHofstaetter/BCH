@@ -403,7 +403,7 @@ static void init_lyndon_words(int rightnormed) {
     for (int i=0; i<=N; i++) {
         a[i] = 0; 
     }
-
+    
     genLW(K, N, 1, 1, a, wp);
 
     if (VERBOSITY_LEVEL>=1) {
@@ -1166,6 +1166,7 @@ static void free_all(void) {
     free_lyndon_words();
 }
 
+
 static lie_series_t gen_result(INTEGER *c, INTEGER denom) {
     lie_series_t LS;
     LS.K = K;
@@ -1180,11 +1181,12 @@ static lie_series_t gen_result(INTEGER *c, INTEGER denom) {
     return LS;
 }
 
-lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M, int rightnormed) {
+
+lie_series_t lie_series(size_t K, expr_t* expr, size_t N, size_t M, int rightnormed) {
     double t0 = tic();
     init_all(K, N, M, rightnormed);
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
-    INTEGER denom = common_denominator(N)*fac;
+    INTEGER denom = common_denominator(N, expr);
     compute_word_coefficients(N, expr, c, denom);
     if (rightnormed) {
         convert_to_rightnormed_lie_series(N, c, 0);
@@ -1204,11 +1206,12 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int64_t fac, size_t M,
     return LS;
 }
 
+
 lie_series_t BCH(size_t N, size_t M, int rightnormed) {
     double t0 = tic();
     init_all(2, N, M, rightnormed);
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
-    INTEGER denom = common_denominator(N);
+    INTEGER denom = common_denominator(N, 0);
     if (rightnormed) {
         compute_goldberg_coefficients(N, c, denom);
         convert_to_rightnormed_lie_series(N, c, 1);
@@ -1237,6 +1240,7 @@ lie_series_t BCH(size_t N, size_t M, int rightnormed) {
     return LS;
 }
 
+
 lie_series_t symBCH(size_t N, size_t M, int rightnormed) {
     double t0 = tic();
     expr_t *halfA = generator(0);
@@ -1245,7 +1249,7 @@ lie_series_t symBCH(size_t N, size_t M, int rightnormed) {
                                      exponential(halfA)));
     init_all(2, N, M, rightnormed);
     INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
-    INTEGER denom = common_denominator(N);
+    INTEGER denom = common_denominator(N, 0);
     if (VERBOSITY_LEVEL>=1) {
         printf("#NOTE: in the following expression, A stands for A/2\n");
         if (VERBOSITY_LEVEL>=2) {

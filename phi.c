@@ -39,28 +39,6 @@ static INTEGER FACTORIAL[33] =  {      1,
  263130836933693530*H+167218012160000000 };
 
 
-/* table den_fac obtained with the following Julia code:
-n = 33
-F = [factorial(Int128(k)) for k=0:n-1]
-M = zeros(Int128,n,n)
-M[:,1] = F
-for m = 2:n
-    M[m+1:end,m] = [lcm([F[k]*M[n-k+1,m-1] for k=2:n-m+1]) for n=m+1:n]  
-end
-using LinearAlgebra # for diagm
-M *= diagm(1:n)
-D = [lcm(M[k,1:k-1]) for k=1:n]
-den_fac = [div(D[i],F[i]) for i=1:n]
- */
-
-static int den_fac[33] = {1, 1, 1, 2, 1, 6, 2, 6, 3, 10, 2, 6, 2, 210, 30, 12, 3, 30, 10, 
-                          210, 42, 330, 30, 60, 30, 546, 42, 28, 2, 60, 4, 924, 231};
-
-
-INTEGER common_denominator(int n) {
-    return FACTORIAL[n]*den_fac[n];
-}
-
 #ifdef USE_INT128_T
 void print_INTEGER(__int128_t x) {
     int s = 1;
@@ -443,3 +421,106 @@ int phi(INTEGER y[], int m, generator_t w[], expr_t* ex, INTEGER v[]) {
             exit(EXIT_FAILURE);
     }
 }
+
+
+static inline INTEGER lcm(INTEGER a, INTEGER b) {
+    /* computes least common multiple of a and b */
+    return (a/gcd(a,b))*b;
+}
+
+
+static void cd_powers(int n, expr_t* ex, INTEGER r[]) {
+    if (n==0) {
+        return;
+    }
+    INTEGER d[n+1];
+    INTEGER d1[n+1];
+    INTEGER d2[n+1];
+    for (int j=0; j<=n; j++) {
+        d[j] = common_denominator(j, ex);
+        d1[j] = d[j];
+    }
+    r[0] = d[n];
+    for (int k=2; k<=n; k++) {
+        for (int m=0; m<=n; m++) {
+            INTEGER h = 1;
+            for (int j=1; j<=m-k; j++) {
+                h = lcm(h, d[j]*d1[m-j]);
+            }
+            d2[m] = h;
+        }
+        for (int m=0; m<=n; m++) {
+            d1[m] = d2[m];
+        }
+        r[k-1] = d1[n];
+    }
+}
+
+
+/* table den_fac obtained with the following Julia code:
+n = 33
+F = [factorial(Int128(k)) for k=0:n-1]
+M = zeros(Int128,n,n)
+M[:,1] = F
+for m = 2:n
+    M[m+1:end,m] = [lcm([F[k]*M[n-k+1,m-1] for k=2:n-m+1]) for n=m+1:n]  
+end
+using LinearAlgebra # for diagm
+M *= diagm(1:n)
+D = [lcm(M[k,1:k-1]) for k=1:n]
+den_fac = [div(D[i],F[i]) for i=1:n]
+ */
+
+static int den_fac[33] = {1, 1, 1, 2, 1, 6, 2, 6, 3, 10, 2, 6, 2, 210, 30, 12, 3, 30, 10, 
+                          210, 42, 330, 30, 60, 30, 546, 42, 28, 2, 60, 4, 924, 231};
+
+
+INTEGER common_denominator(int n, expr_t* ex) {
+    if (n==0) {
+        return 1;
+    }
+    if (ex==NULL) {
+        return FACTORIAL[n]*den_fac[n];
+    }
+    switch (ex->type) {
+        case GENERATOR:
+            return 1;
+        case IDENTITY:
+        case NEGATION:
+            return common_denominator(n, ex->arg1);
+        case SUM:
+        case DIFFERENCE:
+            return lcm(common_denominator(n, ex->arg1), common_denominator(n, ex->arg2));
+        case TERM:
+            return ex->den*common_denominator(n, ex->arg1);
+        case PRODUCT: {
+            INTEGER h = 1;
+            for (int j=0; j<=n; j++) {
+                h = lcm(h, common_denominator(j, ex->arg1)*common_denominator(n-j, ex->arg2));
+            }
+            return h;
+            }
+        case EXPONENTIAL: {
+            INTEGER d[n];
+            cd_powers(n, ex->arg1, d);
+            INTEGER h = 1;
+            for (int k=1; k<=n; k++) {
+                h = lcm(h, FACTORIAL[k]*d[k-1]);
+            }
+            return h;
+            }
+        case LOGARITHM: {
+            INTEGER d[n];
+            cd_powers(n, ex->arg1, d);
+            INTEGER h = 1;
+            for (int k=1; k<=n; k++) {
+                h = lcm(h, FACTORIAL[k]*d[k-1]);
+            }
+            return h;
+            }                          
+        default:
+            fprintf(stderr, "ERROR: unknown expr type %i\n", ex->type);
+            exit(EXIT_FAILURE);
+    }
+}
+
