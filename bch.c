@@ -73,29 +73,29 @@ int main(int argc, char*argv[]) {
         case 2: /* log(exp(A)*exp(B)*exp(A)) */
             ex = logarithm(product(product(exponential(A), exponential(B)), 
                                    exponential(A)));
-            LS = lie_series(2, ex, N, 1, M, rightnormed);
+            LS = lie_series(2, ex, N, M, rightnormed);
             break;
         case 3: /* log(exp(A)*exp(B)*exp(C)), 3 generators */
             ex = logarithm(product(product(exponential(A), exponential(B)), exponential(C)));
-            LS = lie_series(3, ex, N, 1, M, rightnormed);
+            LS = lie_series(3, ex, N, M, rightnormed);
             break;
         case 4: /* log(exp(A)*exp(B)*exp(-A)*exp(-B)) */
             ex = logarithm(product(product(exponential(A), exponential(B)),
                            product(exponential(negation(A)),exponential(negation(B)))));
-            LS = lie_series(2, ex, N, 1, M, rightnormed);
+            LS = lie_series(2, ex, N, M, rightnormed);
             break;
         case 5: /* log(exp(A)*exp(B)) computed in Lie algebra over 3 generators */
             ex = logarithm(product(exponential(A), exponential(B)));
-            LS = lie_series(3, ex, N, 1, M, rightnormed); /* SIC! K=3 */
+            LS = lie_series(3, ex, N, M, rightnormed); /* SIC! K=3 */
             break;
         case 6: /* same as case 0 but without specific optimizations */
             ex = logarithm(product(exponential(A), exponential(B)));
-            LS = lie_series(2, ex, N, 1, M, rightnormed); 
+            LS = lie_series(2, ex, N, M, rightnormed); 
             break;
         case 7: /* same as case 1 but without specific optimizations */
             ex = logarithm(product(product(exponential(term(1, 2, A)), exponential(B)), 
                                    exponential(term(1, 2, A))));
-            LS = lie_series(2, ex, N, 1, M, rightnormed); 
+            LS = lie_series(2, ex, N, M, rightnormed); 
             break;
     }
     if ( (get_verbosity_level()>0) || (get_arg(argc, argv, "print_statistics", 0, 0, 1)) ) {

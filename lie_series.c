@@ -1248,7 +1248,7 @@ lie_series_t symBCH(size_t N, size_t M, int rightnormed) {
     expr_t *expr = logarithm(product(product(exponential(halfA), exponential(B)), 
                                      exponential(halfA)));
     init_all(2, N, M, rightnormed);
-    INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
+    INTEGER *c = calloc(N_LYNDON, sizeof(INTEGER)); /* calloc initializes to zero */
     INTEGER denom = common_denominator(N, 0);
     if (VERBOSITY_LEVEL>=1) {
         printf("#NOTE: in the following expression, A stands for A/2\n");
@@ -1256,12 +1256,13 @@ lie_series_t symBCH(size_t N, size_t M, int rightnormed) {
             fflush(stdout);
         }
     }
-    compute_word_coefficients(N, expr, c, denom);
+    int N1 = N%2 ? N : N-1;
+    compute_word_coefficients(N1, expr, c, denom);
     if (rightnormed) {
-        convert_to_rightnormed_lie_series(N, c, 1);
+        convert_to_rightnormed_lie_series(N1, c, 1);
     }
     else {
-        convert_to_lie_series(N, c);
+        convert_to_lie_series(N1, c);
     }
     lie_series_t LS = gen_result(c, denom);
     for (int i=0; i<N_LYNDON; i++) {
