@@ -63,7 +63,7 @@ int main(int argc, char*argv[]) {
     expr_t *C = generator(2);
     expr_t *ex = NULL;
     lie_series_t LS;
-    switch(get_arg(argc, argv, "expression", 0, 0, 7)) {
+    switch(get_arg(argc, argv, "expression", 0, 0, 8)) {
         case 0:  /* log(exp(A)*exp(B)), with optimizations spezific for this expression */ 
             LS = BCH(N, M, rightnormed);
             break;
@@ -84,15 +84,22 @@ int main(int argc, char*argv[]) {
                            product(exponential(negation(A)),exponential(negation(B)))));
             LS = lie_series(2, ex, N, M, rightnormed);
             break;
-        case 5: /* log(exp(A)*exp(B)) computed in Lie algebra over 3 generators */
+        case 5: /* log(exp(B/6)*exp(A/2)*exp(2/3*B-1/72*[B,[B,A]])*exp(A/2)*exp(B/6)) */
+            ex = logarithm(product(product(product(product(
+                    exponential(term(1, 6, B)), exponential(term(1, 2, A))),
+                    exponential( sum( term(2, 3, B) , term(1, 72, commutator(B, commutator(A, B)))))), 
+                    exponential(term(1, 2, A))), exponential(term(1, 6, B))));
+            LS = lie_series(2, ex, N, M, rightnormed); 
+            break;
+        case 6: /* log(exp(A)*exp(B)) computed in Lie algebra over 3 generators */
             ex = logarithm(product(exponential(A), exponential(B)));
             LS = lie_series(3, ex, N, M, rightnormed); /* SIC! K=3 */
             break;
-        case 6: /* same as case 0 but without specific optimizations */
+        case 7: /* same as case 0 but without specific optimizations */
             ex = logarithm(product(exponential(A), exponential(B)));
             LS = lie_series(2, ex, N, M, rightnormed); 
             break;
-        case 7: /* same as case 1 but without specific optimizations */
+        case 8: /* same as case 1 but without specific optimizations */
             ex = logarithm(product(product(exponential(term(1, 2, A)), exponential(B)), 
                                    exponential(term(1, 2, A))));
             LS = lie_series(2, ex, N, M, rightnormed); 

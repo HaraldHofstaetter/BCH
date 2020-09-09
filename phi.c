@@ -282,8 +282,11 @@ int phi(INTEGER y[], int m, generator_t w[], expr_t* ex, INTEGER v[]) {
             }
         case SUM: { 
             INTEGER y2[m];
+            for (int j=0; j<m; j++) {
+                y2[j] = v[j];
+            }
             int m1 = phi(y, m, w, ex->arg1, v);
-            int m2 = phi(y2, m, w, ex->arg2, v);
+            int m2 = phi(y2, m, w, ex->arg2, y2);
             if (m1<m2) {
                 for (int j=0; j<m1; j++) {
                     y[j] += y2[j];
@@ -302,8 +305,11 @@ int phi(INTEGER y[], int m, generator_t w[], expr_t* ex, INTEGER v[]) {
             } 
         case DIFFERENCE: {
             INTEGER y2[m];
+            for (int j=0; j<m; j++) {
+                y2[j] = v[j];
+            }
             int m1 = phi(y, m, w, ex->arg1, v);
-            int m2 = phi(y2, m, w, ex->arg2, v);
+            int m2 = phi(y2, m, w, ex->arg2, y2);
             if (m1<m2) {
                 for (int j=0; j<m1; j++) {
                     y[j] -= y2[j];
