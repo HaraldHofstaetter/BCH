@@ -64,6 +64,14 @@ static void partitions(int n, uint8_t **P) {
     }  
 }
 
+/* n!*goldberg_denominator[n] = common denominator for all goldberg coefficients of degree <=n.
+ * (Possibly even the smallest such common denominator.)
+ * See http://oeis.org/A338025
+ * Not static because also needed in phi.c 
+ */
+int goldberg_denominator[33] = {1, 1, 1, 2, 1, 6, 2, 6, 3, 10, 2, 6, 2, 210, 30, 12, 3, 30, 10, 
+                               210, 42, 330, 30, 60, 30, 546, 42, 28, 2, 60, 4, 924, 231};
+
 
 #ifndef USE_PHI_FOR_GOLDBERG    
 extern INTEGER FACTORIAL[]; /* defined in phi.c */
@@ -165,7 +173,7 @@ goldberg_t goldberg(size_t n) {
     uint8_t **Pn = G.P+ii[n-1];
     partitions(n, Pn);
 
-    G.denom = common_denominator(n, 0);
+    G.denom = FACTORIAL[n]*goldberg_denominator[n];
 
 #ifdef USE_PHI_FOR_GOLDBERG    
     expr_t *A = generator(0);
