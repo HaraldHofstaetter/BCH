@@ -4,7 +4,8 @@
 
 static const INTEGER H =  1000000000000000000;
 
-static INTEGER FACTORIAL[33] =  {      1,
+/* FACTORIAL not static because also needed in goldberg.c */
+INTEGER FACTORIAL[33] =  {             1,
                                        1,
                                        2,
                                        6,
@@ -450,7 +451,7 @@ static void cd_powers(int n, expr_t* ex, INTEGER r[]) {
     for (int k=2; k<=n; k++) {
         for (int m=0; m<=n; m++) {
             INTEGER h = 1;
-            for (int j=1; j<=m-k; j++) {
+            for (int j=1; j<=m-(k-1); j++) {
                 h = lcm(h, d[j]*d1[m-j]);
             }
             d2[m] = h;
@@ -461,6 +462,7 @@ static void cd_powers(int n, expr_t* ex, INTEGER r[]) {
         r[k-1] = d1[n];
     }
 }
+
 
 
 /* table den_fac obtained with the following Julia code:
@@ -479,6 +481,7 @@ den_fac = [div(D[i],F[i]) for i=1:n]
 
 static int den_fac[33] = {1, 1, 1, 2, 1, 6, 2, 6, 3, 10, 2, 6, 2, 210, 30, 12, 3, 30, 10, 
                           210, 42, 330, 30, 60, 30, 546, 42, 28, 2, 60, 4, 924, 231};
+
 
 
 INTEGER common_denominator(int n, expr_t* ex) {
