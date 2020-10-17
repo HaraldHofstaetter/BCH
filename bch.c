@@ -84,10 +84,10 @@ int main(int argc, char*argv[]) {
                            product(exponential(negation(A)),exponential(negation(B)))));
             LS = lie_series(2, ex, N, M, rightnormed);
             break;
-        case 5: /* log(exp(B/6)*exp(A/2)*exp(2/3*B-1/72*[B,[B,A]])*exp(A/2)*exp(B/6)) */
+        case 5: /* log(exp(B/6)*exp(A/2)*exp(2/3*B+1/72*[B,[A,B]])*exp(A/2)*exp(B/6)) */
             ex = logarithm(product(product(product(product(
                     exponential(term(1, 6, B)), exponential(term(1, 2, A))),
-                    exponential( sum( term(2, 3, B) , term(1, 72, commutator(B, commutator(A, B)))))), 
+                    exponential(sum(term(2, 3, B), term(1, 72, commutator(B, commutator(A, B)))))), 
                     exponential(term(1, 2, A))), exponential(term(1, 6, B))));
             LS = lie_series(2, ex, N, M, rightnormed); 
             break;
