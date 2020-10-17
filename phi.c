@@ -464,24 +464,7 @@ static void cd_powers(int n, expr_t* ex, INTEGER r[]) {
 }
 
 
-
-/* table den_fac obtained with the following Julia code:
-n = 33
-F = [factorial(Int128(k)) for k=0:n-1]
-M = zeros(Int128,n,n)
-M[:,1] = F
-for m = 2:n
-    M[m+1:end,m] = [lcm([F[k]*M[n-k+1,m-1] for k=2:n-m+1]) for n=m+1:n]  
-end
-using LinearAlgebra # for diagm
-M *= diagm(1:n)
-D = [lcm(M[k,1:k-1]) for k=1:n]
-den_fac = [div(D[i],F[i]) for i=1:n]
- */
-
-static int den_fac[33] = {1, 1, 1, 2, 1, 6, 2, 6, 3, 10, 2, 6, 2, 210, 30, 12, 3, 30, 10, 
-                          210, 42, 330, 30, 60, 30, 546, 42, 28, 2, 60, 4, 924, 231};
-
+external int goldberg_denominator[]; /* defined in goldberg.c */
 
 
 INTEGER common_denominator(int n, expr_t* ex) {
@@ -489,7 +472,7 @@ INTEGER common_denominator(int n, expr_t* ex) {
         return 1;
     }
     if (ex==NULL) {
-        return FACTORIAL[n]*den_fac[n];
+        return FACTORIAL[n]*goldberg_denominator[n];
     }
     switch (ex->type) {
         case GENERATOR:
