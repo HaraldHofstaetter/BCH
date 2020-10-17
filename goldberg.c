@@ -64,6 +64,71 @@ static void partitions(int n, uint8_t **P) {
     }  
 }
 
+
+#ifndef USE_PHI_FOR_GOLDBERG    
+extern INTEGER FACTORIAL[]; /* defined in phi.c */
+
+
+static void compute_goldberg_coeffs(INTEGER y[], uint8_t e[], int Afirst, INTEGER d, INTEGER *C) {
+    int N = 0;
+    int L = 0;
+    for (; e[L]!=0; L++) {
+        N += e[L];
+    }
+    for (int n=0; n<N*N; n++) {
+        C[n] = 0;
+    }
+    int n = 0;
+    if (!(L%2)) {
+        Afirst = !Afirst;
+    }
+    for (int l=1; l<=L; l++) {
+        int p = L-l;
+        for (int f=1; f<=e[p]; f++) {
+            n += 1;
+            /* case k=1 */
+            INTEGER r = 0;
+            if (l==1) {
+                r = d/FACTORIAL[f];
+            }
+            else if (Afirst && (l==2)) {
+                r = d/(FACTORIAL[f]*FACTORIAL[e[p+1]]);
+            }
+            C[0 + (n-1)*N] = r;
+            for (int k=2; k<n; k++) { /* case k>=2 */
+                INTEGER r = 0;
+                if (l>=1) {
+                    for (int j=1; j<=f; j++) {
+                        if ((n>j) && C[k-2 + (n-j-1)*N]!=0) {
+                            r += C[k-2 + (n-j-1)*N]/FACTORIAL[j];
+                        }
+                    }
+                }
+                if (Afirst && (l>=2)) {
+                    for (int j=1; j<=e[p+1]; j++) {
+                        if ((n>f+j) && C[k-2 + (n-f-j-1)*N]!=0){
+                            r += C[k-2 + (n-f-j-1)*N]/(FACTORIAL[f]*FACTORIAL[j]);
+                        }
+                    }
+                }
+                C[k-1 + (n-1)*N] = r;
+            }
+            C[n-1 + (n-1)*N] = d;
+        }
+        Afirst = !Afirst;
+    }
+    y[N] = 0;
+    for (n=1;n<=N; n++) {
+        INTEGER r = 0;
+        for (int k=1; k<=N; k++) {
+            r += C[k-1 + (n-1)*N]/(k%2 ? +k : -k);
+        }
+        y[N-n] = r;
+    }
+}
+#endif
+
+
 goldberg_t goldberg(size_t n) {
     double t0 = tic();
 
@@ -102,6 +167,7 @@ goldberg_t goldberg(size_t n) {
 
     G.denom = common_denominator(n, 0);
 
+#ifdef USE_PHI_FOR_GOLDBERG    
     expr_t *A = generator(0);
     expr_t *B = generator(1);
     expr_t *ex = logarithm(product(exponential(A), exponential(B)));
@@ -113,19 +179,27 @@ goldberg_t goldberg(size_t n) {
     e[n] = G.denom;
 
     generator_t w[n];
+#else
+    INTEGER *C = malloc(n*n*sizeof(INTEGER));     
+#endif
     INTEGER t[n+1];
     for (int k=0; k<n_partitions[n]; k++) {
+#ifdef USE_PHI_FOR_GOLDBERG    
         int m=0;
         int l=0;
-        for (int j=0; Pn[k][j]!=0; j++) {
-            l++;
-            for (int i=0; i<Pn[k][j]; i++) {
-                w[m] = j & 1;
+        for ( ; Pn[k][l]!=0; l++) {
+            for (int i=0; i<Pn[k][l]; i++) {
+                w[m] = l & 1;
                 m++;
             }
         }
 
         phi(t, n+1, w, ex, e);
+#else
+        int l=0;
+        for ( ; Pn[k][l]!=0; l++) { }
+        compute_goldberg_coeffs(t, Pn[k], 1, G.denom, C);
+#endif
 
         int j = n-1;
         int q = Pn[k][0];
@@ -146,6 +220,9 @@ goldberg_t goldberg(size_t n) {
             q--;
         }
     }
+#ifndef USE_PHI_FOR_GOLDBERG    
+    free(C);
+#endif
 
     if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
