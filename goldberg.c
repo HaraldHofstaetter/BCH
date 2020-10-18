@@ -105,11 +105,9 @@ static void compute_goldberg_coeffs(INTEGER y[], uint8_t e[], int Afirst, INTEGE
             C[0 + (n-1)*N] = r;
             for (int k=2; k<n; k++) { /* case k>=2 */
                 INTEGER r = 0;
-                if (l>=1) {
-                    for (int j=1; j<=f; j++) {
-                        if ((n>j) && C[k-2 + (n-j-1)*N]!=0) {
-                            r += C[k-2 + (n-j-1)*N]/FACTORIAL[j];
-                        }
+                for (int j=1; j<=f; j++) {
+                    if ((n>j) && C[k-2 + (n-j-1)*N]!=0) {
+                        r += C[k-2 + (n-j-1)*N]/FACTORIAL[j];
                     }
                 }
                 if (Afirst && (l>=2)) {

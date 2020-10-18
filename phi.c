@@ -464,7 +464,7 @@ static void cd_powers(int n, expr_t* ex, INTEGER r[]) {
 }
 
 
-external int goldberg_denominator[]; /* defined in goldberg.c */
+extern int goldberg_denominator[]; /* defined in goldberg.c */
 
 
 INTEGER common_denominator(int n, expr_t* ex) {
