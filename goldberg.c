@@ -72,10 +72,10 @@ static void partitions(int n, uint8_t **P) {
 int goldberg_denominator[33] = {1, 1, 1, 2, 1, 6, 2, 6, 3, 10, 2, 6, 2, 210, 30, 12, 3, 30, 10, 
                                210, 42, 330, 30, 60, 30, 546, 42, 28, 2, 60, 4, 924, 231};
 
-
-#ifndef USE_PHI_FOR_GOLDBERG    
 extern INTEGER FACTORIAL[]; /* defined in phi.c */
 
+
+#ifndef USE_PHI_FOR_GOLDBERG    
 
 static void compute_goldberg_coeffs(INTEGER y[], uint8_t e[], int Afirst, INTEGER d, INTEGER *C) {
     int N = 0;

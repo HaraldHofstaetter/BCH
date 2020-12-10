@@ -449,9 +449,6 @@ static inline INTEGER lcm1(INTEGER a, INTEGER b) {
 }
 
 
-extern int goldberg_denominator[]; /* defined in goldberg.c */
-
-
 static void delta(INTEGER d[], int N, expr_t* ex) {
     switch (ex->type) {
         case GENERATOR:
@@ -561,6 +558,9 @@ static void delta(INTEGER d[], int N, expr_t* ex) {
             exit(EXIT_FAILURE);
     }
 }
+
+
+extern int goldberg_denominator[]; /* defined in goldberg.c */
 
 
 INTEGER common_denominator(int n, expr_t* ex) {
