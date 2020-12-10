@@ -436,35 +436,131 @@ static inline INTEGER lcm(INTEGER a, INTEGER b) {
 }
 
 
-static void cd_powers(int n, expr_t* ex, INTEGER r[]) {
-    if (n==0) {
-        return;
+static inline INTEGER lcm1(INTEGER a, INTEGER b) {
+    if (a==0) {
+        return b;
     }
-    INTEGER d[n+1];
-    INTEGER d1[n+1];
-    INTEGER d2[n+1];
-    for (int j=0; j<=n; j++) {
-        d[j] = common_denominator(j, ex);
-        d1[j] = d[j];
+    else if (b==0) {
+        return a;
     }
-    r[0] = d[n];
-    for (int k=2; k<=n; k++) {
-        for (int m=0; m<=n; m++) {
-            INTEGER h = 1;
-            for (int j=1; j<=m-(k-1); j++) {
-                h = lcm(h, d[j]*d1[m-j]);
-            }
-            d2[m] = h;
-        }
-        for (int m=0; m<=n; m++) {
-            d1[m] = d2[m];
-        }
-        r[k-1] = d1[n];
+    else {
+        return lcm(a, b);
     }
 }
 
 
 extern int goldberg_denominator[]; /* defined in goldberg.c */
+
+
+static void delta(INTEGER d[], int N, expr_t* ex) {
+    switch (ex->type) {
+        case GENERATOR:
+            d[0] = 0;
+            if (N>=1) {
+                d[1] = 1;
+            }
+            for (int n=2; n<=N; n++) {
+                d[n] = 0;
+            }
+            return;
+        case IDENTITY:
+        case NEGATION:
+            delta(d, N, ex->arg1);
+            return;
+        case SUM:
+        case DIFFERENCE: {
+            INTEGER h[N+1];
+            delta(d, N, ex->arg1);
+            delta(h, N, ex->arg2);
+            for (int n=0; n<=N; n++) {
+                d[n] = lcm1(d[n], h[n]);
+            }
+            return;
+            }
+        case TERM:
+            delta(d, N, ex->arg1);
+            for (int n=0; n<=N; n++) {
+                INTEGER x = ex->den*d[n];
+                d[n] = x/gcd(x, ex->num);
+            }
+            return;
+        case PRODUCT: {
+            INTEGER h1[N+1];
+            INTEGER h2[N+1];
+            delta(h1, N, ex->arg1);
+            delta(h2, N, ex->arg2);
+            for (int n=0; n<=N; n++) {
+                INTEGER m = 0;
+                for (int k=0; k<=n; k++) {
+                    m = lcm1(m, h1[k]*h2[n-k]);
+                }
+                d[n] = m;
+            }
+            return;
+            }
+        case EXPONENTIAL: {
+            INTEGER a[N+1];
+            INTEGER h[N+1];
+            INTEGER h1[N+1];
+            delta(a, N, ex->arg1);
+            if (a[0]!=0) {
+                fprintf(stderr, "ERROR: Logarithm expects argument with no constant\n");
+                exit(EXIT_FAILURE);
+            }
+            for (int n=0; n<=N; n++) {
+                h[n] = a[n];
+                d[n] = a[n];
+            }
+            d[0] = 1;
+            for (int j=2; j<=N; j++) {
+                for (int n=j; n<=N; n++) {
+                    INTEGER m = 0;
+                    for (int k=j-1; k<=n; k++) {
+                        m = lcm1(m, h[k]*a[n-k]);
+                    }
+                    h1[n] = m;
+                }
+                for (int n=j; n<=N; n++) {
+                    h[n] = h1[n];
+                    d[n] = lcm1(d[n], FACTORIAL[j]*h[n]);
+                }
+            }
+            return; 
+            }
+        case LOGARITHM: {
+            INTEGER a[N+1];
+            INTEGER h[N+1];
+            INTEGER h1[N+1];
+            delta(a, N, ex->arg1);
+            if (a[0]!=1) {
+                fprintf(stderr, "ERROR: Logarithm expects argument with constant term 1\n");
+                exit(EXIT_FAILURE);
+            }
+            a[0] = 0;
+            for (int n=0; n<=N; n++) {
+                h[n] = a[n];
+                d[n] = a[n];
+            }
+            for (int j=2; j<=N; j++) {
+                for (int n=j; n<=N; n++) {
+                    INTEGER m = 0;
+                    for (int k=j-1; k<=n; k++) {
+                        m = lcm1(m, h[k]*a[n-k]);
+                    }
+                    h1[n] = m;
+                }
+                for (int n=j; n<=N; n++) {
+                    h[n] = h1[n];
+                    d[n] = lcm1(d[n], j*h[n]);
+                }
+            }
+            return;
+            }                          
+        default:
+            fprintf(stderr, "ERROR: unknown expr type %i\n", ex->type);
+            exit(EXIT_FAILURE);
+    }
+}
 
 
 INTEGER common_denominator(int n, expr_t* ex) {
@@ -474,45 +570,13 @@ INTEGER common_denominator(int n, expr_t* ex) {
     if (ex==NULL) {
         return FACTORIAL[n]*goldberg_denominator[n];
     }
-    switch (ex->type) {
-        case GENERATOR:
-            return 1;
-        case IDENTITY:
-        case NEGATION:
-            return common_denominator(n, ex->arg1);
-        case SUM:
-        case DIFFERENCE:
-            return lcm(common_denominator(n, ex->arg1), common_denominator(n, ex->arg2));
-        case TERM:
-            return ex->den*common_denominator(n, ex->arg1);
-        case PRODUCT: {
-            INTEGER h = 1;
-            for (int j=0; j<=n; j++) {
-                h = lcm(h, common_denominator(j, ex->arg1)*common_denominator(n-j, ex->arg2));
-            }
-            return h;
-            }
-        case EXPONENTIAL: {
-            INTEGER d[n];
-            cd_powers(n, ex->arg1, d);
-            INTEGER h = 1;
-            for (int k=1; k<=n; k++) {
-                h = lcm(h, FACTORIAL[k]*d[k-1]);
-            }
-            return h;
-            }
-        case LOGARITHM: {
-            INTEGER d[n];
-            cd_powers(n, ex->arg1, d);
-            INTEGER h = 1;
-            for (int k=1; k<=n; k++) {
-                h = lcm(h, FACTORIAL[k]*d[k-1]);
-            }
-            return h;
-            }                          
-        default:
-            fprintf(stderr, "ERROR: unknown expr type %i\n", ex->type);
-            exit(EXIT_FAILURE);
+    INTEGER d[n+1];
+    delta(d, n, ex);
+    INTEGER h = d[0];
+    for (int j=1; j<=n; j++) {
+        h = lcm1(h, d[j]);
     }
+    return h;
 }
+
 
