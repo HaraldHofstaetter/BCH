@@ -3,20 +3,36 @@ all: bch
 CC = gcc 
 #CC = clang 
 
-#COPTS = -O3  -march=ivybridge  -fopenmp  -Wall -DUSE_INT128_T 
-COPTS = -O3   -msse4.1   -fopenmp  -Wall -DUSE_INT128_T -DSIMD_VECTORIZED 
-#COPTS = -O3  -msse4.1 -fopenmp -fsanitize=signed-integer-overflow -fsanitize=undefined -Wall -DUSE_INT128_T 
-#COPTS = -g -Wall -DUSE_INT128_T 
+#CFLAGS = -O3 -fPIC -march=ivybridge  -fopenmp  -Wall 
+CFLAGS = -O3 -fPIC  -msse4.1   -fopenmp  -Wall  
+#CFLAGS = -O3 -fPIC -msse4.1 -fopenmp -fsanitize=signed-integer-overflow -fsanitize=undefined -Wall 
+#CFLAGS = -g -fPIC -Wall 
 
-bch: bch.h bch.c phi.c lie_series.c lyndon.c rightnormed.c goldberg.c convert_lyndon.c convert_rightnormed.c
+MAKE_SHARED_LIB = $(CC) -fopenmp -shared
 
-	$(CC) $(COPTS) phi.c goldberg.c rightnormed.c lie_series.c bch.c -o bch
+SHARED_LIB = libbch.so
+
+DEPS = bch.h khash.h
+OBJS = phi.o lie_series.o lyndon.o rightnormed.o goldberg.o \
+       convert_lyndon.o convert_rightnormed.o
+
+%.o: %.c $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(SHARED_LIB): $(OBJS)
+	$(MAKE_SHARED_LIB) -o $(SHARED_LIB) $(OBJS) 
+
+bch: $(SHARED_LIB) bch.h 
+	$(CC) $(CFLAGS) bch.c -o bch -L. -lbch
+
+clean:
+	rm -f *.o $(SHARED_LIB) bch
 
 bch_goldberg_30.txt: bch
 	./bch goldberg_coefficients=1 N=30 > bch_goldberg_30.txt
 
 bch_lyndon_20.txt: bch
-	./bch N=20 M=14 verbosity_level=1 > bch_lyndon_20.txt
+	./bch N=20 verbosity_level=1 > bch_lyndon_20.txt
 
 bch_rightnormed_20.txt: bch
 	./bch N=20 rightnormed_basis=1 verbosity_level=1 > bch_rightnormed_20.txt

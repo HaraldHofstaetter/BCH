@@ -1,4 +1,11 @@
-static int coeff_word_in_rightnormed(generator_t w[], generator_t c[], int l1, int r1, int l2) {
+#include"bch.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+extern unsigned int VERBOSITY_LEVEL;
+
+
+static int coeff_word_in_rightnormed(uint8_t w[], uint8_t c[], int l1, int r1, int l2) {
     if (l1==r1) {
         return w[l1]==c[l2] ? 1 : 0;
     }
@@ -52,13 +59,13 @@ static void integer_lu_solve(int n, int64_t *A, INTEGER *x) {
 }
 
 
-static void convert_to_rightnormed_lie_series(int N, INTEGER c[], int odd_orders_only) {
+void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
     double t0 = tic();
     for (int n=2; n<=N; n++) { /* over all word sizes */
     if ((!odd_orders_only)||(n&1)) {
-        size_t i1 = ii[n-1];
-        size_t i2 = ii[n]-1;
-        uint32_t *DI  = multi_degree_indices( K, N_LYNDON, W, nn);
+        size_t i1 = LS->ii[n-1];
+        size_t i2 = LS->ii[n]-1;
+        uint32_t *DI  = multi_degree_indices( LS->K, LS->dim, LS->W, LS->nn);
         size_t h1 = DI[i1];
         size_t h2 = DI[i2];
         for (int h=h1; h<=h2; h++) { /* over all multi-degrees */
@@ -82,11 +89,11 @@ static void convert_to_rightnormed_lie_series(int N, INTEGER c[], int odd_orders
                     int ii=0;
                     for (int i=i1; i<=i2; i++) {
                         if (DI[i]==h) {
-                            A[ii+jj*m] = coeff_word_in_rightnormed(W[i], R[j], 0, n-1, 0);
+                            A[ii+jj*m] = coeff_word_in_rightnormed(LS->W[i], LS->R[j], 0, n-1, 0);
                             ii++;
                         }
                     }
-                    x[jj] = c[j];
+                    x[jj] = LS->c[j];
                     jj++;
                 }
             }
@@ -98,7 +105,7 @@ static void convert_to_rightnormed_lie_series(int N, INTEGER c[], int odd_orders
             jj=0;
             for (int j=i1; j<=i2; j++) {
                 if (DI[j]==h) {
-                    c[j] = x[jj];
+                    LS->c[j] = x[jj];
                     jj++;
                 }
             }
@@ -109,8 +116,8 @@ static void convert_to_rightnormed_lie_series(int N, INTEGER c[], int odd_orders
         free(DI);
     }
     else {
-        for (int j=ii[n-1]; j<=ii[n]-1; j++) {
-            c[j] = 0;
+        for (int j=LS->ii[n-1]; j<=LS->ii[n]-1; j++) {
+            LS->c[j] = 0;
         }
     }
     }
@@ -124,36 +131,40 @@ static void convert_to_rightnormed_lie_series(int N, INTEGER c[], int odd_orders
 }
 
 
-static void compute_rightnormed_BCH_terms_of_even_orders(INTEGER c[]) {
+extern INTEGER beta_num[];  /* defined in convert_lyndon.c */
+extern INTEGER beta_den[];  /* defined in convert_lyndon.c */
+
+
+void compute_rightnormed_BCH_terms_of_even_orders(lie_series_t *LS) {
     double t0 = tic();
 
-    for(int n=2; n<=N; n+=2) {
+    for(int n=2; n<=LS->N; n+=2) {
         #pragma omp parallel for schedule(dynamic,256)
-        for (int i=ii[n-1]; i<=ii[n]-1; i++) {
-            c[i] = 0;
+        for (int i=LS->ii[n-1]; i<=LS->ii[n]-1; i++) {
+            LS->c[i] = 0;
             int k=0;
             int l=0;
-            while (R[i][k]==K-1) {
+            while (LS->R[i][k]==LS->K-1) {
                 k += 1;
                 if (k&1) {
-                    int q = ii[n-1-k];
-                    for (; q<=ii[n-k]-1; q++) {
+                    int q = LS->ii[n-1-k];
+                    for (; q<=LS->ii[n-k]-1; q++) {
                         int m=0;
-                        for (; (m<n-k) && (R[q][m]==R[i][k+m]) ; m++) {}
+                        for (; (m<n-k) && (LS->R[q][m]==LS->R[i][k+m]) ; m++) {}
                         if (m==n-k) {
                             break;
                         }
                     }
-                    if (q>ii[n-k]) {
+                    if (q>LS->ii[n-k]) {
                         fprintf(stderr, "ERROR: basis element not found in compute_rightnormed_BCH_terms_of_even_orders");
                         exit(EXIT_FAILURE);
                     }
-                    INTEGER d = c[q]/beta_den[l];
-                    if (d*beta_den[l]!=c[q]) {
+                    INTEGER d = LS->c[q]/beta_den[l];
+                    if (d*beta_den[l]!=LS->c[q]) {
                         fprintf(stderr, "ERROR: divisibility check failed in compute_rightnormed_BCH_terms_of_even_orders");
                         exit(EXIT_FAILURE);
                     }
-                    c[i] -= beta_num[l]*d; 
+                    LS->c[i] -= beta_num[l]*d; 
                     l += 1;
                 }
             }
@@ -170,22 +181,22 @@ static void compute_rightnormed_BCH_terms_of_even_orders(INTEGER c[]) {
 }
 
 
-static void init_rightnormed(void) {
+void init_rightnormed(lie_series_t *LS) {
     double t0 = tic();
     size_t mem_len = 0;
-    for (int n=1; n<=N; n++) {
-        mem_len += n*(ii[n]-ii[n-1]);
+    for (int n=1; n<=LS->N; n++) {
+        mem_len += n*(LS->ii[n]-LS->ii[n-1]);
     }
 
-    R = malloc(N_LYNDON*sizeof(generator_t *));
-    R[0] = malloc(mem_len*sizeof(generator_t)); 
-    for (int i=1; i<N_LYNDON; i++) {
-        R[i] = R[i-1] + nn[i-1];
+    LS->R = malloc(LS->dim*sizeof(uint8_t *));
+    LS->R[0] = malloc(mem_len*sizeof(uint8_t)); 
+    for (int i=1; i<LS->dim; i++) {
+        LS->R[i] = LS->R[i-1] + LS->nn[i-1];
     }
 
     #pragma omp for schedule(dynamic,256) 
-    for (int i=0; i<N_LYNDON; i++) {
-        lyndon2rightnormed(nn[i], W[i], R[i]);
+    for (int i=0; i<LS->dim; i++) {
+        lyndon2rightnormed(LS->nn[i], LS->W[i], LS->R[i]);
     }
 
     if (VERBOSITY_LEVEL>=1) {

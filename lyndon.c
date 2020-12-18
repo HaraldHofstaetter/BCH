@@ -1,3 +1,11 @@
+#include"bch.h"
+#include<stdlib.h>
+#include<stdio.h>
+#include<assert.h>
+
+extern unsigned int VERBOSITY_LEVEL;
+
+
 static int ipow(int base, unsigned int exp) {
     /* computes base^exp 
      * METHOD: see https://stackoverflow.com/questions/101439/the-most-efficient-way-to-implement-an-integer-based-power-function-powint-int
@@ -38,7 +46,7 @@ static void moebius_mu(size_t N, int mu[N]) {
     }
 }
 
-static void number_of_lyndon_words(generator_t K, size_t N, size_t nLW[N]) {
+static void number_of_lyndon_words(uint8_t K, size_t N, size_t nLW[N]) {
     /* INPUT: K ... number of letters
      *        N ... maximum lenght of lyndon words
      * OUTPUT: nLW[n] ... number of lyndon words with K letters of length n+1, n=0,...,N-1
@@ -65,7 +73,7 @@ static void number_of_lyndon_words(generator_t K, size_t N, size_t nLW[N]) {
     }
 }
 
-static size_t word_index(size_t K, generator_t w[], size_t l, size_t r) {
+static size_t word_index(size_t K, uint8_t w[], size_t l, size_t r) {
     /* computes the index of the subword w[l:r] of w starting at position l and
      * ending at position r. The index is given as w[l:r] interpreted as a K-adic
      * number plus the number (K^n-1)/(K-1)-1 of words of length < n, where 
@@ -113,7 +121,7 @@ static size_t find_lyndon_word_index(uint32_t *WI, size_t l, size_t r, size_t wi
 
 
 
-static int longest_right_lyndon_factor(generator_t w[], size_t l, size_t r) {
+static int longest_right_lyndon_factor(uint8_t w[], size_t l, size_t r) {
 /* returns starting position of the longest right Lyndon factor of the subword w[l:r]
  * METHOD: based on the algorithm MaxLyn from
  *   F. Franek, A. S. M. S. Islam, M. S. Rahman, W. F. Smyth: Algorithms to Compute the Lyndon Array. 
@@ -147,7 +155,8 @@ static int longest_right_lyndon_factor(generator_t w[], size_t l, size_t r) {
  *   J. Algorithms 37 (2) (2000) 267–282
  */
 
-static void genLW(size_t K, size_t n, size_t t, size_t p, generator_t a[], size_t wp[], uint32_t *WI) {
+static void genLW(size_t K, size_t n, size_t t, size_t p, uint8_t a[], uint8_t **W, 
+        size_t wp[], uint32_t *WI, uint32_t *p1, uint32_t *p2, uint32_t *ii) {
     if (t>n) {
         if (p==n) {
             int H = 0;
@@ -184,70 +193,72 @@ static void genLW(size_t K, size_t n, size_t t, size_t p, generator_t a[], size_
     }
     else {
         a[t] = a[t-p];
-        genLW(K, n, t+1, p, a, wp, WI); 
+        genLW(K, n, t+1, p, a, W, wp, WI, p1, p2, ii); 
         for (int j=a[t-p]+1; j<K; j++) {
              a[t] = j;
-             genLW(K, n, t+1, t, a, wp, WI);
+             genLW(K, n, t+1, t, a, W, wp, WI, p1, p2, ii);
         }
     }
 }
 
 
-static void init_lyndon_words(void) {
+void init_lyndon_words(lie_series_t *LS) {
     double t0 = tic();
-    size_t nLW[N];
-    number_of_lyndon_words(K, N, nLW);
+    size_t nLW[LS->N];
+    number_of_lyndon_words(LS->K, LS->N, nLW);
     size_t mem_len = 0;
-    N_LYNDON = 0;
-    for (int n=1; n<=N; n++) {
+    size_t N_LYNDON = 0;
+    for (int n=1; n<=LS->N; n++) {
         N_LYNDON += nLW[n-1];
         mem_len += n*nLW[n-1];
     }
-    W = malloc(N_LYNDON*sizeof(generator_t *));
-    p1 = malloc(N_LYNDON*sizeof(uint32_t)); 
-    p2 = malloc(N_LYNDON*sizeof(uint32_t)); 
-    nn = malloc(N_LYNDON*sizeof(uint8_t)); 
-    ii = malloc((N+1)*sizeof(uint32_t)); 
-    W[0] = malloc(mem_len*sizeof(generator_t)); 
-    ii[0] = 0;
+    LS->dim = N_LYNDON;
+    LS->W = malloc(N_LYNDON*sizeof(uint8_t *));
+    LS->p1 = malloc(N_LYNDON*sizeof(uint32_t)); 
+    LS->p2 = malloc(N_LYNDON*sizeof(uint32_t)); 
+    LS->nn = malloc(N_LYNDON*sizeof(uint8_t)); 
+    LS->ii = malloc((LS->N+1)*sizeof(uint32_t)); 
+    LS->W[0] = malloc(mem_len*sizeof(uint8_t)); 
+    LS->ii[0] = 0;
     int m=0;
-    for (int n=1; n<=N; n++) {
-        ii[n] = ii[n-1] + nLW[n-1];
+    for (int n=1; n<=LS->N; n++) {
+        LS->ii[n] = LS->ii[n-1] + nLW[n-1];
         for (int k=0; k<nLW[n-1]; k++) {            
             if (m<N_LYNDON-1) { /* avoiding illegal W[N_LYNDON] */
-                W[m+1] = W[m]+n;
+                LS->W[m+1] = LS->W[m]+n;
             }
-            nn[m] = n;
+            LS->nn[m] = n;
             m++;
         }
     }
     assert(m==N_LYNDON);
-    for (int i=0; i<K; i++) {
-        p1[i] = i;
-        p2[i] = 0;
+    for (int i=0; i<LS->K; i++) {
+        LS->p1[i] = i;
+        LS->p2[i] = 0;
     }
 
-    generator_t a[N+1];
-    size_t wp[N];
-    for (int i=0; i<N; i++) {
-        wp[i] = ii[i]; 
+    uint8_t a[LS->N+1];
+    size_t wp[LS->N];
+    for (int i=0; i<LS->N; i++) {
+        wp[i] = LS->ii[i]; 
     }
     uint32_t *WI = malloc(N_LYNDON*sizeof(uint32_t));
     wp[0] = 1;
-    W[0][0] = 0;
+    LS->W[0][0] = 0;
     WI[0] = 0;
 
-    for (int i=0; i<=N; i++) {
+    for (int i=0; i<=LS->N; i++) {
         a[i] = 0; 
     }
     
-    genLW(K, N, 1, 1, a, wp, WI);
+    genLW(LS->K, LS->N, 1, 1, a, LS->W, wp, WI, LS->p1, LS->p2, LS->ii);
 
     free(WI);
 
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
-        printf("#number of Lyndon words of length<=%i over set of %i letters: %li\n", N, K, N_LYNDON);
+        printf("#number of Lyndon words of length<=%i over set of %i letters: %i\n", 
+                LS->N, LS->K, LS->dim);
         printf("#init Lyndon words: time=%g sec\n", t1);
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
@@ -302,7 +313,7 @@ static size_t tuple(size_t K, size_t h[]) {
     }
 }
 
-static size_t multi_degree_index(size_t K, generator_t w[], size_t l, size_t r) {
+static size_t multi_degree_index(size_t K, uint8_t w[], size_t l, size_t r) {
     size_t h[K];
     for (int j=0; j<K; j++) {
         h[j] = 0;
@@ -315,7 +326,7 @@ static size_t multi_degree_index(size_t K, generator_t w[], size_t l, size_t r) 
 
 
 
-static uint32_t* multi_degree_indices(size_t K, size_t dim,  generator_t **W, uint8_t *nn) {
+uint32_t* multi_degree_indices(size_t K, size_t dim,  uint8_t **W, uint8_t *nn) {
     uint32_t *DI = malloc(dim*sizeof(uint32_t));
     for (int i=0; i<dim; i++) {
         DI[i] = multi_degree_index(K, W[i], 0, nn[i-1]);

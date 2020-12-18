@@ -106,7 +106,7 @@ expr_t* identity(void) {
     return ex;
 }
 
-expr_t* generator(generator_t n) {
+expr_t* generator(uint8_t n) {
     expr_t *ex = undefined_expr();
     ex->type = GENERATOR;
     ex->num = n;
@@ -256,7 +256,7 @@ static inline void check_for_divisibility_by_INTEGER(INTEGER p, INTEGER q, INTEG
     }
 }
 
-int phi(INTEGER y[], int m, generator_t w[], expr_t* ex, INTEGER v[]) {
+int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
     if (m==0) {
         return 0;
     }

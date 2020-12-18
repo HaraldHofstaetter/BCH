@@ -4,29 +4,26 @@
 #include <assert.h>
 #include <stdio.h>
 
-//#include<stdint.h>
-//typedef uint8_t generator_t;
 
-
-static void invperm(int n, generator_t a[], generator_t b[]) {
+static void invperm(int n, uint8_t a[], uint8_t b[]) {
     for (int j=0; j<n; j++) {
         b[a[j]-1] = j+1;
     }
 }
 
-static void reverse(int n, generator_t a[], generator_t b[]) {
+static void reverse(int n, uint8_t a[], uint8_t b[]) {
     for (int j=0; j<n; j++) {
         b[j] = a[n-j-1];
     }
 }    
 
-static void copy(int n, generator_t a[], generator_t b[]) {
+static void copy(int n, uint8_t a[], uint8_t b[]) {
     for (int j=0; j<n; j++) {
         b[j] = a[j];
     }
 }    
 
-static int lexcmp(generator_t a[], int la, generator_t b[], int lb) {
+static int lexcmp(uint8_t a[], int la, uint8_t b[], int lb) {
     int l = la<lb ? la : lb;
     int j = 0;
     while ((j<l) && (a[j]==b[j])) {
@@ -46,7 +43,7 @@ static int lexcmp(generator_t a[], int la, generator_t b[], int lb) {
 }
 
 /*
-static void print_word(generator_t w[], int lw) {
+static void print_word(uint8_t w[], int lw) {
     printf("[");
     for (int j=0; j<lw; j++) {
         printf("%i", w[j]);
@@ -58,13 +55,13 @@ static void print_word(generator_t w[], int lw) {
 }
 */
 
-static generator_t digits[] =  {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+static uint8_t digits[] =  {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
                                  10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
                                  20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
 
 
 typedef struct list_t {
-    generator_t* w;
+    uint8_t* w;
     int lw;
     int value;
     struct list_t *next;
@@ -94,7 +91,7 @@ static void print_list(list_t *x) {
 }
 */
 
-static int list2arrays(list_t *x, generator_t **w, int lw[], generator_t v[]) {
+static int list2arrays(list_t *x, uint8_t **w, int lw[], uint8_t v[]) {
     int i=0;
     while (x!=NULL) {
         w[i] = x->w;
@@ -108,7 +105,7 @@ static int list2arrays(list_t *x, generator_t **w, int lw[], generator_t v[]) {
     return i;
 }
 
-static int get_list(list_t **L, generator_t w[], int lw, int value) {
+static int get_list(list_t **L, uint8_t w[], int lw, int value) {
     list_t *h = *L;
     list_t *h0 = NULL;
     int c; 
@@ -136,9 +133,9 @@ static int get_list(list_t **L, generator_t w[], int lw, int value) {
 }
 
 
-static void analyze_lyndon_word(generator_t w[], int lw, generator_t w2[], int *lw2, generator_t **tt, int *ltt, int *n ) {
-    generator_t a = w[0];
-    generator_t q = w[0];
+static void analyze_lyndon_word(uint8_t w[], int lw, uint8_t w2[], int *lw2, uint8_t **tt, int *ltt, int *n ) {
+    uint8_t a = w[0];
+    uint8_t q = w[0];
     for (int i=1; i<lw; i++) {
         if (w[i]<a) {
             a = w[i];
@@ -149,7 +146,7 @@ static void analyze_lyndon_word(generator_t w[], int lw, generator_t w2[], int *
     }
     list_t *L = init_list(q);
 
-    generator_t w1[lw];
+    uint8_t w1[lw];
     int lw1 = 0;
     int s = 1;
     int m1 = 1;
@@ -160,7 +157,7 @@ static void analyze_lyndon_word(generator_t w[], int lw, generator_t w2[], int *
     while (s<=lw && w[s-1]!=a) {
         s++;
     }
-    generator_t* v = w+1;
+    uint8_t* v = w+1;
     int lv = s-2;
     int lav = s-1;
     while (s<=lw) {
@@ -174,7 +171,7 @@ static void analyze_lyndon_word(generator_t w[], int lw, generator_t w2[], int *
         //assert(w[s-1]==a);
         s++;
 
-        generator_t* uu = w+s-1;
+        uint8_t* uu = w+s-1;
         int luu=0;
 
         while ((s<lw) && (w[s-1]!=a)) { 
@@ -190,7 +187,7 @@ static void analyze_lyndon_word(generator_t w[], int lw, generator_t w2[], int *
             j++;
         }
 
-        generator_t* u1 = uu+j;
+        uint8_t* u1 = uu+j;
         int lu1 = luu-j;
         m2 = s-lu1-1;
         int x = get_list(&L, w+m1-1, m2-m1+1, q+1);
@@ -205,9 +202,9 @@ static void analyze_lyndon_word(generator_t w[], int lw, generator_t w2[], int *
             lw1++;
         }
     }
-    generator_t vv[lw];
+    uint8_t vv[lw];
     int lvv = list2arrays(L, tt, ltt, vv);
-    generator_t pp[lw+2];
+    uint8_t pp[lw+2];
     invperm(lvv, vv, pp);
     for (int j=0; j<lw1; j++) {
         w2[j] = pp[w1[j]-1];
@@ -216,8 +213,8 @@ static void analyze_lyndon_word(generator_t w[], int lw, generator_t w2[], int *
     *n = lvv;
 }
 
-void lyndon2rightnormed(int lw, generator_t w[], generator_t r[]) {
-    generator_t aa = w[0]; // aa = minimum(w)
+void lyndon2rightnormed(int lw, uint8_t w[], uint8_t r[]) {
+    uint8_t aa = w[0]; // aa = minimum(w)
     int k = 1; // number of occurences of aa in w
     for (int i=1; i<lw; i++) {
         if (w[i]<aa) {
@@ -233,32 +230,32 @@ void lyndon2rightnormed(int lw, generator_t w[], generator_t r[]) {
         return;
     }
 
-    generator_t w1[lw];
+    uint8_t w1[lw];
     int lw1;
-    generator_t* tt[2*lw]; //TODO: Check that this is large enough...
+    uint8_t* tt[2*lw]; //TODO: Check that this is large enough...
     int ltt[2*lw];
     int m;
     analyze_lyndon_word(w, lw, w1, &lw1, tt, ltt, &m);
 
-    generator_t r1[lw1];
+    uint8_t r1[lw1];
     lyndon2rightnormed(lw1, w1, r1);
 
-    generator_t* y = tt[r1[lw1-1]-1];
+    uint8_t* y = tt[r1[lw1-1]-1];
     int ly = ltt[r1[lw1-1]-1];
-    generator_t a = y[0];
+    uint8_t a = y[0];
     
     int k0 = 1; // index of first a in y[1:end]
     for( ; y[k0]!=a; k0++) {} 
     int k1 = ly-1; // index of last a in y
     for( ; y[k1]!=a; k1--) {} 
 
-    generator_t *v = y+1;
+    uint8_t *v = y+1;
     int lv = k0-1;
 
-    generator_t *avn = y+k0;
+    uint8_t *avn = y+k0;
     int lavn = k1-k0;
 
-    generator_t *u1 = y+k1+1;
+    uint8_t *u1 = y+k1+1;
     int lu1 = ly-k1-1;
 
     int lr = 0;
@@ -278,33 +275,3 @@ void lyndon2rightnormed(int lw, generator_t w[], generator_t r[]) {
     lr++;
     //assert(lw==lr);
 }
-
-
-/*
-int main(void) {
-    generator_t w[] = {0, 0, 1, 2, 0, 2, 0, 1, 1};
-    int n = 9;
-    generator_t w1[n];
-    int lw1;
-    generator_t* tt[n];
-    int ltt[n];
-    int m;
-    
-    analyze_lyndon_word(w, n, w1, &lw1, tt, ltt, &m);
-    printf("w1="); print_word(w1, lw1); printf("\n");
-    printf("tt=["); 
-    for (int j=0; j<m; j++) {
-        print_word(tt[j], ltt[j]);
-        if (j<m-1) {
-            printf(", ");
-        }
-    }
-    printf("]\n");
-
-    generator_t r[n];
-
-    lyndon2rightnormed(n, w, r);
-    printf("r="); print_word(r, n); printf("\n");
-}
-*/
-

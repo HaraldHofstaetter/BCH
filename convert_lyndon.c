@@ -1,5 +1,15 @@
-#include "khash.h"
+#include"bch.h"
+#include <stdio.h>
+#include <assert.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
+#define SIMD_VECTORIZED 1
+
+extern unsigned int VERBOSITY_LEVEL;
+
+#include"khash.h"
 KHASH_MAP_INIT_INT64(P_Dict, uint32_t)      // instantiate structs and methods
     
 
@@ -16,14 +26,16 @@ typedef struct P_t {
     uint32_t len;
     uint32_t maxlen;
     uint8_t n;
+    uint8_t K;
     khash_t(P_Dict) *H;
 } P_t;
 
 
-static P_t *P_init(uint8_t n, uint32_t len) {
+static P_t *P_init(uint8_t K, uint8_t n, uint32_t len) {
     P_t *P = malloc(sizeof(P_t));
     P->H = kh_init(P_Dict);  // allocate hash table
     P->n = n;
+    P->K = K;
     if (len<K*n) {
         len = K*n;
     }
@@ -56,14 +68,14 @@ static void P_free(P_t *P) {
 }
 
 
-static uint32_t P_append(P_t *P, u_int32_t i, uint8_t l) {
+static uint32_t P_append(P_t *P, u_int32_t i, uint8_t l, uint32_t *p1, uint32_t *p2, uint8_t* nn) {
     uint64_t key = (((uint64_t) i)<< 8) | l;
     khint_t k = kh_get(P_Dict, P->H, key);  // query the hash table
     if (k == kh_end(P->H)) {                // test if the key is missing
-        uint32_t        a11 = P_append(P, p1[i], l);
-        uint32_t        a12 = P_append(P, p1[i], l+nn[p2[i]]);
-        uint32_t        a21 = P_append(P, p2[i], l);
-        uint32_t        a22 = P_append(P, p2[i], l+nn[p1[i]]);
+        uint32_t        a11 = P_append(P, p1[i], l,           p1, p2, nn);
+        uint32_t        a12 = P_append(P, p1[i], l+nn[p2[i]], p1, p2, nn);
+        uint32_t        a21 = P_append(P, p2[i], l,           p1, p2, nn);
+        uint32_t        a22 = P_append(P, p2[i], l+nn[p1[i]], p1, p2, nn);
         if (P->len>=P->maxlen) {
             P->maxlen *= 2;
             P->L = realloc(P->L, sizeof(P_line_t)*P->maxlen);
@@ -96,7 +108,7 @@ static void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t 
         stop = P->len-1;
     }
     P_line_t *L = P->L;
-    for (int k=0; k<K; k++) {
+    for (int k=0; k<P->K; k++) {
         for (int i=0; i<P->n; i++) {
             X[k*P->n+i][0] = w0[i]==k ? 1 : 0;
             X[k*P->n+i][1] = w1[i]==k ? 1 : 0;
@@ -104,11 +116,11 @@ static void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t 
             X[k*P->n+i][3] = w3[i]==k ? 1 : 0;
         }
     }
-    for (int p=K*P->n; p<=stop; p++) {
+    for (int p=P->K*P->n; p<=stop; p++) {
        X[p] = X[L[p].a11]*X[L[p].a22] - X[L[p].a12]*X[L[p].a21];
     }
    /*
-    for (int p=K*P->n; p<=stop; p++) {
+    for (int p=P->K*P->n; p<=stop; p++) {
         __m128i x11 = _mm_load_si128( (__m128i*) X + L[p].a11 );
         __m128i x12 = _mm_load_si128( (__m128i*) X + L[p].a12 );
         __m128i x21 = _mm_load_si128( (__m128i*) X + L[p].a21 );
@@ -128,12 +140,12 @@ static void P_run(int32_t *X, P_t *P, uint8_t w[], uint32_t stop) {
         stop = P->len-1;
     }
     P_line_t *L = P->L;
-    for (int k=0; k<K; k++) {
+    for (int k=0; k<P->K; k++) {
         for (int i=0; i<P->n; i++) {
             X[k*P->n+i] = w[i]==k ? 1 : 0;
         }
     }
-    for (int p=K*P->n; p<=stop; p++) {
+    for (int p=P->K*P->n; p<=stop; p++) {
         X[p] = X[L[p].a11]*X[L[p].a22] - X[L[p].a12]*X[L[p].a21];
     }
 }
@@ -141,7 +153,7 @@ static void P_run(int32_t *X, P_t *P, uint8_t w[], uint32_t stop) {
 #endif
 
 
-static void convert_to_lie_series(int N, INTEGER c[]) {
+void convert_to_lie_series(lie_series_t *LS, int N) {
     if (VERBOSITY_LEVEL>=2) {
 #ifdef _OPENMP
         printf("# degree     #basis        time thread\n");
@@ -151,10 +163,10 @@ static void convert_to_lie_series(int N, INTEGER c[]) {
     }
     double t0 = tic();
 
-    size_t i1 = ii[N-1];
-    size_t i2 = ii[N]-1;
+    size_t i1 = LS->ii[N-1];
+    size_t i2 = LS->ii[N]-1;
 
-    uint32_t *DI  = multi_degree_indices( K, N_LYNDON, W, nn);
+    uint32_t *DI  = multi_degree_indices( LS->K, LS->dim, LS->W, LS->nn);
 
     size_t h1 = DI[i1];
     size_t h2 = DI[i2];
@@ -167,7 +179,7 @@ static void convert_to_lie_series(int N, INTEGER c[]) {
     int h_thread[h2-h1+1];
 #endif
     int hh[h2-h1+1];
-    if (K==2 && (N&1)==0) {
+    if (LS->K==2 && (N&1)==0) {
         /* generate loop order corresponding to decreasing running times:
          * N/2, N/2-1, N/2+1, N/2-1, N/2+1, ..., 1, N-1
          */ 
@@ -186,7 +198,7 @@ static void convert_to_lie_series(int N, INTEGER c[]) {
 
     #pragma omp parallel 
     {
-    int *jj = calloc(N_LYNDON, sizeof(int));  // N_LYNDON far too large upper bound
+    int *jj = calloc(LS->dim, sizeof(int));  // LS->dim far too large upper bound
     size_t JW[N];
     size_t JB[N];
 
@@ -212,13 +224,13 @@ static void convert_to_lie_series(int N, INTEGER c[]) {
             }
         }
 
-        P_t *P = P_init(N, 2*jj_max);
+        P_t *P = P_init(LS->K, N, 2*jj_max);
         uint32_t *r = malloc(jj_max*sizeof(uint32_t));
 
         for (int y=0; y<jj_max; y++) {
             int j = jj[y];
-            size_t kB = get_right_factors(j, JB, N);
-            r[y] = P_append(P, JB[kB], kB);
+            size_t kB = get_right_factors(j, JB, N, LS->p1, LS->p2);
+            r[y] = P_append(P, JB[kB], kB, LS->p1, LS->p2, LS->nn);
         }
 #ifdef SIMD_VECTORIZED
         h_time1[k] = tic();
@@ -236,20 +248,20 @@ static void convert_to_lie_series(int N, INTEGER c[]) {
             
             h_n[k]++; // TODO: adapt this to vectorized version
 
-            P_run_4(X, P, W[i[0]], W[i[1]], W[i[2]], W[i[3]], stop);
+            P_run_4(X, P, LS->W[i[0]], LS->W[i[1]], LS->W[i[2]], LS->W[i[3]], stop);
 
             for (int s=0; s<4 && x+s<jj_max; s++) {
-                size_t kW =  get_right_factors(i[s], JW, N);
-                int lA = 0; for (;W[i[s]][lA]==0; lA++);
+                size_t kW =  get_right_factors(i[s], JW, N, LS->p1, LS->p2);
+                int lA = 0; for (;LS->W[i[s]][lA]==0; lA++);
             
                 for (int y=0; y<=x+s-1; y++) {
                     int j = jj[y];
-                    size_t kB = get_right_factors(j, JB, N);
+                    size_t kB = get_right_factors(j, JB, N, LS->p1, LS->p2);
                     if (lA>=kB) {
                         int d = X[r[y]][s];
                         if (d!=0) {
                             for (int k=0; k<=kB && k<=kW; k++) {
-                                c[JW[k]] -= d*c[JB[k]];
+                                LS->c[JW[k]] -= d*LS->c[JB[k]];
                             }
                         }
                     }
@@ -271,8 +283,8 @@ static void convert_to_lie_series(int N, INTEGER c[]) {
             stop = r[x] > stop ? r[x] : stop;
             h_n[k]++;
 
-            size_t kW = get_right_factors(i, JW, N);
-            generator_t *w = W[i];
+            size_t kW = get_right_factors(i, JW, N, LS->p1, LS->p2);
+            uint8_t *w = LS->W[i];
 
             P_run(X, P, w, stop);
 
@@ -281,12 +293,12 @@ static void convert_to_lie_series(int N, INTEGER c[]) {
 
             for (int y=0; y<=x-1; y++) {
                 int j = jj[y];
-                size_t kB = get_right_factors(j, JB, N);
+                size_t kB = get_right_factors(j, JB, N, LS->p1, LS->p2);
                 if (lA>=kB) {
                     int d = X[r[y]];
                     if (d!=0) {
                         for (int k=0; k<=kB && k<=kW; k++) {
-                            c[JW[k]] -= d*c[JB[k]];
+                            LS->c[JW[k]] -= d*LS->c[JB[k]];
                         }
                     }
                 }
@@ -358,35 +370,37 @@ static void convert_to_lie_series(int N, INTEGER c[]) {
 
 static const INTEGER H =  1000000000000000000;
 
-static INTEGER beta_num[16] = {1, -1, 1, -17, 31, -691, 5461, -929569, 3202291, -221930581, 4722116521, 
+/* beta_num, beta_den not static because also needed in convert_rightnormed.c */
+
+INTEGER beta_num[16] = {1, -1, 1, -17, 31, -691, 5461, -929569, 3202291, -221930581, 4722116521, 
     -56963745931, 14717667114151, -2093660879252671, 86125672563201181, -129*H-848163681107301953};
 
-static INTEGER beta_den[16] = {2, 24, 240, 40320, 725760, 159667200, 12454041600, 20922789888000, 
+INTEGER beta_den[16] = {2, 24, 240, 40320, 725760, 159667200, 12454041600, 20922789888000, 
     711374856192000, 486580401635328000, 102*H+181884343418880000, 12165*H+654935945871360000, 
     31022420*H+86661971968000000, 43555477801*H+673408643072000000, 17683523987479*H+403909087232000000, 
     263130836933693530*H+167218012160000000};
 
 
-static void  compute_BCH_terms_of_even_order_N(INTEGER c[]) {
+void  compute_BCH_terms_of_even_order_N(lie_series_t *LS) {
     double t0 = tic();
-    assert(!(N&1));
+    assert(!(LS->N&1));
 
     #pragma omp parallel for schedule(dynamic,256)
-    for (int i=ii[N-1]; i<=ii[N]-1; i++) {
-        c[i] = 0;
+    for (int i=LS->ii[LS->N-1]; i<=LS->ii[LS->N]-1; i++) {
+        LS->c[i] = 0;
         int k = 0;
         int l = 0;
         int q = i;
-        while (p1[q]==0) {
+        while (LS->p1[q]==0) {
             k += 1;
-            q = p2[q];
+            q = LS->p2[q];
             if (k&1) {
-                INTEGER d = c[q]/beta_den[l];
-                if (d*beta_den[l]!=c[q]) {
+                INTEGER d = LS->c[q]/beta_den[l];
+                if (d*beta_den[l]!=LS->c[q]) {
                     fprintf(stderr, "ERROR: divisibility check failed in compute_BCH_terms_of_order_N");
                     exit(EXIT_FAILURE);
                 }
-                c[i] += beta_num[l]*d; 
+                LS->c[i] += beta_num[l]*d; 
                 l += 1;
             }
         }
@@ -394,7 +408,7 @@ static void  compute_BCH_terms_of_even_order_N(INTEGER c[]) {
 
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
-        printf("#compute terms of order %i: time=%g sec\n", N, t1);
+        printf("#compute terms of order %i: time=%g sec\n", LS->N, t1);
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }

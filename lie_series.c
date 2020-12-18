@@ -8,20 +8,19 @@
 #include <omp.h>
 #endif
 
-static uint8_t K;             /* number of generators */
-static uint8_t N;             /* maximum length of Lyndon words (=maximum order of Lie series expansion) */
-static generator_t **W=NULL; /* W[i] ... ith Lyndon word, ordered primarily by length and 
-                                secondarily by lexicographical order */
-static generator_t **R=NULL; /* R[i] ... ith rightnormed basis element corresponding to ith Lyndon word */
-static uint32_t *p1=NULL;    /* standard factorization of W[i] is W[p1[i]]*W[p2[i]] */
-static uint32_t *p2=NULL;
-static uint8_t  *nn=NULL;    /* nn[i] = length of W[i] */
-static uint32_t *ii=NULL;    /* W[ii[n-1]] = first Lyndon word of length n; 
-                                W[ii[n]-1] = last Lyndon word of length n */
-static size_t N_LYNDON;      /* number of Lyndon words of length <=N, N_LYNDON = ii[N] */
+//static uint8_t K;             /* number of generators */
+//static uint8_t N;             /* maximum length of Lyndon words (=maximum order of Lie series expansion) */
+//static uint8_t **W=NULL; /* W[i] ... ith Lyndon word, ordered primarily by length and 
+//                                secondarily by lexicographical order */
+//static uint8_t **R=NULL; /* R[i] ... ith rightnormed basis element corresponding to ith Lyndon word */
+//static uint32_t *p1=NULL;    /* standard factorization of W[i] is W[p1[i]]*W[p2[i]] */
+//static uint32_t *p2=NULL;
+//static uint8_t  *nn=NULL;    /* nn[i] = length of W[i] */
+//static uint32_t *ii=NULL;    /* W[ii[n-1]] = first Lyndon word of length n; 
+//                                W[ii[n]-1] = last Lyndon word of length n */
+//static size_t N_LYNDON;      /* number of Lyndon words of length <=N, N_LYNDON = ii[N] */
 
-static unsigned int VERBOSITY_LEVEL = 0;
-
+unsigned int VERBOSITY_LEVEL = 0;
 
 double tic(void) {
 #ifdef _OPENMP
@@ -45,11 +44,7 @@ double toc(double t0) {
 }
 
 
-/*********************************************/
-#include"lyndon.c"
-/*********************************************/
-
-static inline size_t get_right_factors(size_t i, size_t J[], size_t kmax) {
+size_t get_right_factors(size_t i, size_t J[], size_t kmax, uint32_t *p1, uint32_t *p2) {
     size_t k = 0;
     J[0] = i;
     size_t l = i;
@@ -62,10 +57,10 @@ static inline size_t get_right_factors(size_t i, size_t J[], size_t kmax) {
 }
 
 
-static void compute_goldberg_coefficients(int N, INTEGER c[], INTEGER denom) {
+static void compute_goldberg_coefficients(lie_series_t *LS, int N) {
     if (VERBOSITY_LEVEL>=1) {
         printf("#expression=log(exp(A)*exp(A))\n");
-        printf("#denominator="); print_INTEGER(denom); printf("\n");
+        printf("#denominator="); print_INTEGER(LS->denom); printf("\n");
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }
@@ -73,17 +68,17 @@ static void compute_goldberg_coefficients(int N, INTEGER c[], INTEGER denom) {
     double t0 = tic();
     
     goldberg_t G = goldberg(N);        
-    int f = denom/G.denom;
+    int f = LS->denom/G.denom;
     if (f!=1) {
         #pragma omp for schedule(dynamic,256) 
-        for (int i=ii[N]-1; i>=0; i--) {
-            c[i] = f*goldberg_coefficient(nn[i], W[i], &G); 
+        for (int i=LS->ii[N]-1; i>=0; i--) {
+            LS->c[i] = f*goldberg_coefficient(LS->nn[i], LS->W[i], &G); 
         }       
     }
     else {
         #pragma omp for schedule(dynamic,256) 
-        for (int i=ii[N]-1; i>=0; i--) {
-            c[i] = goldberg_coefficient(nn[i], W[i], &G); 
+        for (int i=LS->ii[N]-1; i>=0; i--) {
+            LS->c[i] = goldberg_coefficient(LS->nn[i], LS->W[i], &G); 
         }       
     }
 
@@ -99,33 +94,33 @@ static void compute_goldberg_coefficients(int N, INTEGER c[], INTEGER denom) {
 }
 
 
-static void compute_word_coefficients(int N, expr_t* ex, INTEGER c[], INTEGER denom) {
+static void compute_word_coefficients(lie_series_t *LS, int N, expr_t* ex) {
     if (VERBOSITY_LEVEL>=1) {
         printf("#expression="); print_expr(ex); printf("\n"); 
-        printf("#denominator="); print_INTEGER(denom); printf("\n");
+        printf("#denominator="); print_INTEGER(LS->denom); printf("\n");
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }
     }
     double t0 = tic();
 
-    size_t i1 = ii[N-1];
-    size_t i2 = ii[N]-1;
+    size_t i1 = LS->ii[N-1];
+    size_t i2 = LS->ii[N]-1;
 
     INTEGER e[N+1];
 
     /* c[0] needs special handling */
     INTEGER t1[2];
     e[0] = 0;
-    e[1] = denom;
-    int  m = phi(t1, 2, W[0], ex, e);
-    c[0] = m>0 ? t1[0] : 0;
+    e[1] = LS->denom;
+    int  m = phi(t1, 2, LS->W[0], ex, e);
+    LS->c[0] = m>0 ? t1[0] : 0;
 
     /* now the other coeffs */
     for (int j=0; j<N; j++){
         e[j] = 0;
     }
-    e[N] = denom;
+    e[N] = LS->denom;
 
     #pragma omp parallel 
     {
@@ -135,11 +130,11 @@ static void compute_word_coefficients(int N, expr_t* ex, INTEGER c[], INTEGER de
 
     #pragma omp for schedule(dynamic,256) 
     for (int i=i1; i<=i2; i++) {
-            generator_t *w = W[i];
+            uint8_t *w = LS->W[i];
             int m = phi(t, N+1, w, ex, e);
-            size_t kW = get_right_factors(i, JW, N);
+            size_t kW = get_right_factors(i, JW, N, LS->p1, LS->p2);
             for (int k=0; k<=kW; k++) {
-                c[JW[k]] = k<m ? t[k] : 0;
+                LS->c[JW[k]] = k<m ? t[k] : 0;
             }
     }
     }
@@ -153,47 +148,24 @@ static void compute_word_coefficients(int N, expr_t* ex, INTEGER c[], INTEGER de
     }
 }    
 
-/*********************************************/
-#include"convert_lyndon.c"
-#include"convert_rightnormed.c"
-/*********************************************/
 
 
-
-static lie_series_t gen_result(INTEGER *c, INTEGER denom) {
+lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int rightnormed) {
+    double t0 = tic();
     lie_series_t LS;
     LS.K = K;
     LS.N = N;
-    LS.dim = N_LYNDON;
-    LS.p1 = p1;
-    LS.p2 = p2;
-    LS.nn = nn;
-    LS.ii = ii;
-    LS.W = W;
-    LS.R = R;
-    LS.denom = denom;
-    LS.c = c;
-    return LS;
-}
-
-
-lie_series_t lie_series(size_t K0, expr_t* expr, size_t N0, int rightnormed) {
-    double t0 = tic();
-    K = K0;
-    N = N0;
-    init_lyndon_words();
-    INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
-    INTEGER denom = common_denominator(N, expr);
-    compute_word_coefficients(N, expr, c, denom);
+    init_lyndon_words(&LS);
+    LS.c = malloc(LS.dim*sizeof(INTEGER));
+    LS.denom = common_denominator(N, expr);
+    compute_word_coefficients(&LS, N, expr);
     if (rightnormed) {
-        init_rightnormed();
-        convert_to_rightnormed_lie_series(N, c, 0);
+        init_rightnormed(&LS);
+        convert_to_rightnormed_lie_series(&LS, N, 0);
     }
     else {
-        convert_to_lie_series(N, c);
+        convert_to_lie_series(&LS, N);
     }
-    lie_series_t LS = gen_result(c, denom);
-    free_lyndon_words();
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
         printf("#total time=%g sec\n", t1);
@@ -205,32 +177,31 @@ lie_series_t lie_series(size_t K0, expr_t* expr, size_t N0, int rightnormed) {
 }
 
 
-lie_series_t BCH(size_t N0, int rightnormed) {
+lie_series_t BCH(size_t N, int rightnormed) {
     double t0 = tic();
-    K = 2;
-    N = N0;
-    init_lyndon_words();
-    INTEGER *c = malloc(N_LYNDON*sizeof(INTEGER));
-    INTEGER denom = common_denominator(N, 0);
+    lie_series_t LS;
+    LS.K = 2;
+    LS.N = N;
+    init_lyndon_words(&LS);
+    LS.c = malloc(LS.dim*sizeof(INTEGER));
+    LS.denom = common_denominator(N, 0);
     if (rightnormed) {
-        init_rightnormed();
-        compute_goldberg_coefficients(N, c, denom);
-        convert_to_rightnormed_lie_series(N, c, 1);
-        compute_rightnormed_BCH_terms_of_even_orders(c);
+        init_rightnormed(&LS);
+        compute_goldberg_coefficients(&LS, N);
+        convert_to_rightnormed_lie_series(&LS, N, 1);
+        compute_rightnormed_BCH_terms_of_even_orders(&LS);
     }
     else {
         if (N%2) {
-            compute_goldberg_coefficients(N, c, denom);
-            convert_to_lie_series(N, c);
+            compute_goldberg_coefficients(&LS, N);
+            convert_to_lie_series(&LS, N);
         }
         else {
-            compute_goldberg_coefficients(N-1, c, denom);
-            convert_to_lie_series(N-1, c);
-            compute_BCH_terms_of_even_order_N(c);
+            compute_goldberg_coefficients(&LS, N-1);
+            convert_to_lie_series(&LS, N-1);
+            compute_BCH_terms_of_even_order_N(&LS);
         }
     }
-    lie_series_t LS = gen_result(c, denom);
-    free_lyndon_words();
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
         printf("#total time=%g sec\n", t1);
@@ -242,17 +213,18 @@ lie_series_t BCH(size_t N0, int rightnormed) {
 }
 
 
-lie_series_t symBCH(size_t N0, int rightnormed) {
+lie_series_t symBCH(size_t N, int rightnormed) {
     double t0 = tic();
-    K = 2;
-    N = N0;
+    lie_series_t LS;
+    LS.K = 2;
+    LS.N = N;
     expr_t *halfA = generator(0);
     expr_t *B = generator(1);
     expr_t *expr = logarithm(product(product(exponential(halfA), exponential(B)), 
                                      exponential(halfA)));
-    init_lyndon_words();
-    INTEGER *c = calloc(N_LYNDON, sizeof(INTEGER)); /* calloc initializes to zero */
-    INTEGER denom = common_denominator(N, 0);
+    init_lyndon_words(&LS);
+    LS.c = calloc(LS.dim, sizeof(INTEGER)); /* calloc initializes to zero */
+    LS.denom = common_denominator(N, 0);
     if (VERBOSITY_LEVEL>=1) {
         printf("#NOTE: in the following expression, A stands for A/2\n");
         if (VERBOSITY_LEVEL>=2) {
@@ -260,16 +232,15 @@ lie_series_t symBCH(size_t N0, int rightnormed) {
         }
     }
     int N1 = N%2 ? N : N-1;
-    compute_word_coefficients(N1, expr, c, denom);
+    compute_word_coefficients(&LS, N1, expr);
     if (rightnormed) {
-        init_rightnormed();
-        convert_to_rightnormed_lie_series(N1, c, 1);
+        init_rightnormed(&LS);
+        convert_to_rightnormed_lie_series(&LS, N1, 1);
     }
     else {
-        convert_to_lie_series(N1, c);
+        convert_to_lie_series(&LS, N1);
     }
-    lie_series_t LS = gen_result(c, denom);
-    for (int i=0; i<N_LYNDON; i++) {
+    for (int i=0; i<LS.dim; i++) {
         int nA = get_degree_of_generator(&LS, i, 0);
         LS.c[i] <<= N-1-nA; /* c[i] = c[i]*2^(N-1-nA) */
     }
@@ -280,7 +251,6 @@ lie_series_t symBCH(size_t N0, int rightnormed) {
             fflush(stdout);
         }
     }
-    free_lyndon_words();
     free_expr(halfA);
     free_expr(B);
     free_expr(expr);
@@ -308,7 +278,7 @@ void free_lie_series(lie_series_t LS) {
         free(LS.W[0]);
         free(LS.W);
     }
-    free(ii);
+    free(LS.ii);
 }
 
 

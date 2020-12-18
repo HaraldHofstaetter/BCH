@@ -65,7 +65,6 @@ static void partitions(int n, uint8_t **P) {
 }
 
 /* n!*goldberg_denominator[n] = common denominator for all goldberg coefficients of degree <=n.
- * (Possibly even the smallest such common denominator.)
  * See http://oeis.org/A338025
  * Not static because also needed in phi.c 
  */
@@ -184,7 +183,7 @@ goldberg_t goldberg(size_t n) {
     }
     e[n] = G.denom;
 
-    generator_t w[n];
+    uint8_t w[n];
 #else
     INTEGER *C = malloc(n*n*sizeof(INTEGER));     
 #endif
@@ -246,7 +245,7 @@ static int cumsum_partitions[33] = {1, 2, 4, 7, 12, 19, 30, 45, 67, 97, 139, 195
     373, 508, 684, 915, 1212, 1597, 2087, 2714, 3506, 4508, 5763, 7338, 9296, 11732, 
     14742, 18460, 23025, 28629, 35471, 43820};
 
-INTEGER goldberg_coefficient(int n, generator_t w[], goldberg_t *G) {
+INTEGER goldberg_coefficient(int n, uint8_t w[], goldberg_t *G) {
     int x[n];
     for (int i=0; i<n; i++) {
         x[i] = 0;
