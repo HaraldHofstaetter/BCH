@@ -8,7 +8,7 @@ COPTS = -O3   -msse4.1   -fopenmp  -Wall -DUSE_INT128_T -DSIMD_VECTORIZED
 #COPTS = -O3  -msse4.1 -fopenmp -fsanitize=signed-integer-overflow -fsanitize=undefined -Wall -DUSE_INT128_T 
 #COPTS = -g -Wall -DUSE_INT128_T 
 
-bch: bch.h bch.c phi.c lie_series.c rightnormed.c goldberg.c convert_lyndon.c convert_rightnormed.c
+bch: bch.h bch.c phi.c lie_series.c lyndon.c rightnormed.c goldberg.c convert_lyndon.c convert_rightnormed.c
 
 	$(CC) $(COPTS) phi.c goldberg.c rightnormed.c lie_series.c bch.c -o bch
 
