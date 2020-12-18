@@ -58,6 +58,7 @@ static void convert_to_rightnormed_lie_series(int N, INTEGER c[], int odd_orders
     if ((!odd_orders_only)||(n&1)) {
         size_t i1 = ii[n-1];
         size_t i2 = ii[n]-1;
+        uint32_t *DI  = multi_degree_indices( K, N_LYNDON, W, nn);
         size_t h1 = DI[i1];
         size_t h2 = DI[i2];
         for (int h=h1; h<=h2; h++) { /* over all multi-degrees */
@@ -105,6 +106,7 @@ static void convert_to_rightnormed_lie_series(int N, INTEGER c[], int odd_orders
             free(x);
             free(A);
         }
+        free(DI);
     }
     else {
         for (int j=ii[n-1]; j<=ii[n]-1; j++) {
@@ -166,4 +168,33 @@ static void compute_rightnormed_BCH_terms_of_even_orders(INTEGER c[]) {
         }
     }
 }
+
+
+static void init_rightnormed(void) {
+    double t0 = tic();
+    size_t mem_len = 0;
+    for (int n=1; n<=N; n++) {
+        mem_len += n*(ii[n]-ii[n-1]);
+    }
+
+    R = malloc(N_LYNDON*sizeof(generator_t *));
+    R[0] = malloc(mem_len*sizeof(generator_t)); 
+    for (int i=1; i<N_LYNDON; i++) {
+        R[i] = R[i-1] + nn[i-1];
+    }
+
+    #pragma omp for schedule(dynamic,256) 
+    for (int i=0; i<N_LYNDON; i++) {
+        lyndon2rightnormed(nn[i], W[i], R[i]);
+    }
+
+    if (VERBOSITY_LEVEL>=1) {
+        double t1 = toc(t0);
+        printf("#init rightnormed basis elements: time=%g sec\n", t1);
+        if (VERBOSITY_LEVEL>=2) {
+            fflush(stdout);
+        }
+    }
+}
+
 

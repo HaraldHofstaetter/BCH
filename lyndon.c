@@ -89,9 +89,9 @@ static size_t word_index(size_t K, generator_t w[], size_t l, size_t r) {
     }
 }
 
-static size_t find_lyndon_word_index(size_t l, size_t r, size_t wi) {
+static size_t find_lyndon_word_index(uint32_t *WI, size_t l, size_t r, size_t wi) {
     /* finds index wi in the sorted list of indices WI. Start search at position l 
-     * and stop * it at position r. This function is only applied in situations where 
+     * and stop it at position r. This function is only applied in situations where 
      * the search will not fail.
      * METHOD: binary search
      */
@@ -110,6 +110,152 @@ static size_t find_lyndon_word_index(size_t l, size_t r, size_t wi) {
     fprintf(stderr, "ERROR: Lyndon word index not found: %li\n", wi);
     exit(EXIT_FAILURE);
 }
+
+
+
+static int longest_right_lyndon_factor(generator_t w[], size_t l, size_t r) {
+/* returns starting position of the longest right Lyndon factor of the subword w[l:r]
+ * METHOD: based on the algorithm MaxLyn from
+ *   F. Franek, A. S. M. S. Islam, M. S. Rahman, W. F. Smyth: Algorithms to Compute the Lyndon Array. 
+ *   Stringology 2016: 172-184
+ */
+    for (int j=l+1; j<r; j++) {        
+        int i = j+1;
+        while (i <= r) {
+            int k = 0;
+            while ((i+k <= r) && (w[j+k]==w[i+k])) {
+                k += 1;
+            } 
+            if ((i+k > r) || (w[j+k] >= w[i+k])) {
+                break;
+            }
+            else {
+                i += k + 1;
+            }
+        }
+        if (i==r+1) {
+            return j;
+        }
+    }
+    return r;
+}
+
+/* The following two functions are for the generation of Lyndon words.
+ * METHOD: Algorithm 2.1 from
+ *   K. Cattell, F. Ruskey, J. Sawada, M. Serra, C.R. Miers, Fast algorithms 
+ *   to generate necklaces, unlabeled necklaces and irreducible polynomials over GF(2), 
+ *   J. Algorithms 37 (2) (2000) 267–282
+ */
+
+static void genLW(size_t K, size_t n, size_t t, size_t p, generator_t a[], size_t wp[], uint32_t *WI) {
+    if (t>n) {
+        if (p==n) {
+            int H = 0;
+            size_t j2 = 0;
+            while ((longest_right_lyndon_factor(a, H+1, n)==H+2) && (a[H+1]==0)) { 
+                H++;
+            }
+            for (int h=H; h>=0; h--)  {
+                size_t n0 = n-h;
+                size_t j = wp[n0-1];
+                for (int i=0; i<n0; i++) {
+                    W[j][i] = a[i+h+1];
+                }
+                WI[j] = word_index(K, a, h+1, n);
+                if (n0>1) {
+                    if (h<H) {
+                        p1[j] = 0;
+                        p2[j] = j2;
+                    }
+                    else {
+                        size_t m = longest_right_lyndon_factor(a, h+1, n);
+                        size_t wi1 = word_index(K, a, h+1, m-1);
+                        size_t wi2 = word_index(K, a, m, n);
+                        int n1 = m-h-1;
+                        int n2 = n0-n1;
+                        p1[j] = find_lyndon_word_index(WI, ii[n1-1], wp[n1-1], wi1);
+                        p2[j] = find_lyndon_word_index(WI, ii[n2-1], wp[n2-1], wi2);
+                    }
+                }
+                j2 = j;
+                wp[n0-1]++;
+            } 
+        }
+    }
+    else {
+        a[t] = a[t-p];
+        genLW(K, n, t+1, p, a, wp, WI); 
+        for (int j=a[t-p]+1; j<K; j++) {
+             a[t] = j;
+             genLW(K, n, t+1, t, a, wp, WI);
+        }
+    }
+}
+
+
+static void init_lyndon_words(void) {
+    double t0 = tic();
+    size_t nLW[N];
+    number_of_lyndon_words(K, N, nLW);
+    size_t mem_len = 0;
+    N_LYNDON = 0;
+    for (int n=1; n<=N; n++) {
+        N_LYNDON += nLW[n-1];
+        mem_len += n*nLW[n-1];
+    }
+    W = malloc(N_LYNDON*sizeof(generator_t *));
+    p1 = malloc(N_LYNDON*sizeof(uint32_t)); 
+    p2 = malloc(N_LYNDON*sizeof(uint32_t)); 
+    nn = malloc(N_LYNDON*sizeof(uint8_t)); 
+    ii = malloc((N+1)*sizeof(uint32_t)); 
+    W[0] = malloc(mem_len*sizeof(generator_t)); 
+    ii[0] = 0;
+    int m=0;
+    for (int n=1; n<=N; n++) {
+        ii[n] = ii[n-1] + nLW[n-1];
+        for (int k=0; k<nLW[n-1]; k++) {            
+            if (m<N_LYNDON-1) { /* avoiding illegal W[N_LYNDON] */
+                W[m+1] = W[m]+n;
+            }
+            nn[m] = n;
+            m++;
+        }
+    }
+    assert(m==N_LYNDON);
+    for (int i=0; i<K; i++) {
+        p1[i] = i;
+        p2[i] = 0;
+    }
+
+    generator_t a[N+1];
+    size_t wp[N];
+    for (int i=0; i<N; i++) {
+        wp[i] = ii[i]; 
+    }
+    uint32_t *WI = malloc(N_LYNDON*sizeof(uint32_t));
+    wp[0] = 1;
+    W[0][0] = 0;
+    WI[0] = 0;
+
+    for (int i=0; i<=N; i++) {
+        a[i] = 0; 
+    }
+    
+    genLW(K, N, 1, 1, a, wp, WI);
+
+    free(WI);
+
+    if (VERBOSITY_LEVEL>=1) {
+        double t1 = toc(t0);
+        printf("#number of Lyndon words of length<=%i over set of %i letters: %li\n", N, K, N_LYNDON);
+        printf("#init Lyndon words: time=%g sec\n", t1);
+        if (VERBOSITY_LEVEL>=2) {
+            fflush(stdout);
+        }
+    }
+}
+
+
 
 static unsigned int binomial(unsigned int n, unsigned int k) {
     /* computes binomial coefficient n over k
@@ -168,196 +314,12 @@ static size_t multi_degree_index(size_t K, generator_t w[], size_t l, size_t r) 
 }
 
 
-static int longest_right_lyndon_factor(generator_t w[], size_t l, size_t r) {
-/* returns starting position of the longest right Lyndon factor of the subword w[l:r]
- * METHOD: based on the algorithm MaxLyn from
- *   F. Franek, A. S. M. S. Islam, M. S. Rahman, W. F. Smyth: Algorithms to Compute the Lyndon Array. 
- *   Stringology 2016: 172-184
- */
-    for (int j=l+1; j<r; j++) {        
-        int i = j+1;
-        while (i <= r) {
-            int k = 0;
-            while ((i+k <= r) && (w[j+k]==w[i+k])) {
-                k += 1;
-            } 
-            if ((i+k > r) || (w[j+k] >= w[i+k])) {
-                break;
-            }
-            else {
-                i += k + 1;
-            }
-        }
-        if (i==r+1) {
-            return j;
-        }
-    }
-    return r;
-}
 
-/* The following two functions are for the generation of Lyndon words.
- * METHOD: Algorithm 2.1 from
- *   K. Cattell, F. Ruskey, J. Sawada, M. Serra, C.R. Miers, Fast algorithms 
- *   to generate necklaces, unlabeled necklaces and irreducible polynomials over GF(2), 
- *   J. Algorithms 37 (2) (2000) 267–282
- */
-
-static void genLW(size_t K, size_t n, size_t t, size_t p, generator_t a[], size_t wp[]) {
-    if (t>n) {
-        if (p==n) {
-            int H = 0;
-            size_t j2 = 0;
-            while ((longest_right_lyndon_factor(a, H+1, n)==H+2) && (a[H+1]==0)) { 
-                H++;
-            }
-            for (int h=H; h>=0; h--)  {
-                size_t n0 = n-h;
-                size_t j = wp[n0-1];
-                for (int i=0; i<n0; i++) {
-                    W[j][i] = a[i+h+1];
-                }
-                WI[j] = word_index(K, a, h+1, n);
-                DI[j] = multi_degree_index(K, a, h+1, n);
-                if (n0>1) {
-                    if (h<H) {
-                        p1[j] = 0;
-                        p2[j] = j2;
-                    }
-                    else {
-                        size_t m = longest_right_lyndon_factor(a, h+1, n);
-                        size_t wi1 = word_index(K, a, h+1, m-1);
-                        size_t wi2 = word_index(K, a, m, n);
-                        int n1 = m-h-1;
-                        int n2 = n0-n1;
-                        p1[j] = find_lyndon_word_index(ii[n1-1], wp[n1-1], wi1);
-                        p2[j] = find_lyndon_word_index(ii[n2-1], wp[n2-1], wi2);
-                    }
-                }
-                j2 = j;
-                wp[n0-1]++;
-            } 
-        }
+static uint32_t* multi_degree_indices(size_t K, size_t dim,  generator_t **W, uint8_t *nn) {
+    uint32_t *DI = malloc(dim*sizeof(uint32_t));
+    for (int i=0; i<dim; i++) {
+        DI[i] = multi_degree_index(K, W[i], 0, nn[i-1]);
     }
-    else {
-        a[t] = a[t-p];
-        genLW(K, n, t+1, p, a, wp); 
-        for (int j=a[t-p]+1; j<K; j++) {
-             a[t] = j;
-             genLW(K, n, t+1, t, a, wp);
-        }
-    }
-}
-
-
-static void init_lyndon_words(int rightnormed) {
-    double t0 = tic();
-    size_t nLW[N];
-    number_of_lyndon_words(K, N, nLW);
-    size_t mem_len = 0;
-    N_LYNDON = 0;
-    for (int n=1; n<=N; n++) {
-        N_LYNDON += nLW[n-1];
-        mem_len += n*nLW[n-1];
-    }
-    W = malloc(N_LYNDON*sizeof(generator_t *));
-    R = NULL;
-    if (rightnormed) {
-        R = malloc(N_LYNDON*sizeof(generator_t *));
-    }
-    p1 = malloc(N_LYNDON*sizeof(uint32_t)); 
-    p2 = malloc(N_LYNDON*sizeof(uint32_t)); 
-    nn = malloc(N_LYNDON*sizeof(uint8_t)); 
-    WI = malloc(N_LYNDON*sizeof(uint32_t));
-    DI = malloc(N_LYNDON*sizeof(uint32_t));
-    ii = malloc((N+1)*sizeof(uint32_t)); 
-    W[0] = malloc(mem_len*sizeof(generator_t)); 
-    if (rightnormed) {
-        R[0] = malloc(mem_len*sizeof(generator_t)); 
-    }
-    ii[0] = 0;
-    int m=0;
-    for (int n=1; n<=N; n++) {
-        ii[n] = ii[n-1] + nLW[n-1];
-        for (int k=0; k<nLW[n-1]; k++) {            
-            if (m<N_LYNDON-1) { /* avoiding illegal W[N_LYNDON] */
-                W[m+1] = W[m]+n;
-                if (rightnormed) {
-                    R[m+1] = R[m]+n;
-                }
-            }
-            nn[m] = n;
-            m++;
-        }
-    }
-    assert(m==N_LYNDON);
-    for (int i=0; i<K; i++) {
-        p1[i] = i;
-        p2[i] = 0;
-    }
-
-    generator_t a[N+1];
-    size_t wp[N];
-    for (int i=0; i<N; i++) {
-        wp[i] = ii[i]; 
-    }
-    wp[0] = 1;
-    W[0][0] = 0;
-    WI[0] = 0;
-    DI[0] = 1;
-
-    for (int i=0; i<=N; i++) {
-        a[i] = 0; 
-    }
-    
-    genLW(K, N, 1, 1, a, wp);
-
-    if (VERBOSITY_LEVEL>=1) {
-        double t1 = toc(t0);
-        printf("#number of Lyndon words of length<=%i over set of %i letters: %li\n", N, K, N_LYNDON);
-        printf("#init Lyndon words: time=%g sec\n", t1);
-        if (VERBOSITY_LEVEL>=2) {
-            fflush(stdout);
-        }
-    }
-
-    if (rightnormed) {
-        double t0 = tic();
-
-        #pragma omp for schedule(dynamic,256) 
-        for (int i=0; i<N_LYNDON; i++) {
-            lyndon2rightnormed(nn[i], W[i], R[i]);
-        }
-        
-        if (VERBOSITY_LEVEL>=1) {
-            double t1 = toc(t0);
-            printf("#compute rightnormed basis elements: time=%g sec\n", t1);
-            if (VERBOSITY_LEVEL>=2) {
-                fflush(stdout);
-            }
-        }
-    }
-}
-
-static void free_lyndon_words(void) {
-    free(W[0]);
-    free(W);
-    free(ii);
-    free(WI);
-    free(DI);
-    /* Note: p1, p2, and nn are taken over by a lie_series_t struct
-       and are eventually freed by free_lie_series */
-}
-
-
-static inline size_t get_right_factors(size_t i, size_t J[], size_t kmax) {
-    size_t k = 0;
-    J[0] = i;
-    size_t l = i;
-    while ((k<kmax) && (p1[l]==0)) {
-        k++;
-        l = p2[l];
-        J[k] = l;
-    }
-    return k;
+    return DI;
 }
 

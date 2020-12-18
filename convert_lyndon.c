@@ -154,6 +154,8 @@ static void convert_to_lie_series(int N, INTEGER c[]) {
     size_t i1 = ii[N-1];
     size_t i2 = ii[N]-1;
 
+    uint32_t *DI  = multi_degree_indices( K, N_LYNDON, W, nn);
+
     size_t h1 = DI[i1];
     size_t h2 = DI[i2];
 
@@ -308,6 +310,7 @@ static void convert_to_lie_series(int N, INTEGER c[]) {
     }
     free(jj);
     }
+    free(DI);
 
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);

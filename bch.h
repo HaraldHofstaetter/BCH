@@ -64,6 +64,8 @@ typedef struct lie_series_t {
     uint32_t *p1;
     uint32_t *p2;
     uint8_t *nn;
+    uint32_t *ii;
+    generator_t **W;
     generator_t **R;
     INTEGER denom;
     INTEGER *c;
