@@ -175,6 +175,7 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int rightnormed) {
     }
     else {
         convert_to_lie_series(&LS, N);
+        LS.R = 0;
     }
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
@@ -211,6 +212,7 @@ lie_series_t BCH(size_t N, int rightnormed) {
             convert_to_lie_series(&LS, N-1);
             compute_BCH_terms_of_even_order_N(&LS);
         }
+        LS.R = 0;
     }
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
@@ -249,6 +251,7 @@ lie_series_t symBCH(size_t N, int rightnormed) {
     }
     else {
         convert_to_lie_series(&LS, N1);
+        LS.R = 0;
     }
     for (int i=0; i<LS.dim; i++) {
         int nA = degree_of_generator(&LS, i, 0);
@@ -276,19 +279,19 @@ lie_series_t symBCH(size_t N, int rightnormed) {
 
 
 void free_lie_series(lie_series_t LS) {
+    if (LS.W) {
+        free(LS.W[0]);
+        free(LS.W);
+    }
+    free(LS.nn);
     free(LS.p1);
     free(LS.p2);
-    free(LS.nn);
+    free(LS.ii);
     if (LS.R) {
         free(LS.R[0]);
         free(LS.R);
     }
     free(LS.c);
-    if (LS.W) {
-        free(LS.W[0]);
-        free(LS.W);
-    }
-    free(LS.ii);
 }
 
 
