@@ -63,9 +63,9 @@ typedef struct lie_series_t {
     uint32_t dim;  /* number of Lyndon words of length<=N */
     uint8_t **W;   /* W[i] ... ith Lyndon word, ordered primarily by length and 
                                secondarily by lexicographical order */
+    uint8_t *nn;   /* nn[i] = length of W[i] */
     uint32_t *p1;  /* standard factorization of W[i] is W[p1[i]]*W[p2[i]] */
     uint32_t *p2;
-    uint8_t *nn;   /* nn[i] = length of W[i] */
     uint32_t *ii;  /* W[ii[n-1]] = first Lyndon word of length n; 
                       W[ii[n]-1] = last Lyndon word of length n; 
                       ii[N] = dim */
@@ -98,15 +98,12 @@ enum {
 
 
 void print_lists(lie_series_t *LS, unsigned int what);
-int get_degree(lie_series_t *LS, size_t i);
-int get_degree_of_generator(lie_series_t *LS, size_t i, uint8_t g);
 void print_lyndon_word(lie_series_t *LS,  size_t i);
 void print_rightnormed_word(lie_series_t *LS,  size_t i);
 void print_basis_element(lie_series_t *LS,  size_t i);
 
 void free_lie_series(lie_series_t LS);
 
-void lyndon2rightnormed(int lw, uint8_t w[], uint8_t r[]);
 
 
 /**********************************************/
@@ -120,5 +117,6 @@ void compute_BCH_terms_of_even_order_N(lie_series_t *LS);
 void init_rightnormed(lie_series_t *LS);
 void compute_rightnormed_BCH_terms_of_even_orders(lie_series_t *LS);
 void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_orders_only);
+void lyndon2rightnormed(int lw, uint8_t w[], uint8_t r[]);
 
 #endif /*BCH_H */

@@ -56,6 +56,16 @@ size_t get_right_factors(size_t i, size_t J[], size_t kmax, uint32_t *p1, uint32
     return k;
 }
 
+static int degree_of_generator(lie_series_t *LS, size_t i, uint8_t g) {
+    if (i<LS->K) {
+        return i==g ? 1 : 0;
+    }
+    else {
+        return degree_of_generator(LS, LS->p1[i], g)
+              +degree_of_generator(LS, LS->p2[i], g);
+    }
+}
+
 
 static void compute_goldberg_coefficients(lie_series_t *LS, int N) {
     if (VERBOSITY_LEVEL>=1) {
@@ -241,7 +251,7 @@ lie_series_t symBCH(size_t N, int rightnormed) {
         convert_to_lie_series(&LS, N1);
     }
     for (int i=0; i<LS.dim; i++) {
-        int nA = get_degree_of_generator(&LS, i, 0);
+        int nA = degree_of_generator(&LS, i, 0);
         LS.c[i] <<= N-1-nA; /* c[i] = c[i]*2^(N-1-nA) */
     }
     LS.denom <<= N-1; /* denom = denom*2^(N-1) */
@@ -355,8 +365,7 @@ void print_lie_series_statistics(lie_series_t *LS) {
     int nonzero = 0;
     printf("# degree         dim    #nonzero   dim(cum.)   #nz(cum.)\n");
     for (int i=0; i<LS->dim; i++) {
-        int nn = get_degree(LS,i);
-        if (nn > n) { 
+        if (LS->nn[i] > n) { 
             dim += dim_n;
             nonzero += nonzero_n;
             printf("#  %5i  %10i  %10i  %10i  %10i\n", n, dim_n, nonzero_n, dim, nonzero);
@@ -375,27 +384,6 @@ void print_lie_series_statistics(lie_series_t *LS) {
     printf("#\n");
 }
 
-int get_degree(lie_series_t *LS, size_t i) {
-    return LS->nn[i];
-/*    
-    if (i<LS->K) {
-        return 1;
-    }
-    else {
-        return get_degree(LS, LS->p1[i])+get_degree(LS, LS->p2[i]);
-    }
-*/
-}
-
-int get_degree_of_generator(lie_series_t *LS, size_t i, uint8_t g) {
-    if (i<LS->K) {
-        return i==g ? 1 : 0;
-    }
-    else {
-        return get_degree_of_generator(LS, LS->p1[i], g)
-              +get_degree_of_generator(LS, LS->p2[i], g);
-    }
-}
 
 void print_lists(lie_series_t *LS, unsigned int what) {
     if (VERBOSITY_LEVEL>=1) {
@@ -412,11 +400,11 @@ void print_lists(lie_series_t *LS, unsigned int what) {
     }
     for (int i=0; i<LS->dim; i++) {
         if (what & PRINT_INDEX) printf("%i", i);
-        if (what & PRINT_DEGREE) printf("\t%i", get_degree(LS, i));
+        if (what & PRINT_DEGREE) printf("\t%i", LS->nn[i]);
         if (what & PRINT_MULTI_DEGREE) {
-            printf("\t(%i", get_degree_of_generator(LS, i, 0));
+            printf("\t(%i", degree_of_generator(LS, i, 0));
             for (int g=1; g<LS->K; g++) {
-                printf(",%i", get_degree_of_generator(LS, i, g));
+                printf(",%i", degree_of_generator(LS, i, g));
             }
             printf(")");
         }
