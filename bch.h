@@ -69,13 +69,12 @@ typedef struct lie_series_t {
     INTEGER *c;
 } lie_series_t;
 
-lie_series_t lie_series(size_t K, expr_t* expr, size_t N, size_t M, int rightnormed);
-lie_series_t BCH(size_t N, size_t M, int rightnormed);
-lie_series_t symBCH(size_t N, size_t M, int rightnormed);
+lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int rightnormed);
+lie_series_t BCH(size_t N, int rightnormed);
+lie_series_t symBCH(size_t N, int rightnormed);
 
 void set_verbosity_level(unsigned int verbosity_level);
 unsigned int get_verbosity_level(void);
-void set_max_lookup_size(size_t M);
 double tic(void); 
 double toc(double t0);
 
