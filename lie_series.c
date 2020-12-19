@@ -56,6 +56,9 @@ static int degree_of_generator(lie_series_t *LS, size_t i, uint8_t g) {
 
 
 static void compute_goldberg_coefficients(lie_series_t *LS, int N) {
+    /* computes coefficients of Lyndon words LS->W[] up to length N<=LS->N
+     * in log(exp(A)exp(B)) and stores them in LS->c[]
+     */
     if (VERBOSITY_LEVEL>=1) {
         printf("#expression=log(exp(A)*exp(A))\n");
         printf("#denominator="); print_INTEGER(LS->denom); printf("\n");
@@ -93,6 +96,9 @@ static void compute_goldberg_coefficients(lie_series_t *LS, int N) {
 
 
 static void compute_word_coefficients(lie_series_t *LS, int N, expr_t* ex) {
+    /* computes coefficients of Lyndon words LS->W[] up to length N<=LS->N
+     * in expression ex and stores them in LS->c[]
+     */
     if (VERBOSITY_LEVEL>=1) {
         printf("#expression="); print_expr(ex); printf("\n"); 
         printf("#denominator="); print_INTEGER(LS->denom); printf("\n");

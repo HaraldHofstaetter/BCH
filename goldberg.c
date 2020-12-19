@@ -78,59 +78,67 @@ extern INTEGER FACTORIAL[]; /* defined in phi.c */
 
 #ifndef USE_PHI_FOR_GOLDBERG    
 
-static void compute_goldberg_coeffs(INTEGER y[], uint8_t e[], int Afirst, INTEGER d, INTEGER *C) {
+static void compute_goldberg_coeffs(INTEGER y[], uint8_t q[], int Afirst, INTEGER d, INTEGER *C) {
+    /* INPUT: q[0],...,q[m-1]>=1 ... exponents in word of the form w=A^q[0]B^q[1]... or w=B^q[0]A^q[1]... 
+     *           depending on Afirst; q[m] = 0 is marker for first after last entry;
+     *        d ... common denominator
+     *        C ... auxilliary array of size at least N*N where N=q[0]+...+q[m-1]
+     * OUTPUT: y[k]/d is the coefficient of w[end:end-k] in log(exp(A)exp(B))
+     * METHOD: Algorithm 2 from the appendix of 
+     *   Harald Hofstätter, Smallest common denominators for the homogeneous components
+     *   of the Baker-Campbell-Hausdorff series, https://arxiv.org/abs/2012.03818
+     */
     int N = 0;
-    int L = 0;
-    for (; e[L]!=0; L++) {
-        N += e[L];
+    int m = 0;
+    for (; q[m]!=0; m++) {
+        N += q[m];
     }
     for (int n=0; n<N*N; n++) {
         C[n] = 0;
     }
-    int n = 0;
-    if (!(L%2)) {
-        Afirst = !Afirst;
+    int Acurrent = Afirst; 
+    if (!(m%2)) {
+        Acurrent = !Afirst;
     }
-    for (int l=1; l<=L; l++) {
-        int p = L-l;
-        for (int f=1; f<=e[p]; f++) {
+    int n = 0;
+    for (int i=m-1; i>=0; i--) {
+        for (int r=1; r<=q[i]; r++) {
             n += 1;
-            /* case k=1 */
-            INTEGER r = 0;
-            if (l==1) {
-                r = d/FACTORIAL[f];
+            INTEGER h = 0;
+            if (i==m-1) {
+                h = d/FACTORIAL[n];
             }
-            else if (Afirst && (l==2)) {
-                r = d/(FACTORIAL[f]*FACTORIAL[e[p+1]]);
+            else if (Acurrent && (i==m-2)) {
+                h = d/(FACTORIAL[r]*FACTORIAL[q[i+1]]);
             }
-            C[0 + (n-1)*N] = r;
+            C[0 + (n-1)*N] = h;
             for (int k=2; k<n; k++) { /* case k>=2 */
-                INTEGER r = 0;
-                for (int j=1; j<=f; j++) {
+                INTEGER h = 0;
+                for (int j=1; j<=r; j++) {
                     if ((n>j) && C[k-2 + (n-j-1)*N]!=0) {
-                        r += C[k-2 + (n-j-1)*N]/FACTORIAL[j];
+                        h += C[k-2 + (n-j-1)*N]/FACTORIAL[j];
                     }
                 }
-                if (Afirst && (l>=2)) {
-                    for (int j=1; j<=e[p+1]; j++) {
-                        if ((n>f+j) && C[k-2 + (n-f-j-1)*N]!=0){
-                            r += C[k-2 + (n-f-j-1)*N]/(FACTORIAL[f]*FACTORIAL[j]);
+                if (Acurrent && (i<=m-2)) {
+                    for (int j=1; j<=q[i+1]; j++) {
+                        if ((n>r+j) && C[k-2 + (n-r-j-1)*N]!=0){
+                            h += C[k-2 + (n-r-j-1)*N]/(FACTORIAL[r]*FACTORIAL[j]);
                         }
                     }
                 }
-                C[k-1 + (n-1)*N] = r;
+                C[k-1 + (n-1)*N] = h;
             }
             C[n-1 + (n-1)*N] = d;
         }
-        Afirst = !Afirst;
+        Acurrent = !Acurrent;
     }
     y[N] = 0;
     for (n=1;n<=N; n++) {
-        INTEGER r = 0;
+        INTEGER h = 0;
         for (int k=1; k<=N; k++) {
-            r += C[k-1 + (n-1)*N]/(k%2 ? +k : -k);
+            h += C[k-1 + (n-1)*N]/(k%2 ? +k : -k);
         }
-        y[N-n] = r;
+        y[N-n] = h;
     }
 }
 #endif
@@ -248,6 +256,11 @@ static int cumsum_partitions[33] = {1, 2, 4, 7, 12, 19, 30, 45, 67, 97, 139, 195
     14742, 18460, 23025, 28629, 35471, 43820};
 
 INTEGER goldberg_coefficient(int n, uint8_t w[], goldberg_t *G) {
+    /* INPUT: word w of length n, 
+     *        G ... struct as computed by function goldberg();
+     * OUTPUT: returns coefficient of word w in log(exp(A)exp(B));
+     * METHOD: binary search for entry in G corresponding to w.
+     */
     int x[n];
     for (int i=0; i<n; i++) {
         x[i] = 0;
