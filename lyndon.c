@@ -203,20 +203,23 @@ static void genLW(size_t K, size_t n, size_t t, size_t p, uint8_t a[], uint8_t *
 
 
 void init_lyndon_words(lie_series_t *LS) {
+    /* computes Lyndon words up to degree LS->N and data related to these Lyndon words
+     * and stores them in the fields W, nn, p1, p2, ii, and dim of the struct LS
+     */
     double t0 = tic();
     size_t nLW[LS->N];
     number_of_lyndon_words(LS->K, LS->N, nLW);
     size_t mem_len = 0;
-    size_t N_LYNDON = 0;
+    size_t dim = 0;
     for (int n=1; n<=LS->N; n++) {
-        N_LYNDON += nLW[n-1];
+        dim += nLW[n-1];
         mem_len += n*nLW[n-1];
     }
-    LS->dim = N_LYNDON;
-    LS->W = malloc(N_LYNDON*sizeof(uint8_t *));
-    LS->p1 = malloc(N_LYNDON*sizeof(uint32_t)); 
-    LS->p2 = malloc(N_LYNDON*sizeof(uint32_t)); 
-    LS->nn = malloc(N_LYNDON*sizeof(uint8_t)); 
+    LS->dim = dim;
+    LS->W = malloc(dim*sizeof(uint8_t *));
+    LS->p1 = malloc(dim*sizeof(uint32_t)); 
+    LS->p2 = malloc(dim*sizeof(uint32_t)); 
+    LS->nn = malloc(dim*sizeof(uint8_t)); 
     LS->ii = malloc((LS->N+1)*sizeof(uint32_t)); 
     LS->W[0] = malloc(mem_len*sizeof(uint8_t)); 
     LS->ii[0] = 0;
@@ -224,36 +227,39 @@ void init_lyndon_words(lie_series_t *LS) {
     for (int n=1; n<=LS->N; n++) {
         LS->ii[n] = LS->ii[n-1] + nLW[n-1];
         for (int k=0; k<nLW[n-1]; k++) {            
-            if (m<N_LYNDON-1) { /* avoiding illegal W[N_LYNDON] */
+            if (m<dim-1) { /* avoid illegal W[dim] */
                 LS->W[m+1] = LS->W[m]+n;
             }
             LS->nn[m] = n;
             m++;
         }
     }
-    assert(m==N_LYNDON);
+    assert(m==dim);
     for (int i=0; i<LS->K; i++) {
         LS->p1[i] = i;
         LS->p2[i] = 0;
+        LS->W[i][0] = i;
     }
 
-    uint8_t a[LS->N+1];
-    size_t wp[LS->N];
-    for (int i=0; i<LS->N; i++) {
-        wp[i] = LS->ii[i]; 
-    }
-    uint32_t *WI = malloc(N_LYNDON*sizeof(uint32_t));
-    wp[0] = 1;
-    LS->W[0][0] = 0;
-    WI[0] = 0;
-
-    for (int i=0; i<=LS->N; i++) {
-        a[i] = 0; 
-    }
+    if (LS->N>1) {
+        uint8_t a[LS->N+1];
+        size_t wp[LS->N];
+        for (int i=0; i<LS->N; i++) {
+            wp[i] = LS->ii[i]; 
+        }
+        uint32_t *WI = malloc(dim*sizeof(uint32_t));
+        wp[0] = 1;
+        LS->W[0][0] = 0;
+        WI[0] = 0;
     
-    genLW(LS->K, LS->N, 1, 1, a, LS->W, wp, WI, LS->p1, LS->p2, LS->ii);
+        for (int i=0; i<=LS->N; i++) {
+            a[i] = 0; 
+        }
+    
+        genLW(LS->K, LS->N, 1, 1, a, LS->W, wp, WI, LS->p1, LS->p2, LS->ii);
 
-    free(WI);
+        free(WI);
+    }
 
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);

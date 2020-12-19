@@ -6,6 +6,7 @@
 #endif
 
 #define SIMD_VECTORIZED 1
+// #define USE_SIMD_INTRINSICS 1
 
 extern unsigned int VERBOSITY_LEVEL;
 
@@ -72,19 +73,20 @@ static uint32_t P_append(P_t *P, u_int32_t i, uint8_t l, uint32_t *p1, uint32_t 
     uint64_t key = (((uint64_t) i)<< 8) | l;
     khint_t k = kh_get(P_Dict, P->H, key);  // query the hash table
     if (k == kh_end(P->H)) {                // test if the key is missing
-        uint32_t        a11 = P_append(P, p1[i], l,           p1, p2, nn);
-        uint32_t        a12 = P_append(P, p1[i], l+nn[p2[i]], p1, p2, nn);
-        uint32_t        a21 = P_append(P, p2[i], l,           p1, p2, nn);
-        uint32_t        a22 = P_append(P, p2[i], l+nn[p1[i]], p1, p2, nn);
-        if (P->len>=P->maxlen) {
-            P->maxlen *= 2;
-            P->L = realloc(P->L, sizeof(P_line_t)*P->maxlen);
+        if (nn[i]>1) {
+            uint32_t        a11 = P_append(P, p1[i], l,           p1, p2, nn);
+            uint32_t        a12 = P_append(P, p1[i], l+nn[p2[i]], p1, p2, nn);
+            uint32_t        a21 = P_append(P, p2[i], l,           p1, p2, nn);
+            uint32_t        a22 = P_append(P, p2[i], l+nn[p1[i]], p1, p2, nn);
+            if (P->len>=P->maxlen) {
+                P->maxlen *= 2;
+                P->L = realloc(P->L, sizeof(P_line_t)*P->maxlen);
+            }
+            P->L[P->len].a11 = a11;
+            P->L[P->len].a12 = a12;
+            P->L[P->len].a21 = a21;
+            P->L[P->len].a22 = a22;
         }
-        P->L[P->len].a11 = a11;
-        P->L[P->len].a12 = a12;
-        P->L[P->len].a21 = a21;
-        P->L[P->len].a22 = a22;
-
         int absent;
         k = kh_put(P_Dict, P->H, key, &absent);  // insert a key to the hash table
         kh_val(P->H, k) = P->len;
@@ -98,7 +100,9 @@ static uint32_t P_append(P_t *P, u_int32_t i, uint8_t l, uint32_t *p1, uint32_t 
 
 
 #ifdef SIMD_VECTORIZED
-// #include <smmintrin.h>
+#ifdef USE_SIMD_INTRINSICS    
+#include <smmintrin.h>
+#endif
 
 typedef int32_t v4int32_t __attribute__ ((vector_size(16), aligned(16)));
 
@@ -116,10 +120,11 @@ static void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t 
             X[k*P->n+i][3] = w3[i]==k ? 1 : 0;
         }
     }
+#ifndef USE_SIMD_INTRINSICS    
     for (int p=P->K*P->n; p<=stop; p++) {
        X[p] = X[L[p].a11]*X[L[p].a22] - X[L[p].a12]*X[L[p].a21];
     }
-   /*
+#else
     for (int p=P->K*P->n; p<=stop; p++) {
         __m128i x11 = _mm_load_si128( (__m128i*) X + L[p].a11 );
         __m128i x12 = _mm_load_si128( (__m128i*) X + L[p].a12 );
@@ -130,12 +135,12 @@ static void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t 
         __m128i y = _mm_sub_epi32(x11x22, x12x21);
         _mm_store_si128( (__m128i*) X +p, y);  
     }
-    */
+    
+#endif 
 }
-
 #else
 
-static void P_run(int32_t *X, P_t *P, uint8_t w[], uint32_t stop) {
+static void P_run(int32_t *X, P_t *P, uint8_t w[], uint32_t stop) { 
     if (stop>=P->len) {
         stop = P->len-1;
     }

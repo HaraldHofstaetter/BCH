@@ -3,6 +3,8 @@
 #include<stdio.h>
 #include<assert.h>
 
+/* #define USE_PHI_FOR_GOLDBERG 1 */
+
 
 /* n_partitions[n] = number of partitions of given number n, hardcoded for simplicity.
  * See: https://oeis.org/A000041

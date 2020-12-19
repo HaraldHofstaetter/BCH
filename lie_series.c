@@ -8,18 +8,6 @@
 #include <omp.h>
 #endif
 
-//static uint8_t K;             /* number of generators */
-//static uint8_t N;             /* maximum length of Lyndon words (=maximum order of Lie series expansion) */
-//static uint8_t **W=NULL; /* W[i] ... ith Lyndon word, ordered primarily by length and 
-//                                secondarily by lexicographical order */
-//static uint8_t **R=NULL; /* R[i] ... ith rightnormed basis element corresponding to ith Lyndon word */
-//static uint32_t *p1=NULL;    /* standard factorization of W[i] is W[p1[i]]*W[p2[i]] */
-//static uint32_t *p2=NULL;
-//static uint8_t  *nn=NULL;    /* nn[i] = length of W[i] */
-//static uint32_t *ii=NULL;    /* W[ii[n-1]] = first Lyndon word of length n; 
-//                                W[ii[n]-1] = last Lyndon word of length n */
-//static size_t N_LYNDON;      /* number of Lyndon words of length <=N, N_LYNDON = ii[N] */
-
 unsigned int VERBOSITY_LEVEL = 0;
 
 double tic(void) {
