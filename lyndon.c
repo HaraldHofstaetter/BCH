@@ -329,7 +329,7 @@ static size_t multi_degree_index(size_t K, uint8_t w[], size_t l, size_t r) {
 uint32_t* multi_degree_indices(size_t K, size_t dim,  uint8_t **W, uint8_t *nn) {
     uint32_t *DI = malloc(dim*sizeof(uint32_t));
     for (int i=0; i<dim; i++) {
-        DI[i] = multi_degree_index(K, W[i], 0, nn[i-1]);
+        DI[i] = multi_degree_index(K, W[i], 0, nn[i]-1);
     }
     return DI;
 }
