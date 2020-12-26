@@ -386,7 +386,7 @@ INTEGER beta_den[16] = {2, 24, 240, 40320, 725760, 159667200, 12454041600, 20922
     263130836933693530*H+167218012160000000};
 
 
-void  compute_BCH_terms_of_even_order_N(lie_series_t *LS) {
+void compute_BCH_terms_of_even_order_N(lie_series_t *LS) {
     double t0 = tic();
     assert(!(LS->N&1));
 

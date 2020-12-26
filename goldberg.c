@@ -83,8 +83,8 @@ static void compute_goldberg_coeffs(INTEGER y[], uint8_t q[], int Afirst, INTEGE
      *           depending on Afirst; q[m] = 0 is marker for first after last entry;
      *        d ... common denominator
      *        C ... auxilliary array of size at least N*N where N=q[0]+...+q[m-1]
-     * OUTPUT: y[k]/d is the coefficient of w[end:end-k] in log(exp(A)exp(B))
-     * METHOD: Algorithm 2 from the appendix of 
+     * OUTPUT: y[k]/d is the coefficient of tight subword w[end:end-k] of w in log(exp(A)exp(B))
+     * METHOD: Algorithm 2 from the appendix of: 
      *   Harald Hofstätter, Smallest common denominators for the homogeneous components
      *   of the Baker-Campbell-Hausdorff series, https://arxiv.org/abs/2012.03818
      */
