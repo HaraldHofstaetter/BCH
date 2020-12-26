@@ -154,7 +154,7 @@ static void compute_word_coefficients(lie_series_t *LS, int N, expr_t* ex) {
 
 
 
-lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int rightnormed) {
+lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis) {
     double t0 = tic();
     lie_series_t LS;
     LS.K = K;
@@ -163,7 +163,7 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int rightnormed) {
     LS.c = malloc(LS.dim*sizeof(INTEGER));
     LS.denom = common_denominator(N, expr);
     compute_word_coefficients(&LS, N, expr);
-    if (rightnormed) {
+    if (basis==RIGHTNORMED_BASIS) {
         init_rightnormed(&LS);
         convert_to_rightnormed_lie_series(&LS, N, 0);
     }
@@ -182,7 +182,7 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int rightnormed) {
 }
 
 
-lie_series_t BCH(size_t N, int rightnormed) {
+lie_series_t BCH(size_t N, int basis) {
     double t0 = tic();
     lie_series_t LS;
     LS.K = 2;
@@ -190,7 +190,7 @@ lie_series_t BCH(size_t N, int rightnormed) {
     init_lyndon_words(&LS);
     LS.c = malloc(LS.dim*sizeof(INTEGER));
     LS.denom = common_denominator(N, 0);
-    if (rightnormed) {
+    if (basis==RIGHTNORMED_BASIS) {
         init_rightnormed(&LS);
         compute_goldberg_coefficients(&LS, N);
         convert_to_rightnormed_lie_series(&LS, N, 1);
@@ -219,7 +219,7 @@ lie_series_t BCH(size_t N, int rightnormed) {
 }
 
 
-lie_series_t symBCH(size_t N, int rightnormed) {
+lie_series_t symBCH(size_t N, int basis) {
     double t0 = tic();
     lie_series_t LS;
     LS.K = 2;
@@ -239,7 +239,7 @@ lie_series_t symBCH(size_t N, int rightnormed) {
     }
     int N1 = N%2 ? N : N-1;
     compute_word_coefficients(&LS, N1, expr);
-    if (rightnormed) {
+    if (basis==RIGHTNORMED_BASIS) {
         init_rightnormed(&LS);
         convert_to_rightnormed_lie_series(&LS, N1, 1);
     }

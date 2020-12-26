@@ -56,6 +56,12 @@ INTEGER goldberg_coefficient(int n, uint8_t w[], goldberg_t *G);
 void print_goldberg(goldberg_t *G);
 void free_goldberg(goldberg_t G);
 
+enum {
+    LYNDON_BASIS = 0,
+    RIGHTNORMED_BASIS = 1,
+    HALL_BASIS = 2
+};        
+
 
 typedef struct lie_series_t {
     uint8_t K;     /* number of generators */
@@ -74,9 +80,9 @@ typedef struct lie_series_t {
     INTEGER *c;
 } lie_series_t;
 
-lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int rightnormed);
-lie_series_t BCH(size_t N, int rightnormed);
-lie_series_t symBCH(size_t N, int rightnormed);
+lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis);
+lie_series_t BCH(size_t N, int basis);
+lie_series_t symBCH(size_t N, int basis);
 
 void set_verbosity_level(unsigned int verbosity_level);
 unsigned int get_verbosity_level(void);
