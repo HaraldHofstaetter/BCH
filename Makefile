@@ -22,7 +22,7 @@ OBJS = phi.o lie_series.o lyndon.o rightnormed.o goldberg.o \
 $(SHARED_LIB): $(OBJS)
 	$(MAKE_SHARED_LIB) -o $(SHARED_LIB) $(OBJS) 
 
-bch: $(SHARED_LIB) bch.h 
+bch: $(SHARED_LIB) bch.h bch.c 
 	$(CC) $(CFLAGS) bch.c -o bch -L. -lbch
 
 clean:
