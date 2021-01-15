@@ -196,22 +196,8 @@ static void fraction_free_lu(int n, int64_t *A, uint32_t *p) {
     }
 }
 
-static void permute(int n, INTEGER *x, uint32_t* p) {
-    /* inplace permute: x[:] = x[p] */
-    for (int i=0; i<n; i++) {
-        int j = p[i];
-        while (j<i) {
-            j = p[j];
-        }
-        INTEGER h = x[i];
-        x[i] = x[j];
-        x[j] = h;
-    }
-}
 
-
-static int64_t fraction_free_lu_solve(int n, int64_t *A, uint32_t *p, INTEGER *x) {
-    permute(n, x, p);
+static int64_t fraction_free_lu_solve(int n, int64_t *A, INTEGER *x) {
     int64_t oldpivot = 1;
     for (int k=0; k<n-1; k++) {
         int64_t pivot = A[k+n*k];
@@ -222,7 +208,7 @@ static int64_t fraction_free_lu_solve(int n, int64_t *A, uint32_t *p, INTEGER *x
     }
 
     int64_t d = A[n-1+n*(n-1)];
-    for (int i=n-2; i>=0; i--) {
+    for (int i=n-1; i>=0; i--) {
         INTEGER h = 0;
         for (int j=i+1; j<n; j++) {
             h += A[i+j*n]*x[j];
@@ -240,6 +226,10 @@ void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
     }
     uint32_t *DI_lyndon  = multi_degree_indices(LS->K, LS->dim, LS->W, LS->nn);
     uint32_t *DI_hall = hall_multi_degree_indices(LS->K, LS->dim, LS->p1, LS->p2);
+    INTEGER *c_hall =malloc(LS->dim*sizeof(INTEGER));
+    for (int i=0; i<=LS->K; i++) {
+        c_hall[i] = LS->c[i];
+    }
 
     for (int n=2; n<=N; n++) { /* over all word sizes */
     if ((!odd_orders_only)||(n&1)) {
@@ -295,7 +285,7 @@ void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
             }
             int32_t *X = malloc((P->len)*sizeof(int32_t));
 
-            /* set up matrix and right-hand side */
+            /* set up matrix */
             INTEGER *x = calloc(m, sizeof(INTEGER));
             int64_t *A = calloc(m*m, sizeof(int64_t));
             for (int i=0; i<m; i++) {
@@ -304,16 +294,29 @@ void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
                 for (int j=0; j<m; j++) {
                     A[i+j*m] = X[r[p0[m-j-1]]];
                 }
-                x[i] = LS->c[I[m-i-1]];
             }
 
             uint32_t* p1 = malloc(m*sizeof(uint32_t));
             fraction_free_lu(m, A, p1);
-            fraction_free_lu_solve(m, A, p1, x);
+
+            /* set up righthand side */
+            for (int i=0; i<m; i++) {
+                x[i] = LS->c[I[m-p1[i]-1]];
+            }
+
+            int64_t det = fraction_free_lu_solve(m, A, x);
+            assert(llabs(det)==1);
 
             /* copy result */
-            for (int j=0; j<m; j++) {
-                 LS->c[J[j]] = x[p0[m-j-1]];
+            if (det==1) {
+                for (int j=0; j<m; j++) {
+                     c_hall[J[p0[m-j-1]]] = x[j];
+                }
+            }
+            else { /* det==-1 */
+                for (int j=0; j<m; j++) {
+                     c_hall[J[p0[m-j-1]]] = -x[j];
+                }
             }
 
             free(WI1);
@@ -334,6 +337,8 @@ void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
         }
     }
     }
+    free(LS->c);
+    LS->c = c_hall;
     free(WI);
     free(DI_lyndon);
     free(DI_hall);
