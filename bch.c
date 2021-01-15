@@ -54,7 +54,7 @@ int main(int argc, char*argv[]) {
         return EXIT_SUCCESS;
     }
 
-    int basis = get_arg(argc, argv, "basis", 0, 0, 1);
+    int basis = get_arg(argc, argv, "basis", 0, 0, 2);
 
     expr_t *A = generator(0);
     expr_t *B = generator(1);
@@ -118,7 +118,7 @@ int main(int argc, char*argv[]) {
                 PRINT_INDEX           *get_arg(argc, argv, "print_index",         1, 0, 1) |
                 PRINT_DEGREE          *get_arg(argc, argv, "print_degree",        1, 0, 1) |
                 PRINT_MULTI_DEGREE    *get_arg(argc, argv, "print_multi_degree",  0, 0, 1) |
-                PRINT_FACTORS         *get_arg(argc, argv, "print_factors",       basis==LYNDON_BASIS ? 1 : 0, 0, 1) |
+                PRINT_FACTORS         *get_arg(argc, argv, "print_factors",       (basis==LYNDON_BASIS)||(basis==HALL_BASIS) ? 1 : 0, 0, 1) |
                 PRINT_LYNDON_WORD     *get_arg(argc, argv, "print_lyndon_word",   0, 0, 1) |
                 PRINT_RIGHTNORMED_WORD*get_arg(argc, argv, "print_rightnormed_word", basis==RIGHTNORMED_BASIS ? 1 : 0, 0, 1) |
                 PRINT_BASIS_ELEMENT   *get_arg(argc, argv, "print_basis_element", 0, 0, 1) |

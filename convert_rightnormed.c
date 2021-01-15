@@ -61,11 +61,11 @@ static void integer_lu_solve(int n, int64_t *A, INTEGER *x) {
 
 void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
     double t0 = tic();
+    uint32_t *DI  = multi_degree_indices( LS->K, LS->dim, LS->W, LS->nn);
     for (int n=2; n<=N; n++) { /* over all word sizes */
     if ((!odd_orders_only)||(n&1)) {
         size_t i1 = LS->ii[n-1];
         size_t i2 = LS->ii[n]-1;
-        uint32_t *DI  = multi_degree_indices( LS->K, LS->dim, LS->W, LS->nn);
         size_t h1 = DI[i1];
         size_t h2 = DI[i2];
         for (int h=h1; h<=h2; h++) { /* over all multi-degrees */
@@ -113,7 +113,6 @@ void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_orders_o
             free(x);
             free(A);
         }
-        free(DI);
     }
     else {
         for (int j=LS->ii[n-1]; j<=LS->ii[n]-1; j++) {
@@ -121,6 +120,8 @@ void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_orders_o
         }
     }
     }
+    free(DI);
+
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
         printf("#convert to rightnormed lie series: time=%g sec\n", t1);

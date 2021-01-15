@@ -73,7 +73,9 @@ static void number_of_lyndon_words(uint8_t K, size_t N, size_t nLW[N]) {
     }
 }
 
-static size_t word_index(size_t K, uint8_t w[], size_t l, size_t r) {
+
+/* not static because also neede in convert_hall.c */
+size_t word_index(size_t K, uint8_t w[], size_t l, size_t r) {
     /* computes the index of the subword w[l:r] of w starting at position l and
      * ending at position r. The index is given as w[l:r] interpreted as a K-adic
      * number plus the number (K^n-1)/(K-1)-1 of words of length < n, where 
@@ -97,7 +99,8 @@ static size_t word_index(size_t K, uint8_t w[], size_t l, size_t r) {
     }
 }
 
-static size_t find_lyndon_word_index(uint32_t *WI, size_t l, size_t r, size_t wi) {
+/* not static because also neede in convert_hall.c */
+size_t find_lyndon_word_index(uint32_t *WI, size_t l, size_t r, size_t wi) {
     /* finds index wi in the sorted list of indices WI. Start search at position l 
      * and stop it at position r. This function is only applied in situations where 
      * the search will not fail.
@@ -303,7 +306,8 @@ static unsigned int binomial(unsigned int n, unsigned int k) {
     return x;
 }
 
-static size_t tuple(size_t K, size_t h[]) {
+/* not static, also needed in convert_hall.c */
+size_t tuple_index(size_t K, uint8_t h[]) {
     if (K==2) {
         int s = h[0]+h[1];
         return ((s*(s+1))>>1)+h[1];
@@ -320,14 +324,14 @@ static size_t tuple(size_t K, size_t h[]) {
 }
 
 static size_t multi_degree_index(size_t K, uint8_t w[], size_t l, size_t r) {
-    size_t h[K];
+    uint8_t h[K];
     for (int j=0; j<K; j++) {
         h[j] = 0;
     }
     for (int j=l; j<=r; j++) {
         h[w[j]]++;
     }
-    return tuple(K, h); 
+    return tuple_index(K, h); 
 }
 
 

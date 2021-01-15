@@ -5,34 +5,14 @@
 #include <omp.h>
 #endif
 
-#define SIMD_VECTORIZED 1
-// #define USE_SIMD_INTRINSICS 1
-
 extern unsigned int VERBOSITY_LEVEL;
 
 #include"khash.h"
 KHASH_MAP_INIT_INT64(P_Dict, uint32_t)      // instantiate structs and methods
     
+typedef khash_t(P_Dict) PH;
 
-typedef struct P_line_t {
-    uint32_t a11;
-    uint32_t a12;
-    uint32_t a21;
-    uint32_t a22;
-} P_line_t;
-
-
-typedef struct P_t {
-    P_line_t *L;
-    uint32_t len;
-    uint32_t maxlen;
-    uint8_t n;
-    uint8_t K;
-    khash_t(P_Dict) *H;
-} P_t;
-
-
-static P_t *P_init(uint8_t K, uint8_t n, uint32_t len) {
+P_t *P_init(uint8_t K, uint8_t n, uint32_t len) {
     P_t *P = malloc(sizeof(P_t));
     P->H = kh_init(P_Dict);  // allocate hash table
     P->n = n;
@@ -52,8 +32,8 @@ static P_t *P_init(uint8_t K, uint8_t n, uint32_t len) {
             P->L[l].a22 = 0;
             uint64_t key = (((uint64_t) i)<< 8) | j;
             int absent;
-            k = kh_put(P_Dict, P->H, key, &absent);  // insert a key to the hash table
-            kh_val(P->H, k) = l;
+            k = kh_put(P_Dict, (PH*) P->H, key, &absent);  // insert a key to the hash table
+            kh_val((PH*) P->H, k) = l;
             l++;
         }    
     }
@@ -62,17 +42,17 @@ static P_t *P_init(uint8_t K, uint8_t n, uint32_t len) {
 }
 
 
-static void P_free(P_t *P) {
+void P_free(P_t *P) {
     free(P->L);
-    kh_destroy(P_Dict, P->H);  // deallocate hash table
+    kh_destroy(P_Dict, (PH*) P->H);  // deallocate hash table
     free(P);
 }
 
 
-static uint32_t P_append(P_t *P, u_int32_t i, uint8_t l, uint32_t *p1, uint32_t *p2, uint8_t* nn) {
+uint32_t P_append(P_t *P, uint32_t i, uint8_t l, uint32_t *p1, uint32_t *p2, uint8_t* nn) {
     uint64_t key = (((uint64_t) i)<< 8) | l;
-    khint_t k = kh_get(P_Dict, P->H, key);  // query the hash table
-    if (k == kh_end(P->H)) {                // test if the key is missing
+    khint_t k = kh_get(P_Dict, (PH*) P->H, key);  // query the hash table
+    if (k == kh_end((PH*) P->H)) {                // test if the key is missing
         if (nn[i]>1) {
             uint32_t        a11 = P_append(P, p1[i], l,           p1, p2, nn);
             uint32_t        a12 = P_append(P, p1[i], l+nn[p2[i]], p1, p2, nn);
@@ -88,13 +68,13 @@ static uint32_t P_append(P_t *P, u_int32_t i, uint8_t l, uint32_t *p1, uint32_t 
             P->L[P->len].a22 = a22;
         }
         int absent;
-        k = kh_put(P_Dict, P->H, key, &absent);  // insert a key to the hash table
-        kh_val(P->H, k) = P->len;
+        k = kh_put(P_Dict, (PH*) P->H, key, &absent);  // insert a key to the hash table
+        kh_val((PH*) P->H, k) = P->len;
         P->len++;
         return (P->len-1);
     }
     else {
-        return kh_val(P->H, k);
+        return kh_val((PH*) P->H, k);
     }
 }
 
@@ -104,9 +84,7 @@ static uint32_t P_append(P_t *P, u_int32_t i, uint8_t l, uint32_t *p1, uint32_t 
 #include <smmintrin.h>
 #endif
 
-typedef int32_t v4int32_t __attribute__ ((vector_size(16), aligned(16)));
-
-static void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t w2[], uint8_t w3[], uint32_t stop) {
+void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t w2[], uint8_t w3[], uint32_t stop) {
     v4int32_t *X = __builtin_assume_aligned (X0, 16);
     if (stop>=P->len) {
         stop = P->len-1;
@@ -140,7 +118,7 @@ static void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t 
 }
 #else
 
-static void P_run(int32_t *X, P_t *P, uint8_t w[], uint32_t stop) { 
+void P_run(int32_t *X, P_t *P, uint8_t w[], uint32_t stop) { 
     if (stop>=P->len) {
         stop = P->len-1;
     }
