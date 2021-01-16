@@ -99,8 +99,7 @@ size_t word_index(size_t K, uint8_t w[], size_t l, size_t r) {
     }
 }
 
-/* not static because also neede in convert_hall.c */
-size_t find_lyndon_word_index(uint32_t *WI, size_t l, size_t r, size_t wi) {
+static size_t find_lyndon_word_index(uint32_t *WI, size_t l, size_t r, size_t wi) {
     /* finds index wi in the sorted list of indices WI. Start search at position l 
      * and stop it at position r. This function is only applied in situations where 
      * the search will not fail.

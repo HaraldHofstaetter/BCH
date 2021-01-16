@@ -118,7 +118,6 @@ double toc(double t0);
 size_t get_right_factors(size_t i, size_t J[], size_t kmax, uint32_t *p1, uint32_t *p2);
 void init_lyndon_words(lie_series_t *LS);
 size_t word_index(size_t K, uint8_t w[], size_t l, size_t r);
-size_t find_lyndon_word_index(uint32_t *WI, size_t l, size_t r, size_t wi);
 size_t tuple_index(size_t K, uint8_t h[]);
 uint32_t* multi_degree_indices(size_t K, size_t dim,  uint8_t **W, uint8_t *nn);
 void convert_to_lie_series(lie_series_t *LS, int N);

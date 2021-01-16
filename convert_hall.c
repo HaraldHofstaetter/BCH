@@ -87,7 +87,7 @@ static void leading_word(int K, int i, uint8_t w[], uint8_t *nn, uint32_t *p1, u
     leading_word(K, p2[i], w2, nn, p1, p2);
     int c = compare_w1w2_w2w1(n1, w1, n2, w2);
     int k=0;
-    if (c<=0) {
+    if (c<0) {
         for (int j=0; j<n1; j++) {
             w[k] = w1[j];
             k++;
@@ -108,6 +108,28 @@ static void leading_word(int K, int i, uint8_t w[], uint8_t *nn, uint32_t *p1, u
         }
     }
     // assert(k==nn[i]);
+}
+
+
+static size_t find_smallest_lyndon_word_index(uint32_t *WI, size_t l, size_t r, size_t wi) {
+    /* finds smallest index not less than wi in the sorted list of indices WI. 
+     * Start search at position l and stop it at position r. 
+     * METHOD: binary search, 
+     * See also: lyndon.c/find_lyndon_word_index
+     */
+    while (l<=r) {
+        size_t m = l + (r-l)/2;
+        if (WI[m]==wi) {
+            return m;
+        }
+        if (WI[m]<wi) {
+            l = m+1;
+        }
+        else {
+            r = m-1;
+        }
+    }
+    return l;
 }
 
 
@@ -159,7 +181,7 @@ static void fraction_free_lu(int n, int64_t *A, uint32_t *p) {
             }
         }
         if (kpivot>=n) {
-            fprintf(stderr, "ERROR: fraction-free LU factorization does not exist"); 
+            fprintf(stderr, "ERROR: fraction-free LU factorization does not exist\n"); 
             exit(EXIT_FAILURE);
         }
         if (kpivot!=k) { /* swap k-th and kpivot-th row */
@@ -237,6 +259,7 @@ void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
         size_t i2 = LS->ii[n]-1;
         size_t h1 = DI_lyndon[i1];
         size_t h2 = DI_lyndon[i2];
+        #pragma omp parallel for schedule(dynamic,1)
         for (int h=h1; h<=h2; h++) { /* over all multi-degrees */
             /* get dimension */
             int m=0;
@@ -271,7 +294,7 @@ void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
             for (int j=0; j<m; j++) {
                 leading_word(LS->K, J[j], w, LS->nn, LS->p1, LS->p2);
                 int i = word_index(LS->K, w, 0, n-1);
-                LWI[j] = find_lyndon_word_index(WI1, 0, m-1, i);
+                LWI[j] = find_smallest_lyndon_word_index(WI1, 0, m-1, i);
             }
             uint32_t* p0 = malloc(m*sizeof(uint32_t));
             sortperm(m, LWI, p0);
