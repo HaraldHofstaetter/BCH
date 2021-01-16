@@ -59,7 +59,10 @@ void free_goldberg(goldberg_t G);
 enum {
     LYNDON_BASIS = 0,
     RIGHTNORMED_BASIS = 1,
-    HALL_BASIS = 2
+    HALL_BASIS = 2,
+    REVERSE_HALL_BASIS = 3,
+    LYNDON_AS_HALL_BASIS = 4,
+    REVERSE_LYNDON_AS_HALL_BASIS = 5
 };        
 
 
@@ -126,10 +129,22 @@ void init_rightnormed(lie_series_t *LS);
 void compute_rightnormed_BCH_terms_of_even_orders(lie_series_t *LS);
 void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_orders_only);
 void lyndon2rightnormed(int lw, uint8_t w[], uint8_t r[]);
-void init_hall(lie_series_t *LS);
+void init_hall(lie_series_t *LS, int basis);
 void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only);
 
-// #define SIMD_VECTORIZED 1
+#define USE_INT128_T_FOR_FRACTION_FREE_LU 1
+
+#ifdef USE_INT128_T_FOR_FRACTION_FREE_LU
+typedef __int128_t INT_FF_LU_T; 
+/* INT128_MAX does not exist in stdint.h */
+static const __int128_t INT_FF_LU_MAX = (__int128_t)(((__uint128_t) -1) >> 1);
+#else
+typedef int64_t INT_FF_LU_T;
+static const int64_t INT_FF_LU_MAX = INT64_MAX;
+#endif
+
+
+#define SIMD_VECTORIZED 1
 // #define USE_SIMD_INTRINSICS 1
 
 typedef struct P_line_t {

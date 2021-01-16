@@ -167,8 +167,8 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis) {
         init_rightnormed(&LS);
         convert_to_rightnormed_lie_series(&LS, N, 0);
     }
-    else if (basis==HALL_BASIS) {
-        init_hall(&LS);
+    else if (basis>=HALL_BASIS) {
+        init_hall(&LS, basis);
         convert_to_hall_lie_series(&LS, N, 0);
         LS.R = 0;
     }
@@ -201,8 +201,8 @@ lie_series_t BCH(size_t N, int basis) {
         convert_to_rightnormed_lie_series(&LS, N, 1);
         compute_rightnormed_BCH_terms_of_even_orders(&LS);
     }
-    else if (basis==HALL_BASIS) {
-        init_hall(&LS);
+    else if (basis>=HALL_BASIS) {
+        init_hall(&LS, basis);
         compute_goldberg_coefficients(&LS, N);
         convert_to_hall_lie_series(&LS, N, 0);
         LS.R = 0;
@@ -254,8 +254,8 @@ lie_series_t symBCH(size_t N, int basis) {
         init_rightnormed(&LS);
         convert_to_rightnormed_lie_series(&LS, N1, 1);
     }
-    else if (basis==HALL_BASIS) {
-        init_hall(&LS);
+    else if (basis>=HALL_BASIS) {
+        init_hall(&LS, basis);
         convert_to_hall_lie_series(&LS, N1, 1);
         LS.R = 0;
     }

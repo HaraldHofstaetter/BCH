@@ -6,14 +6,32 @@
 extern unsigned int VERBOSITY_LEVEL;
 
 
-void init_hall(lie_series_t *LS) {
+void init_hall(lie_series_t *LS, int basis) {
     /* METHOD: Algorithm 1 in Section II.B of
      * F. Casas, A. Murua, An efficient algoritzhm for computing the 
      * Baker-Campbell-Hausdorff series and some of its applications,
      * J. Math. Phys. 50, 033513 (2009).
      */
-    uint32_t *p1= LS->p1;
-    uint32_t *p2= LS->p2;
+    if (basis==LYNDON_AS_HALL_BASIS) {
+        /* leave p1, p2 as they are */
+        return;
+    }
+    if (basis==REVERSE_LYNDON_AS_HALL_BASIS) {
+        /* swap p1, p2 */
+        uint32_t *h = LS->p1;
+        LS->p1 = LS->p2;
+        LS->p2 = h;
+        return;
+    }
+    uint32_t *p1, *p2;
+    if (basis==REVERSE_HALL_BASIS) {
+        p1 = LS->p2;
+        p2 = LS->p1;
+    }
+    else {
+        p1 = LS->p1;
+        p2 = LS->p2;
+    }
     uint8_t *nn= LS->nn;
     for (int i=0; i<LS->K; i++) {
         p1[i] = i;
@@ -154,6 +172,11 @@ static void sortperm(int n, uint32_t a[], uint32_t p[]) {
 }
 
 
+static inline INT_FF_LU_T IABS(INT_FF_LU_T x) {
+    return x>=0 ? x : -x;
+}
+
+
 /* W. Zhou, D.J. Jeffrey, Fraction-free matrix factors: new forms for 
  * LU and QR factors, Front. Comput. Sci. China 2 (1) (2008)1–13.
  *
@@ -163,19 +186,19 @@ static void sortperm(int n, uint32_t a[], uint32_t p[]) {
  */
 
 
-static void fraction_free_lu(int n, int64_t *A, uint32_t *p) {
+static void fraction_free_lu(int n, INT_FF_LU_T *A, uint32_t *p) {
     for (int i=0; i<n; i++) {
         p[i] = i;
     }
-    int64_t oldpivot = 1;
+    INT_FF_LU_T oldpivot = 1;
     for (int k=0; k<n; k++) {
-        int64_t pivot = INT64_MAX;
+        INT_FF_LU_T pivot = INT_FF_LU_MAX;
         int kpivot = n;
         for (int i=k; i<n; i++) { /* search for smallest nonzero pivot */
-            if ((A[i+n*k]!=0) && (llabs(A[i+n*k])<llabs(pivot))) {
+            if ((A[i+n*k]!=0) && (IABS(A[i+n*k])<IABS(pivot))) {
                 kpivot = i;
                 pivot = A[i+n*k];
-                if (llabs(pivot)==1) { /* pivot already as small as possible */
+                if (IABS(pivot)==1) { /* pivot already as small as possible */
                     break;
                 }
             }
@@ -186,7 +209,7 @@ static void fraction_free_lu(int n, int64_t *A, uint32_t *p) {
         }
         if (kpivot!=k) { /* swap k-th and kpivot-th row */
             for (int i=0; i<n; i++) {
-                int64_t h = A[k+n*i];
+                INT_FF_LU_T h = A[k+n*i];
                 A[k+n*i] = A[kpivot+n*i];
                 A[kpivot+n*i] = h;
             }
@@ -195,7 +218,7 @@ static void fraction_free_lu(int n, int64_t *A, uint32_t *p) {
             p[kpivot] = h;
         }
         for (int i=k+1; i<n; i++) {
-            int64_t Aik = A[i+n*k];
+            INT_FF_LU_T Aik = A[i+n*k];
             if (!((Aik==0) && (pivot==oldpivot))) {
                 if (oldpivot==1) { /* avoid expensive div operation */
                     for (int j=k+1; j<n; j++) {
@@ -219,17 +242,17 @@ static void fraction_free_lu(int n, int64_t *A, uint32_t *p) {
 }
 
 
-static int64_t fraction_free_lu_solve(int n, int64_t *A, INTEGER *x) {
-    int64_t oldpivot = 1;
+static INT_FF_LU_T fraction_free_lu_solve(int n, INT_FF_LU_T *A, INTEGER *x) {
+    INT_FF_LU_T oldpivot = 1;
     for (int k=0; k<n-1; k++) {
-        int64_t pivot = A[k+n*k];
+        INT_FF_LU_T pivot = A[k+n*k];
         for (int i=k+1; i<n; i++) {
             x[i] = (pivot*x[i] - A[i+n*k]*x[k])/oldpivot;
         }
         oldpivot = pivot;
     }
 
-    int64_t d = A[n-1+n*(n-1)];
+    INT_FF_LU_T d = A[n-1+n*(n-1)];
     for (int i=n-1; i>=0; i--) {
         INTEGER h = 0;
         for (int j=i+1; j<n; j++) {
@@ -310,7 +333,7 @@ void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
 
             /* set up matrix */
             INTEGER *x = calloc(m, sizeof(INTEGER));
-            int64_t *A = calloc(m*m, sizeof(int64_t));
+            INT_FF_LU_T *A = calloc(m*m, sizeof(INT_FF_LU_T));
             for (int i=0; i<m; i++) {
                 //stop = r[i] > stop ? r[i] : stop;
                 P_run(X, P, LS->W[I[m-i-1]], stop);
@@ -327,8 +350,8 @@ void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
                 x[i] = LS->c[I[m-p1[i]-1]];
             }
 
-            int64_t det = fraction_free_lu_solve(m, A, x);
-            assert(llabs(det)==1);
+            INT_FF_LU_T det = fraction_free_lu_solve(m, A, x);
+            assert(IABS(det)==1);
 
             /* copy result */
             if (det==1) {

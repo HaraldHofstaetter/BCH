@@ -24,7 +24,6 @@ static void integer_lu(int n, int64_t *A) {
             fprintf(stderr, "ERROR: integer LU factorization does not exist\n"); 
             exit(EXIT_FAILURE);
         }
-        //#pragma omp parallel for schedule(static, 32) 
         for (int i=k+1; i<n; i++) {
             if (A[i+n*k]!=0) {
                 A[i+n*k] *= s;

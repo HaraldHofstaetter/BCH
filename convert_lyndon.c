@@ -79,6 +79,23 @@ uint32_t P_append(P_t *P, uint32_t i, uint8_t l, uint32_t *p1, uint32_t *p2, uin
 }
 
 
+void P_run(int32_t *X, P_t *P, uint8_t w[], uint32_t stop) { 
+    if (stop>=P->len) {
+        stop = P->len-1;
+    }
+    P_line_t *L = P->L;
+    for (int k=0; k<P->K; k++) {
+        for (int i=0; i<P->n; i++) {
+            X[k*P->n+i] = w[i]==k ? 1 : 0;
+        }
+    }
+    for (int p=P->K*P->n; p<=stop; p++) {
+        X[p] = X[L[p].a11]*X[L[p].a22] - X[L[p].a12]*X[L[p].a21];
+    }
+}
+
+
+
 #ifdef SIMD_VECTORIZED
 #ifdef USE_SIMD_INTRINSICS    
 #include <smmintrin.h>
@@ -116,24 +133,9 @@ void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t w2[], u
     
 #endif 
 }
-#else
-
-void P_run(int32_t *X, P_t *P, uint8_t w[], uint32_t stop) { 
-    if (stop>=P->len) {
-        stop = P->len-1;
-    }
-    P_line_t *L = P->L;
-    for (int k=0; k<P->K; k++) {
-        for (int i=0; i<P->n; i++) {
-            X[k*P->n+i] = w[i]==k ? 1 : 0;
-        }
-    }
-    for (int p=P->K*P->n; p<=stop; p++) {
-        X[p] = X[L[p].a11]*X[L[p].a22] - X[L[p].a12]*X[L[p].a21];
-    }
-}
-
 #endif
+
+
 
 
 void convert_to_lie_series(lie_series_t *LS, int N) {
