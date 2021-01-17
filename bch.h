@@ -91,7 +91,7 @@ void set_verbosity_level(unsigned int verbosity_level);
 unsigned int get_verbosity_level(void);
 
 
-void print_lie_series(lie_series_t *LS);
+void print_lie_series(lie_series_t *LS, char *g);
 void print_lie_series_statistics(lie_series_t *LS);
 
 enum {
@@ -106,10 +106,10 @@ enum {
 };
 
 
-void print_lists(lie_series_t *LS, unsigned int what);
-void print_lyndon_word(lie_series_t *LS,  size_t i);
-void print_rightnormed_word(lie_series_t *LS,  size_t i);
-void print_basis_element(lie_series_t *LS,  size_t i);
+void print_lists(lie_series_t *LS, unsigned int what, char *g);
+void print_lyndon_word(lie_series_t *LS,  size_t i, char *g);
+void print_rightnormed_word(lie_series_t *LS,  size_t i, char *g);
+void print_basis_element(lie_series_t *LS,  size_t i, char *g);
 
 void free_lie_series(lie_series_t LS);
 

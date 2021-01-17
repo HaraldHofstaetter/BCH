@@ -314,49 +314,49 @@ unsigned int get_verbosity_level(void) {
 }
 
 
-void print_lyndon_word(lie_series_t *LS,  size_t i) {
+void print_lyndon_word(lie_series_t *LS,  size_t i, char *g) {
     if (i<LS->K) {
-        printf("%c", (char) ('A'+i));
+        printf("%c", g[i]);
     }
     else {
-        print_lyndon_word(LS, LS->p1[i]);
-        print_lyndon_word(LS, LS->p2[i]);
+        print_lyndon_word(LS, LS->p1[i], g);
+        print_lyndon_word(LS, LS->p2[i], g);
     }
 }   
 
-void print_rightnormed_word(lie_series_t *LS,  size_t i) {
+void print_rightnormed_word(lie_series_t *LS,  size_t i, char *g) {
     if (LS->R) {
         for (int j=0; j < LS->nn[i]; j++) {
-            printf("%c", (char) ('A'+LS->R[i][j]));
+            printf("%c", g[LS->R[i][j]]);
         }
     }
 }
 
-void print_basis_element(lie_series_t *LS,  size_t i) {
+void print_basis_element(lie_series_t *LS,  size_t i, char *g) {
     if (i<LS->K) {
-        printf("%c", (char) ('A'+i));
+        printf("%c", g[i]);
     }
     else {
         if (LS->R) { /* rightnormed basis element */
             for (int j=0; j < LS->nn[i]-1; j++) {
-                printf("[%c,", (char) ('A'+LS->R[i][j]));
+                printf("[%c,", g[LS->R[i][j]]);
             }
-            printf("%c", (char) ('A'+LS->R[i][LS->nn[i]-1]));
+            printf("%c", g[LS->R[i][LS->nn[i]-1]]);
             for (int j=0; j < LS->nn[i]-1; j++) {
                 printf("]");
             }
         }
-        else { /* Lyndon basis element */
+        else { /* Lyndon or Hall basis element */
             printf("[");
-            print_basis_element(LS, LS->p1[i]);
+            print_basis_element(LS, LS->p1[i], g);
             printf(",");
-            print_basis_element(LS, LS->p2[i]);
+            print_basis_element(LS, LS->p2[i], g);
             printf("]");
         }
     }
 }
 
-void print_lie_series(lie_series_t *LS) {
+void print_lie_series(lie_series_t *LS, char *g) {
     for (int i=0; i<LS->dim; i++) {
         if (LS->c[i]!=0) {
             if (LS->c[i]>0) {
@@ -364,7 +364,7 @@ void print_lie_series(lie_series_t *LS) {
             }
             print_RATIONAL(LS->c[i], LS->denom);
             printf("*");
-            print_basis_element(LS, i);
+            print_basis_element(LS, i, g);
         }
     }
 }
@@ -398,7 +398,7 @@ void print_lie_series_statistics(lie_series_t *LS) {
 }
 
 
-void print_lists(lie_series_t *LS, unsigned int what) {
+void print_lists(lie_series_t *LS, unsigned int what, char* g) {
     if (VERBOSITY_LEVEL>=1) {
         printf("# ");
         if (what & PRINT_INDEX) printf("i");
@@ -424,15 +424,15 @@ void print_lists(lie_series_t *LS, unsigned int what) {
         if (what & PRINT_FACTORS) printf("\t%i\t%i", LS->p1[i], LS->p2[i]);
         if (what & PRINT_LYNDON_WORD) {
             printf("\t");
-            print_lyndon_word(LS, i);
+            print_lyndon_word(LS, i, g);
         }
         if ((LS->R) && (what & PRINT_RIGHTNORMED_WORD)) {
             printf("\t");
-            print_rightnormed_word(LS, i);
+            print_rightnormed_word(LS, i, g);
         }
         if (what & PRINT_BASIS_ELEMENT) {
             printf("\t");
-            print_basis_element(LS, i);
+            print_basis_element(LS, i, g);
 
         }
         if (what & PRINT_COEFFICIENT) {

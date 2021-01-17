@@ -37,6 +37,22 @@ long long int get_arg(int argc, char*argv[], char* varname,
     return default_value;
 }
 
+char* get_string_arg(int argc, char*argv[], char* varname, char* default_value) {
+    for (int k=1; k<argc; k++) {
+        char* sep = strchr(argv[k], '=');
+        if (sep) {
+            *sep ='\0';
+            if (strcmp(argv[k], varname)==0) {
+                return sep+1;
+            }
+            *sep = '=';
+        }   
+    }
+    return default_value;
+}
+
+static char *default_generators = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
 
 int main(int argc, char*argv[]) {
 #ifdef USE_INT128_T
@@ -103,6 +119,13 @@ int main(int argc, char*argv[]) {
             LS = lie_series(2, ex, N, basis); 
             break;
     }
+
+    char *g = get_string_arg(argc, argv, "generators", default_generators);
+    if (strlen(g)<LS.K) {
+        fprintf(stderr, "WARNING: expected generators of length %i, got \"%s\"\n", LS.K, g);
+        g = default_generators;
+    }
+
     if ( (get_verbosity_level()>0) || (get_arg(argc, argv, "print_statistics", 0, 0, 1)) ) {
         print_lie_series_statistics(&LS);
     }
@@ -110,7 +133,7 @@ int main(int argc, char*argv[]) {
     /* output result: */
     switch(get_arg(argc, argv, "lists_output", N<=10 ? 0 : 1, 0, 1)) {
         case 0:
-            print_lie_series(&LS);
+            print_lie_series(&LS, g);
             printf("\n");
             break;
         case 1: {
@@ -123,7 +146,7 @@ int main(int argc, char*argv[]) {
                 PRINT_RIGHTNORMED_WORD*get_arg(argc, argv, "print_rightnormed_word", basis==RIGHTNORMED_BASIS ? 1 : 0, 0, 1) |
                 PRINT_BASIS_ELEMENT   *get_arg(argc, argv, "print_basis_element", 0, 0, 1) |
                 PRINT_COEFFICIENT     *get_arg(argc, argv, "print_coefficient",   1, 0, 1); 
-            print_lists(&LS, what);
+            print_lists(&LS, what, g);
             break;
         }
     }

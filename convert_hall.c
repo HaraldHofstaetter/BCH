@@ -397,17 +397,4 @@ void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
     }
 }
 
-/*
-void main(void) {
-    int N = 8;
-    int K = 2;
 
-    lie_series_t LS;
-    LS.K = K;
-    LS.N = N;
-    init_lyndon_words(&LS);
-    init_hall(&LS);
-    convert_to_hall_lie_series(&LS, N, 0);
-    free_lie_series(LS);
-}
-*/
