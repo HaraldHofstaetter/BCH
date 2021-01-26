@@ -167,14 +167,15 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis) {
         init_rightnormed(&LS);
         convert_to_rightnormed_lie_series(&LS, N, 0);
     }
-    else if (basis>=HALL_BASIS) {
-        init_hall(&LS, basis);
-        convert_to_hall_lie_series(&LS, N, 0);
-        LS.R = 0;
-    }
     else {
         convert_to_lie_series(&LS, N);
         LS.R = 0;
+        if (basis==HALL_BASIS) {
+            lie_series_t HS;
+            convert_lyndon_to_hall_lie_series(&LS, &HS);
+            free_lie_series(LS);
+            LS = HS;
+        }
     }
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
@@ -201,12 +202,6 @@ lie_series_t BCH(size_t N, int basis) {
         convert_to_rightnormed_lie_series(&LS, N, 1);
         compute_rightnormed_BCH_terms_of_even_orders(&LS);
     }
-    else if (basis>=HALL_BASIS) {
-        init_hall(&LS, basis);
-        compute_goldberg_coefficients(&LS, N);
-        convert_to_hall_lie_series(&LS, N, 0);
-        LS.R = 0;
-    }
     else {
         if (N%2) {
             compute_goldberg_coefficients(&LS, N);
@@ -217,7 +212,12 @@ lie_series_t BCH(size_t N, int basis) {
             convert_to_lie_series(&LS, N-1);
             compute_BCH_terms_of_even_order_N(&LS);
         }
-        LS.R = 0;
+        if (basis==HALL_BASIS) {
+            lie_series_t HS;
+            convert_lyndon_to_hall_lie_series(&LS, &HS);
+            free_lie_series(LS);
+            LS = HS;
+        }
     }
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
@@ -254,14 +254,14 @@ lie_series_t symBCH(size_t N, int basis) {
         init_rightnormed(&LS);
         convert_to_rightnormed_lie_series(&LS, N1, 1);
     }
-    else if (basis>=HALL_BASIS) {
-        init_hall(&LS, basis);
-        convert_to_hall_lie_series(&LS, N1, 1);
-        LS.R = 0;
-    }
     else {
         convert_to_lie_series(&LS, N1);
-        LS.R = 0;
+        if (basis==HALL_BASIS) {
+            lie_series_t HS;
+            convert_lyndon_to_hall_lie_series(&LS, &HS);
+            free_lie_series(LS);
+            LS = HS;
+        }
     }
     for (int i=0; i<LS.dim; i++) {
         int nA = degree_of_generator(&LS, i, 0);

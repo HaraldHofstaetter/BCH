@@ -1,506 +1,559 @@
 #include"bch.h"
-#include<stdio.h>
+#include<stdint.h>
 #include<stdlib.h>
-#include<assert.h>
+#include<stdio.h>
+#include<string.h>
+#include<stdbool.h>
+#include <assert.h>
 
 extern unsigned int VERBOSITY_LEVEL;
 
 
-void init_hall(lie_series_t *LS, int basis) {
+#include"khash.h"
+KHASH_MAP_INIT_STR(str_int, int)
+KHASH_MAP_INIT_INT(LinComb, int64_t)
+KHASH_MAP_INIT_STR(str_LinComb, khash_t(LinComb) *)
+
+
+typedef struct magma_element_t {
+    uint8_t deg;
+    uint8_t g;
+    struct magma_element_t *l;
+    struct magma_element_t *r;
+} magma_element_t;
+
+static magma_element_t* gen(uint8_t g) {
+    magma_element_t *m = malloc(sizeof(magma_element_t));
+    m->deg = 1;
+    m->g = g;
+    m->l = NULL;
+    m->r = NULL;
+    return m;
+}
+
+static magma_element_t* bracket(magma_element_t *l, magma_element_t *r) {
+    magma_element_t *m = malloc(sizeof(magma_element_t));
+    m->deg = l->deg + r->deg;
+    m->g = 0;
+    m->l = l;
+    m->r = r;
+    return m;
+}
+
+
+static uint8_t m2str(const magma_element_t *m, uint8_t p, char *s) {
+    if (m->deg==1) {
+        s[p] = '0' + m->g;
+        s[p+1] = '\0';
+        return p+1;
+    }
+    else {
+        //s[p] = '(';
+        //p++;
+        p = m2str(m->l, p, s);
+        p = m2str(m->r, p, s);
+        s[p] = ')';
+        s[p+1] = '\0';
+        return p+1;
+    }
+}
+
+/*
+ 
+static magma_element_t* _str2m(char *s, int *p) {
+    if ((s[*p]>='0') && (s[*p]<='9')) {
+        magma_element_t *g = gen(s[*p]-'0');
+        (*p)++;
+        return g;
+    }
+    if (s[*p]=='(') {
+        (*p)++;
+        magma_element_t *ml = _str2m(s, p);
+        magma_element_t *mr = _str2m(s, p);
+        assert(s[*p]==')');
+        (*p)++;
+        return bracket(ml, mr);
+    }
+    assert(0);
+}
+
+static magma_element_t* str2m(char *s) {
+    int p=0;
+    return _str2m(s, &p);
+}
+
+
+static void foliage(const magma_element_t *m, uint8_t p, char *f) {
+    if (m->deg==1) {
+        f[p] = '0' + m->g;
+        f[p+1] = '\0';
+    }
+    else {
+        foliage(m->l, p, f);
+        foliage(m->r, p+m->l->deg, f);
+    }
+}
+
+
+static int mcmp(const magma_element_t *m1, const magma_element_t *m2) {
+    if (m1->deg<m2->deg) {
+        return -1;
+    }
+    else if (m1->deg>m2->deg) {
+        return +1;
+    }
+    else {
+        char f1[m1->deg+1];
+        char f2[m2->deg+1];
+        foliage(m1, 0, f1);
+        foliage(m2, 0, f2);
+        return strcmp(f1, f2);
+    }
+}
+
+static int mcmp0(const void *m1, const void *m2) {
+    return mcmp(*(magma_element_t * const *) m1, *(magma_element_t * const *) m2);
+}
+
+bool ishall(magma_element_t *m) {
+    if (m->deg==1) {
+        return true;
+    }
+    else if (!ishall(m->l) || !ishall(m->r) || (mcmp(m->l, m->r)<=0)) {
+        return false;
+    }
+    else if (m->l->deg==1) {
+        return true;
+    }
+    else {
+        return mcmp(m->l->r, m->r)<=0;
+    }
+}
+
+int hall_basis(int K, int d, magma_element_t **H) {
+    for (int i=0; i<K; i++) {
+        H[i] = gen(i);
+    }
+    int m = 2;
+    int k = K;
+    while (m<=d) {
+        int k0 = k;
+        for(int i=0; i<k0; i++) {
+            for(int j=0; j<k0; j++) {
+                if (H[i]->deg + H[j]->deg==m) {
+                    magma_element_t *h = bracket(H[i], H[j]);
+                    if (ishall(h)) {
+                        H[k] = h;
+                        k++;
+                    }
+                    else {
+                        free(h);
+                    }
+                }
+            }
+        }
+        m++;
+    }
+    qsort(H, k, sizeof(magma_element_t*), mcmp0);
+    return k;
+}
+
+static void print_magma_element(magma_element_t *m) {
+    char s[3*m->deg-2+1];
+    m2str(m, 0, s);
+    printf("%s", s);
+}
+
+static void print_MagmaLinComb(khash_t(LinComb) *L, magma_element_t **H) {
+    if (kh_size(L)==0) {
+        printf("0");
+    }
+    else {
+        for (khint_t k=kh_begin(L); k!=kh_end(L); k++) {
+            if (kh_exist(L, k)) {
+                int64_t v = kh_value(L, k);
+                //if (v!=0) {
+                    printf("%+li*", v);
+                    print_magma_element(H[kh_key(L, k)]);
+                //}
+            }
+        }
+    }
+}
+
+*/
+
+
+static int hall_data(int K, int N, int size, uint8_t **_nn, uint32_t **_p1, uint32_t **_p2) {
     /* METHOD: Algorithm 1 in Section II.B of
      * F. Casas, A. Murua, An efficient algoritzhm for computing the 
      * Baker-Campbell-Hausdorff series and some of its applications,
      * J. Math. Phys. 50, 033513 (2009).
      */
-    if (basis==LYNDON_AS_HALL_BASIS) {
-        /* leave p1, p2 as they are */
-        return;
-    }
-    if (basis==REVERSE_LYNDON_AS_HALL_BASIS) {
-        /* swap p1, p2 */
-        uint32_t *h = LS->p1;
-        LS->p1 = LS->p2;
-        LS->p2 = h;
-        return;
-    }
-    uint32_t *p1, *p2;
-    if (basis==REVERSE_HALL_BASIS) {
-        p1 = LS->p2;
-        p2 = LS->p1;
-    }
-    else {
-        p1 = LS->p1;
-        p2 = LS->p2;
-    }
-    uint8_t *nn= LS->nn;
-    for (int i=0; i<LS->K; i++) {
+    uint8_t *nn = malloc(size*sizeof(uint8_t));
+    uint32_t *p1 = malloc(size*sizeof(uint32_t));
+    uint32_t *p2 = malloc(size*sizeof(uint32_t));
+    for (int i=0; i<K; i++) {
         p1[i] = i;
         p2[i] = 0;
-        assert(nn[i]==1);
+        nn[i] = 1;
     }
-    int i = LS->K;
-    for (int n=2; n<=LS->N; n++) {
+    int i = K;
+    for (int n=2; n<=N; n++) {
         for (int j=0; j<i; j++) {
             for (int k=j+1; k<i; k++) {
                 if ((nn[j]+nn[k]==n) && j>=p2[k]) {
+                    if (i>=size) {
+                        size *= 2;
+                        nn = realloc(nn, size*sizeof(uint8_t));
+                        p1 = realloc(p1, size*sizeof(uint32_t));
+                        p2 = realloc(p2, size*sizeof(uint32_t));
+                    }
                     p1[i] = k;
                     p2[i] = j;
-                    assert(nn[i]==n);
+                    nn[i] = n;
                     i++;
                 }
             }
         }
-    }       
-    assert(i==LS->dim);
+    }
+    *_nn = nn;
+    *_p1 = p1;
+    *_p2 = p2;
+    return i;
 }
 
-
-static uint32_t* hall_multi_degree_indices(size_t K, size_t dim, uint32_t *p1, uint32_t *p2) {
-    uint32_t *DI = malloc(dim*sizeof(uint32_t));
-    uint8_t *h = malloc(K*dim*sizeof(uint8_t));
-    for (int i=0; i<K; i++) {
-        for (int j=0; j<K; j++) {
-            h[i*K+j] = 0;
-        }
-        h[i*K+i] = 1;
-        DI[i] = tuple_index(K, h+K*i);
-    }
-    for (int i=K; i<dim; i++) {
-        for (int j=0; j<K; j++) {
-            h[i*K+j] = h[p1[i]*K+j] + h[p2[i]*K+j];
-        }
-        DI[i] = tuple_index(K, h+K*i);
-    }
-    free(h);
-    return DI;
-}
-
-
-static int compare_w1w2_w2w1(int n1, uint8_t w1[], int n2, uint8_t w2[]) {
-    int i = 0;
-    while (i<n1+n2) {
-        uint8_t c12 = i<n1 ? w1[i] : w2[i-n1];
-        uint8_t c21 = i<n2 ? w2[i] : w1[i-n2];
-        if (c12<c21) {
-            return -1;
-        }
-        else if (c12>c21) {
-            return +1;
-        }
-        i++;
-    }
-    return 0;
-}
-
-static void leading_word(int K, int i, uint8_t w[], uint8_t *nn, uint32_t *p1, uint32_t *p2) {
-    if (i<K) {
-        w[0] = i;
-        return;
-    }
-    int n1 =nn[p1[i]];
-    int n2 =nn[p2[i]];
-    uint8_t w1[n1];
-    uint8_t w2[n2];
-    leading_word(K, p1[i], w1, nn, p1, p2);
-    leading_word(K, p2[i], w2, nn, p1, p2);
-    int c = compare_w1w2_w2w1(n1, w1, n2, w2);
-    int k=0;
-    if (c<0) {
-        for (int j=0; j<n1; j++) {
-            w[k] = w1[j];
-            k++;
-        }
-        for (int j=0; j<n2; j++) {
-            w[k] = w2[j];
-            k++;
-        }
-    }
-    else {
-        for (int j=0; j<n2; j++) {
-            w[k] = w2[j];
-            k++;
-        }
-        for (int j=0; j<n1; j++) {
-            w[k] = w1[j];
-            k++;
-        }
-    }
-    // assert(k==nn[i]);
-}
-
-
-static size_t find_smallest_lyndon_word_index(uint32_t *WI, size_t l, size_t r, size_t wi) {
-    /* finds smallest index not less than wi in the sorted list of indices WI. 
-     * Start search at position l and stop it at position r. 
-     * METHOD: binary search, 
-     * See also: lyndon.c/find_lyndon_word_index
-     */
-    while (l<=r) {
-        size_t m = l + (r-l)/2;
-        if (WI[m]==wi) {
-            return m;
-        }
-        if (WI[m]<wi) {
-            l = m+1;
+static void data2m(int dim, uint8_t *nn, uint32_t *p1, uint32_t *p2,  magma_element_t **H) {
+    for (int i=0; i<dim; i++) {
+        if (nn[i]==1) {
+            H[i] = gen(i);
         }
         else {
-            r = m-1;
+            H[i] = bracket(H[p1[i]], H[p2[i]]);
         }
-    }
-    return l;
-}
-
-
-static void sortperm(int n, uint32_t a[], uint32_t p[]) {
-    /* METHOD: bubble sort */
-    for (int i=0; i<n; i++) {
-        p[i] = i;
-    }
-    int swapped = 1;
-    while (swapped) {
-        swapped = 0;
-        for (int i=0; i<n-1; i++) {
-            if (a[p[i]]>a[p[i+1]]) {
-                uint32_t h = p[i];
-                p[i] = p[i+1];
-                p[i+1] = h;
-                swapped = 1;
-            }
-        }
-        n--;
     }
 }
 
-
-static inline INT_FF_LU_T IABS(INT_FF_LU_T x) {
-    return x>=0 ? x : -x;
+static int hall_basis(int K, int N, int size, magma_element_t ***_H) {
+    uint8_t *nn;
+    uint32_t *p1;
+    uint32_t *p2;
+    int dim = hall_data(K, N, size, &nn, &p1, &p2);
+    magma_element_t **H = malloc(dim*sizeof(magma_element_t*));
+    data2m(dim, nn, p1, p2, H);
+    free(nn);
+    free(p1);
+    free(p2);
+    *_H = H;
+    return dim;
 }
 
 
-/* W. Zhou, D.J. Jeffrey, Fraction-free matrix factors: new forms for 
- * LU and QR factors, Front. Comput. Sci. China 2 (1) (2008)1–13.
- *
- * David Dureisseix. Generalized fraction-free LU factorization for 
- * singular systems with kernel extraction. Linear Algebra and its 
- * Applications, Elsevier, 2012, 436 (1), pp.27-40.
- */
-
-
-static void fraction_free_lu(int n, INT_FF_LU_T *A, uint32_t *p) {
-    for (int i=0; i<n; i++) {
-        p[i] = i;
+static khash_t(str_int) *hall_inverse_table(int dim, magma_element_t **H) {
+    khash_t(str_int) *HT = kh_init(str_int);
+    for(int i=0; i<dim; i++) {
+        magma_element_t *h = H[i];
+        char s[3*h->deg-2+1];
+        m2str(h, 0, s);
+        int absent;
+        khint_t k = kh_put(str_int, HT, s, &absent);
+        kh_value(HT, k) = i;
+        if (absent) kh_key(HT, k) = strdup(s);
     }
-    INT_FF_LU_T oldpivot = 1;
-    for (int k=0; k<n; k++) {
-        INT_FF_LU_T pivot = INT_FF_LU_MAX;
-        int kpivot = n;
-        for (int i=k; i<n; i++) { /* search for smallest nonzero pivot */
-            if ((A[i+n*k]!=0) && (IABS(A[i+n*k])<IABS(pivot))) {
-                kpivot = i;
-                pivot = A[i+n*k];
-                if (IABS(pivot)==1) { /* pivot already as small as possible */
-                    break;
-                }
-            }
-        }
-        if (kpivot>=n) {
-            fprintf(stderr, "ERROR: fraction-free LU factorization does not exist\n"); 
-            exit(EXIT_FAILURE);
-        }
-        if (kpivot!=k) { /* swap k-th and kpivot-th row */
-            for (int i=0; i<n; i++) {
-                INT_FF_LU_T h = A[k+n*i];
-                A[k+n*i] = A[kpivot+n*i];
-                A[kpivot+n*i] = h;
-            }
-            uint32_t h = p[k];
-            p[k] = p[kpivot];
-            p[kpivot] = h;
-        }
-        for (int i=k+1; i<n; i++) {
-            INT_FF_LU_T Aik = A[i+n*k];
-            if (!((Aik==0) && (pivot==oldpivot))) {
-                if (oldpivot==1) { /* avoid expensive div operation */
-                    for (int j=k+1; j<n; j++) {
-                        A[i+n*j] = pivot*A[i+n*j] - A[k+n*j]*Aik;
-                    }
-                }
-                else if (oldpivot==-1) { /* avoid expensive div operation */
-                    for (int j=k+1; j<n; j++) {
-                        A[i+n*j] = -pivot*A[i+n*j] + A[k+n*j]*Aik;
-                    }
-                }
-                else {
-                    for (int j=k+1; j<n; j++) {
-                        A[i+n*j] = (pivot*A[i+n*j] - A[k+n*j]*Aik)/oldpivot; /* division is exact without remainder */
-                    }
-                }
-            }
-        }
-        oldpivot = pivot;
-    }
+    return HT;
 }
 
-static void fraction_free_full_pivoting_lu(int n, INT_FF_LU_T *A, uint32_t *p, uint32_t *q) {
-    for (int i=0; i<n; i++) {
-        p[i] = i;
-        q[i] = i;
+static void data_from_table(int dim, magma_element_t**H, khash_t(str_int) *HT,
+        uint8_t **_nn, uint32_t **_p1, uint32_t **_p2) {
+    uint8_t *nn = malloc(dim*sizeof(uint8_t));
+    uint32_t *p1 = malloc(dim*sizeof(uint32_t));
+    uint32_t *p2 = malloc(dim*sizeof(uint32_t));
+    for (int i=0; i<dim; i++) {
+        magma_element_t *h = H[i];
+        nn[i] = h->deg;
+        if (nn[i]==1) {
+            p1[i] = i;
+            p2[i] = 0;
+        }
+        else {
+            char s[3*h->deg-2+1];
+            m2str(h->l, 0, s);
+            khint_t k = kh_get(str_int, HT, s);
+            assert (k != kh_end(HT));
+            p1[i] = kh_value(HT, k); 
+            m2str(h->r, 0, s);
+            k = kh_get(str_int, HT, s);
+            assert (k != kh_end(HT));
+            p2[i] = kh_value(HT, k); 
+        }
     }
-    INT_FF_LU_T oldpivot = 1;
-    for (int k=0; k<n; k++) {
-        INT_FF_LU_T pivot = INT_FF_LU_MAX;
-        int ipivot = n;
-        int jpivot = n;
-        /* search for smallest nonzero pivot */
-        for (int j=k; j<n; j++) { 
-            for (int i=k; i<n; i++) { 
-                if ((A[i+n*j]!=0) && (IABS(A[i+n*j])<IABS(pivot))) {
-                    ipivot = i;
-                    jpivot = j;
-                    pivot = A[i+n*j];
-                    if (IABS(pivot)==1) { /* pivot already as small as possible */
-                        break;
-                    }
-                }
-            }
-            if (IABS(pivot)==1) { /* pivot already as small as possible */
-                 break;
-            }
+    *_nn = nn;
+    *_p1 = p1;
+    *_p2 = p2;
+}
+
+static khash_t(LinComb)* rewrite_magma_element(magma_element_t *m, 
+                      magma_element_t **H, khash_t(str_int) *HT,
+                      khash_t(str_LinComb) *LT) {
+    khash_t(LinComb) *R;
+    char *s = malloc((3*m->deg-2+1)*sizeof(char));
+    m2str(m, 0, s);
+    if (LT!=NULL) {
+        /* Take result from lookup table if it already contains m */
+        khint_t k = kh_get(str_LinComb, LT, s);
+        if (k != kh_end(LT)) {
+           R = kh_value(LT, k);
+           free(s);
+           return R;
         }
-        if (ipivot>=n) {
-            fprintf(stderr, "ERROR: fraction-free LU factorization does not exist\n"); 
-            exit(EXIT_FAILURE);
-        }
-        if (ipivot!=k) { /* swap k-th and ipivot-th row */
-            for (int j=0; j<n; j++) {
-                INT_FF_LU_T h = A[k+n*j];
-                A[k+n*j] = A[ipivot+n*j];
-                A[ipivot+n*j] = h;
-            }
-            uint32_t h = p[k];
-            p[k] = p[ipivot];
-            p[ipivot] = h;
-        }
-        if (jpivot!=k) { /* swap k-th and jpivot-th column */
-            for (int i=0; i<n; i++) {
-                INT_FF_LU_T h = A[i+n*k];
-                A[i+n*k] = A[i+n*jpivot];
-                A[i+n*jpivot] = h;
-            }
-            uint32_t h = q[k];
-            q[k] = p[jpivot];
-            q[jpivot] = h;
-        }
-        for (int i=k+1; i<n; i++) {
-            INT_FF_LU_T Aik = A[i+n*k];
-            if (!((Aik==0) && (pivot==oldpivot))) {
-                if (oldpivot==1) { /* avoid expensive div operation */
-                    for (int j=k+1; j<n; j++) {
-                        A[i+n*j] = pivot*A[i+n*j] - A[k+n*j]*Aik;
-                    }
-                }
-                else if (oldpivot==-1) { /* avoid expensive div operation */
-                    for (int j=k+1; j<n; j++) {
-                        A[i+n*j] = -pivot*A[i+n*j] + A[k+n*j]*Aik;
-                    }
-                }
-                else {
-                    for (int j=k+1; j<n; j++) {
-                        A[i+n*j] = (pivot*A[i+n*j] - A[k+n*j]*Aik)/oldpivot; /* division is exact without remainder */
-                    }
-                }
-            }
-        }
-        oldpivot = pivot;
     }
+    khint_t k = kh_get(str_int, HT, s);
+    /* If m is hall element, then R = 1*m */
+    if (k != kh_end(HT)) {
+        int64_t i = kh_value(HT, k);
+        R = kh_init(LinComb);
+        int absent;
+        khint_t k = kh_put(LinComb, R, i, &absent);
+        kh_value(R, k) = 1;
+        goto exit;
+    }
+    assert(m->deg>1);
+    khint_t kl;
+    {
+    char sl[3*m->l->deg-2+1];
+    m2str(m->l, 0, sl);
+    kl = kh_get(str_int, HT, sl);
+    }
+    if (kl != kh_end(HT)) {
+        khint_t kr;
+        {
+        char sr[3*m->r->deg-2+1];
+        m2str(m->r, 0, sr);
+        kr = kh_get(str_int, HT, sr);
+        }
+        if (kr != kh_end(HT)) {
+            /* m->l and m->r are both Hall elements */
+            int il = kh_value(HT, kl);
+            int ir = kh_value(HT, kr);
+            if (ir>il) {
+                /* m = (l,r) = -(r, l) = -mrev */
+                magma_element_t *mrev = bracket(m->r, m->l);
+                khash_t(LinComb) *S = rewrite_magma_element(mrev, H, HT, LT);
+                free(mrev);
+                /* compute R = -S */
+                R = kh_init(LinComb); 
+                for (khint_t ks=kh_begin(S); ks!=kh_end(S); ks++) {
+                    if (kh_exist(S, ks)) {
+                        int absent;
+                        khint_t kr = kh_put(LinComb, R, kh_key(S, ks), &absent); 
+                        kh_value(R, kr) = -kh_value(S, ks);
+                    }
+                }
+                if (LT==NULL) {
+                    /* If a lookup table is available, auxiliary results in the form of 
+                     * linear combinations must not be destroyed! On the other hand, if
+                     * no lookup table is available, they should be destroyed for a 
+                     * proper cleaning up. 
+                     */
+                    kh_destroy(LinComb, S);
+                }
+                goto exit;
+            }
+            else if (il>ir) {
+                magma_element_t *a = m->l->l;
+                magma_element_t *b = m->l->r;
+                magma_element_t *n1 = bracket(bracket(a, m->r), b);
+                magma_element_t *n2 = bracket(a, bracket(b, m->r));
+                khash_t(LinComb) *S1 = rewrite_magma_element(n1, H, HT, LT);
+                khash_t(LinComb) *S2 = rewrite_magma_element(n2, H, HT, LT);
+                free(n1->l);
+                free(n1);
+                free(n2->r);
+                free(n2);
+                /* compute R = S1 + S2 */
+                R = kh_init(LinComb); 
+                for (khint_t ks=kh_begin(S1); ks!=kh_end(S1); ks++) { /* copy S1 to R */
+                    if (kh_exist(S1, ks)) {
+                        int absent;
+                        khint_t kr = kh_put(LinComb, R, kh_key(S1, ks), &absent); 
+                        kh_value(R, kr) = kh_value(S1, ks);
+                    }
+                }
+                for (khint_t ks=kh_begin(S2); ks!=kh_end(S2); ks++) { /* add S2 to R */
+                    if (kh_exist(S2, ks)) {
+                        int absent;
+                        khint_t kr = kh_put(LinComb, R, kh_key(S2, ks), &absent);
+                        if (absent) {
+                            kh_value(R, kr) = kh_value(S2, ks);
+                        }
+                        else {
+                            kh_value(R, kr) += kh_value(S2, ks);
+                        }
+                        if (kh_value(R, kr)==0) {
+                            kh_del(LinComb, R, kr);
+                        }
+                    }
+                }
+                if (LT==NULL) {
+                    kh_destroy(LinComb, S1);
+                    kh_destroy(LinComb, S2);
+                }
+                goto exit;
+            }
+            else { 
+                R = kh_init(LinComb); /* zero linear combination */
+                goto exit;
+            }
+        }
+    }
+    /* at least one of m->l, m->r is not a Hall element */
+    khash_t(LinComb) *U = rewrite_magma_element(m->l, H, HT, LT);
+    khash_t(LinComb) *V = rewrite_magma_element(m->r, H, HT, LT);
+    R = kh_init(LinComb); 
+    for (khint_t ku=kh_begin(U); ku!=kh_end(U); ku++) {
+        if (kh_exist(U, ku)) {
+            int64_t cu = kh_value(U, ku);
+            if (cu!=0) {
+                for (khint_t kv=kh_begin(V); kv!=kh_end(V); kv++) {
+                    if (kh_exist(V, kv)) {
+                        int64_t cv = kh_value(V, kv);
+                        if (cv!=0) {
+                            int64_t cuv = cu*cv;
+                            magma_element_t *muv = bracket(H[kh_key(U, ku)], H[kh_key(V, kv)]);
+                            khash_t(LinComb) *S = rewrite_magma_element(muv, H, HT, LT);
+                            free(muv);
+                            for (khint_t ks=kh_begin(S); ks!=kh_end(S); ks++) {
+                                if (kh_exist(S, ks)) {
+                                    int absent;
+                                    khint_t kr = kh_put(LinComb, R, kh_key(S, ks), &absent);
+                                    int64_t cuvs = cuv*kh_value(S, ks);
+                                    if (absent) {
+                                        kh_value(R, kr) = cuvs;
+                                    }
+                                    else {
+                                        kh_value(R, kr) += cuvs;
+                                    }
+                                    if (kh_value(R, kr)==0) {
+                                        kh_del(LinComb, R, kr);
+                                    }
+                                }
+                            }
+                            if (LT==NULL) {
+                                kh_destroy(LinComb, S);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (LT==NULL) {
+         kh_destroy(LinComb, U);
+         kh_destroy(LinComb, V);
+    }
+exit: ;
+    if (LT!=NULL) { /* put result into lookup table */
+        int absent;
+        k = kh_put(str_LinComb, LT, s, &absent);
+        kh_value(LT, k) = R;
+    } else {
+        free(s);
+    }
+    return R;
 }
 
 
-static INT_FF_LU_T fraction_free_lu_solve(int n, INT_FF_LU_T *A, INTEGER *x) {
-    INT_FF_LU_T oldpivot = 1;
-    for (int k=0; k<n-1; k++) {
-        INT_FF_LU_T pivot = A[k+n*k];
-        for (int i=k+1; i<n; i++) {
-            x[i] = (pivot*x[i] - A[i+n*k]*x[k])/oldpivot;
-        }
-        oldpivot = pivot;
-    }
 
-    INT_FF_LU_T d = A[n-1+n*(n-1)];
-    for (int i=n-1; i>=0; i--) {
-        INTEGER h = 0;
-        for (int j=i+1; j<n; j++) {
-            h += A[i+j*n]*x[j];
-        }
-        x[i] = (d*x[i]-h)/A[i+n*i];
-    }
-    return d;
-}
-
-
-void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
+void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS) {
     double t0 = tic();
-    uint32_t *WI = malloc(LS->dim*sizeof(uint32_t));
-    for (int i=0; i<LS->dim; i++) {
-        WI[i] = word_index(LS->K, LS->W[i], 0, LS->nn[i]-1);
-    }
-    uint32_t *DI_lyndon  = multi_degree_indices(LS->K, LS->dim, LS->W, LS->nn);
-    uint32_t *DI_hall = hall_multi_degree_indices(LS->K, LS->dim, LS->p1, LS->p2);
-    INTEGER *c_hall =malloc(LS->dim*sizeof(INTEGER));
-    for (int i=0; i<=LS->K; i++) {
-        c_hall[i] = LS->c[i];
-    }
+    int N = LS->N;
+    HS->N = LS->N;
+    HS->K = LS->K;
+    HS->dim = LS->dim;
+    HS->denom = LS->denom;
+    HS->W = NULL;
+    HS->R = NULL;
+    HS->c = calloc(LS->dim, sizeof(INTEGER));
 
-    for (int n=2; n<=N; n++) { /* over all word sizes */
-    if ((!odd_orders_only)||(n&1)) {
-        size_t i1 = LS->ii[n-1];
-        size_t i2 = LS->ii[n]-1;
-        size_t h1 = DI_lyndon[i1];
-        size_t h2 = DI_lyndon[i2];
-        #pragma omp parallel for schedule(dynamic,1)
-        for (int h=h1; h<=h2; h++) { /* over all multi-degrees */
-            double t0 = tic();
-            int kk= h-h1;
-            /* get dimension */
-            int m=0;
-            for (int j=i1; j<=i2; j++) {
-                if (DI_lyndon[j]==h) {
-                    m++;
-                }
-            }
-            if (m==0) {
-                continue;
-            }
+    magma_element_t **H;
+    int dim = hall_basis(LS->K, LS->N, LS->dim, &H);
+    assert(dim==LS->dim);
+    khash_t(str_int) *HT = hall_inverse_table(dim, H);
+    data_from_table(LS->dim, H, HT, &HS->nn, &HS->p1, &HS->p2);
 
-            uint32_t *WI1 = malloc(m*sizeof(uint32_t));
-            uint32_t *I = malloc(m*sizeof(uint32_t));
-            uint32_t *J = malloc(m*sizeof(uint32_t));
-            int k=0;
-            int l=0;
-            for (int j=i1; j<=i2; j++) {
-                if (DI_lyndon[j]==h) {
-                    I[k] = j;
-                    WI1[k] = WI[j];
-                    k++;
-                }
-                if (DI_hall[j]==h) {
-                    J[l] = j;
-                    l++;
-                }
-            }
-            assert(l==m);
-            uint32_t* LWI = malloc(m*sizeof(uint32_t));
-            uint8_t w[n];
-            for (int j=0; j<m; j++) {
-                leading_word(LS->K, J[j], w, LS->nn, LS->p1, LS->p2);
-                int i = word_index(LS->K, w, 0, n-1);
-                LWI[j] = find_smallest_lyndon_word_index(WI1, 0, m-1, i);
-            }
-            uint32_t* p0 = malloc(m*sizeof(uint32_t));
-            sortperm(m, LWI, p0);
-
-            P_t *P = P_init(LS->K, N, 2*m);
-            uint32_t *r = malloc(m*sizeof(uint32_t));
-            int stop = 0;
-            for (int j=0; j<m; j++) {
-                r[j] = P_append(P, J[j], 0, LS->p1, LS->p2, LS->nn);
-                stop = r[j] > stop ? r[j] : stop;
-            }
-            int32_t *X = malloc((P->len)*sizeof(int32_t));
-
-            /* set up matrix */
-            INTEGER *x = calloc(m, sizeof(INTEGER));
-            INT_FF_LU_T *A = calloc(m*m, sizeof(INT_FF_LU_T));
-            for (int i=0; i<m; i++) {
-                //stop = r[i] > stop ? r[i] : stop;
-                P_run(X, P, LS->W[I[m-i-1]], stop);
-                for (int j=0; j<m; j++) {
-                    A[i+j*m] = X[r[p0[m-j-1]]];
-                }
-            }
-
-            INT_FF_LU_T Amax=0;
-            for (int i=0; i<m; i++) {
-                for (int j=0; j<m; j++) {
-                    if (IABS(A[i+m*j])>Amax) {
-                        Amax = IABS(A[i+m*j]);
-                    }
-                }
-            }
-
-
-            double t1 = toc(t0);
-            uint32_t* p1 = malloc(m*sizeof(uint32_t));
-            uint32_t* p2 = malloc(m*sizeof(uint32_t));
-            // fraction_free_lu(m, A, p1);
-            fraction_free_full_pivoting_lu(m, A, p1, p2);
-            double t2 = toc(t0);
-
-            INT_FF_LU_T LUmax=0;
-            INT_FF_LU_T dmax=0;
-            for (int i=0; i<m; i++) {
-                if (IABS(A[i+m*i])>dmax) {
-                    dmax = IABS(A[i+m*i]);
-                }
-                for (int j=0; j<m; j++) {
-                    if (IABS(A[i+m*j])>LUmax) {
-                        LUmax = IABS(A[i+m*j]);
-                    }
-                }
-            }
-
-            /* set up righthand side */
-            for (int i=0; i<m; i++) {
-                x[i] = LS->c[I[m-p1[i]-1]];
-            }
-
-            INT_FF_LU_T det = fraction_free_lu_solve(m, A, x);
-            assert(IABS(det)==1);
-
-            /* copy result */
-            if (det==1) {
-                for (int j=0; j<m; j++) {
-                     c_hall[J[p0[m-p2[j]-1]]] = x[j];
-                }
-            }
-            else { /* det==-1 */
-                for (int j=0; j<m; j++) {
-                     c_hall[J[p0[m-p2[j]-1]]] = -x[j];
-                }
-            }
-
-            free(WI1);
-            free(I);
-            free(J);
-            free(LWI);
-            free(p0);
-            free(p1);
-            free(r);
-            free(X);
-            free(x);
-            free(A);
-            double t3 = toc(t0);
-            printf("%3i %3i %6i %10.4f %10.4f %10.4f",n, kk, m, t1, t2-t1, t3);  
-            printf(" Amax="); print_INTEGER(Amax);
-            printf(" dmax="); print_INTEGER(dmax);
-            printf(" LUmax="); print_INTEGER(LUmax);
-            printf("\n");
-        }
-    }
-    else {
-        for (int j=LS->ii[n-1]; j<=LS->ii[n]-1; j++) {
-            LS->c[j] = 0;
-        }
-    }
-    }
-    free(LS->c);
-    LS->c = c_hall;
-    free(WI);
-    free(DI_lyndon);
-    free(DI_hall);
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
-        printf("#convert to Lie series: time=%g sec\n", t1);
+        printf("#init Hall basis: time=%g sec\n", t1);
+        if (VERBOSITY_LEVEL>=2) {
+            fflush(stdout);
+        }
+    }
+
+    magma_element_t **L = malloc(LS->dim*sizeof(magma_element_t*));
+    data2m(LS->dim, LS->nn, LS->p1, LS->p2, L);
+
+    HS->ii = malloc((N+1)*sizeof(uint32_t));
+    for (int n=0; n<=N; n++) {
+        HS->ii[n] = LS->ii[n];
+    }
+
+    size_t i1 = LS->ii[N-1];
+    size_t i2 = LS->ii[N]-1;
+    uint32_t *DI  = multi_degree_indices(LS->K, LS->dim, LS->W, LS->nn);
+    size_t h1 = DI[i1];
+    size_t h2 = DI[i2];
+    #pragma omp parallel for schedule(dynamic,1)
+    for (int h=h1; h<=h2; h++) { /* over all multi-degrees */
+         khash_t(str_LinComb) *LUT = kh_init(str_LinComb);
+         //kh_resize(str_LinComb, LUT, 300000);
+         for (int i=i1; i<=i2; i++) {
+            if (DI[i]==h) {
+                size_t I[N];
+                size_t nr = get_right_factors(i, I, N, LS->p1, LS->p2);
+                for (int r=0; r<=nr; r++) {
+                    int ii = I[r];
+                    if (LS->c[ii]!=0) {
+                        khash_t(LinComb) *R = rewrite_magma_element(L[ii], H, HT, LUT);
+                        for (khint_t k=kh_begin(R); k!=kh_end(R); k++) {
+                            if (kh_exist(R, k)) {
+                                int64_t v = kh_value(R, k);
+                                if (v!=0) {
+                                    int j = kh_key(R, k);
+                                    HS->c[j] += v*LS->c[ii];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (khint_t k=kh_begin(LUT); k!=kh_end(LUT); k++) {
+            if (kh_exist(LUT, k)) {
+                free((char*) kh_key(LUT, k));
+                kh_destroy(LinComb, kh_value(LUT, k));
+            }
+        }
+        kh_destroy(str_LinComb, LUT);
+    }
+
+    free(DI);
+    for (int i=0; i<LS->dim; i++) {
+        free(H[i]);
+        free(L[i]);
+    }
+    free(H);
+    free(L);
+    for (khint_t k=kh_begin(HT); k!=kh_end(HT); k++) {
+        if (kh_exist(HT, k)) {
+            free((char*) kh_key(HT, k));
+        }
+    }
+    kh_destroy(str_int, HT);
+
+
+    if (VERBOSITY_LEVEL>=1) {
+        double t1 = toc(t0);
+        printf("#convert from Lyndon to Hall Lie series: time=%g sec\n", t1);
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }

@@ -163,24 +163,6 @@ void convert_to_lie_series(lie_series_t *LS, int N) {
 #ifdef _OPENMP
     int h_thread[h2-h1+1];
 #endif
-    int hh[h2-h1+1];
-    if (LS->K==2 && (N&1)==0) {
-        /* generate loop order corresponding to decreasing running times:
-         * N/2, N/2-1, N/2+1, N/2-1, N/2+1, ..., 1, N-1
-         */ 
-        int n1 = N>>1;
-        hh[0]=n1-1;
-        for (int k=1; k<n1; k++) {
-            hh[N-2*k-1] = k-1;
-            hh[2*k+1-1] = n1+k-1;
-        }
-    }
-    else {
-        for (int k=0; k<=h2-h1; k++) {
-            hh[k] = k;
-        }
-    }
-
     #pragma omp parallel 
     {
     int *jj = calloc(LS->dim, sizeof(int));  // LS->dim far too large upper bound
@@ -193,8 +175,8 @@ void convert_to_lie_series(lie_series_t *LS, int N) {
      * for different multi degree indices. 
      */
     #pragma omp for schedule(dynamic,1) 
-    for (int k=0; k<=h2-h1; k++) {
-        int h = h1+hh[k];
+    for (int h=h1; h<=h2; h++) { /* over all multi-degrees */
+        int k = h-h1;
         h_time[k] = tic();
         h_n[k] = 0;
 #ifdef _OPENMP
@@ -291,16 +273,17 @@ void convert_to_lie_series(lie_series_t *LS, int N) {
         }
         h_time2[k] = toc(h_time2[k]); 
 #endif
-
+        free(r);
         int len = P->len;
         P_free(P);
         free(X);
+        LS->R = 0;
         h_time[k] = toc(h_time[k]); 
         if (VERBOSITY_LEVEL>=2) {
 #ifdef _OPENMP
-            printf("#%7i %10i %11.2f %11.2f %11.2f %10i %4i\n", hh[k]+1, h_n[k], h_time1[k], h_time2[k], h_time[k], len, h_thread[k]);
+            printf("#%7i %10i %11.2f %11.2f %11.2f %10i %4i\n", k+1, h_n[k], h_time1[k], h_time2[k], h_time[k], len, h_thread[k]);
 #else
-            printf("#%7i %10i %11.2f\n", hh[k]+1, h_n[k], h_time[k]);
+            printf("#%7i %10i %11.2f\n", k+1, h_n[k], h_time[k]);
 #endif
             fflush(stdout);
         }

@@ -60,9 +60,6 @@ enum {
     LYNDON_BASIS = 0,
     RIGHTNORMED_BASIS = 1,
     HALL_BASIS = 2,
-    REVERSE_HALL_BASIS = 3,
-    LYNDON_AS_HALL_BASIS = 4,
-    REVERSE_LYNDON_AS_HALL_BASIS = 5
 };        
 
 
@@ -174,5 +171,6 @@ typedef int32_t v4int32_t __attribute__ ((vector_size(16), aligned(16)));
 void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t w2[], uint8_t w3[], uint32_t stop);
 #endif
 
+void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS);
 
 #endif /*BCH_H */
