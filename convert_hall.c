@@ -111,21 +111,6 @@ static void data2m(int dim, uint8_t *nn, uint32_t *p1, uint32_t *p2,  magma_elem
 }
 
 
-static int hall_basis(int K, int N, int size, lie_series_t *HS, magma_element_t ***_H) {
-    uint8_t *nn;
-    uint32_t *p1;
-    uint32_t *p2;
-    int dim = hall_data(K, N, size, &nn, &p1, &p2);
-    HS->nn = nn;
-    HS->p1 = p1;
-    HS->p2 = p2;
-    magma_element_t **H = malloc(dim*sizeof(magma_element_t*));
-    data2m(dim, nn, p1, p2, H);
-    *_H = H;
-    return dim;
-}
-
-
 static khash_t(str_int) *hall_inverse_table(int dim, magma_element_t **H) {
     khash_t(str_int) *HT = kh_init(str_int);
     for(int i=0; i<dim; i++) {
@@ -318,17 +303,17 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS) {
     int N = LS->N;
     HS->N = LS->N;
     HS->K = LS->K;
-    HS->dim = LS->dim;
     HS->denom = LS->denom;
     HS->W = NULL;
     HS->R = NULL;
     HS->c = calloc(LS->dim, sizeof(INTEGER));
     HS->c[0] = LS->c[0];
 
-    magma_element_t **H;
-    int dim = hall_basis(LS->K, LS->N, LS->dim, HS, &H);
-    assert(dim==LS->dim);
-    khash_t(str_int) *HT = hall_inverse_table(dim, H);
+    HS->dim = hall_data(LS->K, LS->N, LS->dim, &HS->nn, &HS->p1, &HS->p2);
+    assert(HS->dim==LS->dim);
+    magma_element_t **H = malloc(HS->dim*sizeof(magma_element_t*));
+    data2m(HS->dim, HS->nn, HS->p1, HS->p2, H);
+    khash_t(str_int) *HT = hall_inverse_table(HS->dim, H);
 
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
