@@ -200,8 +200,8 @@ static int hall_data(int K, int N, int size, uint8_t **_nn, uint32_t **_p1, uint
     }
     int i = K;
     for (int n=2; n<=N; n++) {
-        for (int j=0; j<i; j++) {
-            for (int k=j+1; k<i; k++) {
+        for (int j=0; (j<i) && (nn[j]<n); j++) {
+            for (int k=j+1; (k<i) && (nn[k]<=n-nn[j]); k++) {
                 if ((nn[j]+nn[k]==n) && j>=p2[k]) {
                     if (i>=size) {
                         size *= 2;
@@ -474,6 +474,7 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS) {
     HS->W = NULL;
     HS->R = NULL;
     HS->c = calloc(LS->dim, sizeof(INTEGER));
+    HS->c[0] = LS->c[0];
 
     magma_element_t **H;
     int dim = hall_basis(LS->K, LS->N, LS->dim, &H);
