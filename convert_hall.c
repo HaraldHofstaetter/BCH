@@ -241,6 +241,80 @@ static void fraction_free_lu(int n, INT_FF_LU_T *A, uint32_t *p) {
     }
 }
 
+static void fraction_free_full_pivoting_lu(int n, INT_FF_LU_T *A, uint32_t *p, uint32_t *q) {
+    for (int i=0; i<n; i++) {
+        p[i] = i;
+        q[i] = i;
+    }
+    INT_FF_LU_T oldpivot = 1;
+    for (int k=0; k<n; k++) {
+        INT_FF_LU_T pivot = INT_FF_LU_MAX;
+        int ipivot = n;
+        int jpivot = n;
+        /* search for smallest nonzero pivot */
+        for (int j=k; j<n; j++) { 
+            for (int i=k; i<n; i++) { 
+                if ((A[i+n*j]!=0) && (IABS(A[i+n*j])<IABS(pivot))) {
+                    ipivot = i;
+                    jpivot = j;
+                    pivot = A[i+n*j];
+                    if (IABS(pivot)==1) { /* pivot already as small as possible */
+                        break;
+                    }
+                }
+            }
+            if (IABS(pivot)==1) { /* pivot already as small as possible */
+                 break;
+            }
+        }
+        if (ipivot>=n) {
+            fprintf(stderr, "ERROR: fraction-free LU factorization does not exist\n"); 
+            exit(EXIT_FAILURE);
+        }
+        if (ipivot!=k) { /* swap k-th and ipivot-th row */
+            for (int j=0; j<n; j++) {
+                INT_FF_LU_T h = A[k+n*j];
+                A[k+n*j] = A[ipivot+n*j];
+                A[ipivot+n*j] = h;
+            }
+            uint32_t h = p[k];
+            p[k] = p[ipivot];
+            p[ipivot] = h;
+        }
+        if (jpivot!=k) { /* swap k-th and jpivot-th column */
+            for (int i=0; i<n; i++) {
+                INT_FF_LU_T h = A[i+n*k];
+                A[i+n*k] = A[i+n*jpivot];
+                A[i+n*jpivot] = h;
+            }
+            uint32_t h = q[k];
+            q[k] = p[jpivot];
+            q[jpivot] = h;
+        }
+        for (int i=k+1; i<n; i++) {
+            INT_FF_LU_T Aik = A[i+n*k];
+            if (!((Aik==0) && (pivot==oldpivot))) {
+                if (oldpivot==1) { /* avoid expensive div operation */
+                    for (int j=k+1; j<n; j++) {
+                        A[i+n*j] = pivot*A[i+n*j] - A[k+n*j]*Aik;
+                    }
+                }
+                else if (oldpivot==-1) { /* avoid expensive div operation */
+                    for (int j=k+1; j<n; j++) {
+                        A[i+n*j] = -pivot*A[i+n*j] + A[k+n*j]*Aik;
+                    }
+                }
+                else {
+                    for (int j=k+1; j<n; j++) {
+                        A[i+n*j] = (pivot*A[i+n*j] - A[k+n*j]*Aik)/oldpivot; /* division is exact without remainder */
+                    }
+                }
+            }
+        }
+        oldpivot = pivot;
+    }
+}
+
 
 static INT_FF_LU_T fraction_free_lu_solve(int n, INT_FF_LU_T *A, INTEGER *x) {
     INT_FF_LU_T oldpivot = 1;
@@ -263,6 +337,7 @@ static INT_FF_LU_T fraction_free_lu_solve(int n, INT_FF_LU_T *A, INTEGER *x) {
     return d;
 }
 
+
 void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
     double t0 = tic();
     uint32_t *WI = malloc(LS->dim*sizeof(uint32_t));
@@ -284,6 +359,8 @@ void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
         size_t h2 = DI_lyndon[i2];
         #pragma omp parallel for schedule(dynamic,1)
         for (int h=h1; h<=h2; h++) { /* over all multi-degrees */
+            double t0 = tic();
+            int kk= h-h1;
             /* get dimension */
             int m=0;
             for (int j=i1; j<=i2; j++) {
@@ -342,8 +419,35 @@ void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
                 }
             }
 
+            INT_FF_LU_T Amax=0;
+            for (int i=0; i<m; i++) {
+                for (int j=0; j<m; j++) {
+                    if (IABS(A[i+m*j])>Amax) {
+                        Amax = IABS(A[i+m*j]);
+                    }
+                }
+            }
+
+
+            double t1 = toc(t0);
             uint32_t* p1 = malloc(m*sizeof(uint32_t));
-            fraction_free_lu(m, A, p1);
+            uint32_t* p2 = malloc(m*sizeof(uint32_t));
+            // fraction_free_lu(m, A, p1);
+            fraction_free_full_pivoting_lu(m, A, p1, p2);
+            double t2 = toc(t0);
+
+            INT_FF_LU_T LUmax=0;
+            INT_FF_LU_T dmax=0;
+            for (int i=0; i<m; i++) {
+                if (IABS(A[i+m*i])>dmax) {
+                    dmax = IABS(A[i+m*i]);
+                }
+                for (int j=0; j<m; j++) {
+                    if (IABS(A[i+m*j])>LUmax) {
+                        LUmax = IABS(A[i+m*j]);
+                    }
+                }
+            }
 
             /* set up righthand side */
             for (int i=0; i<m; i++) {
@@ -356,12 +460,12 @@ void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
             /* copy result */
             if (det==1) {
                 for (int j=0; j<m; j++) {
-                     c_hall[J[p0[m-j-1]]] = x[j];
+                     c_hall[J[p0[m-p2[j]-1]]] = x[j];
                 }
             }
             else { /* det==-1 */
                 for (int j=0; j<m; j++) {
-                     c_hall[J[p0[m-j-1]]] = -x[j];
+                     c_hall[J[p0[m-p2[j]-1]]] = -x[j];
                 }
             }
 
@@ -375,6 +479,12 @@ void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
             free(X);
             free(x);
             free(A);
+            double t3 = toc(t0);
+            printf("%3i %3i %6i %10.4f %10.4f %10.4f",n, kk, m, t1, t2-t1, t3);  
+            printf(" Amax="); print_INTEGER(Amax);
+            printf(" dmax="); print_INTEGER(dmax);
+            printf(" LUmax="); print_INTEGER(LUmax);
+            printf("\n");
         }
     }
     else {
