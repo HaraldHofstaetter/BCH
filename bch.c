@@ -70,7 +70,7 @@ int main(int argc, char*argv[]) {
         return EXIT_SUCCESS;
     }
 
-    int basis = get_arg(argc, argv, "basis", 0, 0, 2);
+    int basis = get_arg(argc, argv, "basis", 0, 0, 5);
 
     expr_t *A = generator(0);
     expr_t *B = generator(1);

@@ -4,7 +4,7 @@
 #include<stdio.h>
 #include<string.h>
 #include<stdbool.h>
-#include <assert.h>
+#include<assert.h>
 
 extern unsigned int VERBOSITY_LEVEL;
 
@@ -21,6 +21,7 @@ typedef struct magma_element_t {
     struct magma_element_t *l;
     struct magma_element_t *r;
 } magma_element_t;
+
 
 static magma_element_t* gen(uint8_t g) {
     magma_element_t *m = malloc(sizeof(magma_element_t));
@@ -59,7 +60,35 @@ static uint8_t m2str(const magma_element_t *m, uint8_t p, char *s) {
 }
 
 
-static int hall_data(int K, int N, int size, uint8_t **_nn, uint32_t **_p1, uint32_t **_p2) {
+static void data2m(int dim, uint8_t *nn, uint32_t *p1, uint32_t *p2,  magma_element_t **H) {
+    for (int i=0; i<dim; i++) {
+        if (nn[i]==1) {
+            H[i] = gen(i);
+        }
+        else {
+            H[i] = bracket(H[p1[i]], H[p2[i]]);
+        }
+    }
+}
+
+static khash_t(str_int) *hall_inverse_table(int dim, magma_element_t **H) {
+    khash_t(str_int) *HT = kh_init(str_int);
+    for(int i=0; i<dim; i++) {
+        magma_element_t *h = H[i];
+        char s[3*h->deg-2+1];
+        m2str(h, 0, s);
+        int absent;
+        khint_t k = kh_put(str_int, HT, s, &absent);
+        kh_value(HT, k) = i;
+        if (absent) kh_key(HT, k) = strdup(s);
+    }
+    return HT;
+}
+
+
+
+static int hall_data(int K, int N, int size, uint8_t **_nn, uint32_t **_p1, uint32_t **_p2,  
+        magma_element_t **H, khash_t(str_int) **HT) {
     /* METHOD: Algorithm 1 in Section II.B of
      * F. Casas, A. Murua, An efficient algoritzhm for computing the 
      * Baker-Campbell-Hausdorff series and some of its applications,
@@ -92,6 +121,8 @@ static int hall_data(int K, int N, int size, uint8_t **_nn, uint32_t **_p1, uint
             }
         }
     }
+    data2m(i, nn, p1, p2, H);
+    *HT = hall_inverse_table(i, H);
     *_nn = nn;
     *_p1 = p1;
     *_p2 = p2;
@@ -99,31 +130,181 @@ static int hall_data(int K, int N, int size, uint8_t **_nn, uint32_t **_p1, uint
 }
 
 
-static void data2m(int dim, uint8_t *nn, uint32_t *p1, uint32_t *p2,  magma_element_t **H) {
+static void data_from_table(int dim, magma_element_t **H, khash_t(str_int) *HT,
+        uint8_t **_nn, uint32_t **_p1, uint32_t **_p2) {
+    uint8_t *nn = malloc(dim*sizeof(uint8_t));
+    uint32_t *p1 = malloc(dim*sizeof(uint32_t));
+    uint32_t *p2 = malloc(dim*sizeof(uint32_t));
     for (int i=0; i<dim; i++) {
+        magma_element_t *h = H[i];
+        nn[i] = h->deg;
         if (nn[i]==1) {
-            H[i] = gen(i);
+            p1[i] = i;
+            p2[i] = 0;
         }
         else {
-            H[i] = bracket(H[p1[i]], H[p2[i]]);
+            char s[3*h->deg-2+1];
+            m2str(h->l, 0, s);
+            khint_t k = kh_get(str_int, HT, s);
+            assert (k != kh_end(HT));
+            p1[i] = kh_value(HT, k); 
+            m2str(h->r, 0, s);
+            k = kh_get(str_int, HT, s);
+            assert (k != kh_end(HT));
+            p2[i] = kh_value(HT, k); 
+        }
+    }
+    *_nn = nn;
+    *_p1 = p1;
+    *_p2 = p2;
+}
+
+
+static void foliage(const magma_element_t *m, uint8_t p, char *f) {
+    if (m->deg==1) {
+        f[p] = '0' + m->g;
+        f[p+1] = '\0';
+    }
+    else {
+        foliage(m->l, p, f);
+        foliage(m->r, p+m->l->deg, f);
+    }
+}
+
+
+static int mcmp_0(const magma_element_t *m1, const magma_element_t *m2) {
+    if (m1==m2) {
+        return 0;
+    }
+    else {
+        char f1[m1->deg+1];
+        char f2[m2->deg+1];
+        foliage(m1, 0, f1);
+        foliage(m2, 0, f2);
+        return strcmp(f2, f1);
+    }
+}
+
+
+static int mcmp_1(const magma_element_t *m1, const magma_element_t *m2) {
+    if (m1==m2) {
+        return 0;
+    }
+    else if (m1->deg<m2->deg) {
+        return -1;
+    }
+    else if (m1->deg>m2->deg) {
+        return +1;
+    }
+    else {
+        char f1[m1->deg+1];
+        char f2[m2->deg+1];
+        foliage(m1, 0, f1);
+        foliage(m2, 0, f2);
+        return strcmp(f1, f2);
+    }
+}
+
+
+static int mcmp_2(const magma_element_t *m1, const magma_element_t *m2) {
+    if (m1==m2) {
+        return 0;
+    }
+    else if (m1->deg<m2->deg) {
+        return -1;
+    }
+    else if (m1->deg>m2->deg) {
+        return +1;
+    }
+    else {
+        char f1[m1->deg+1];
+        char f2[m2->deg+1];
+        foliage(m1, 0, f1);
+        foliage(m2, 0, f2);
+        int c1 = 0;
+        int c2 = 0;
+        for (int i=0; i<m1->deg; i++) {
+            if (f1[i]=='0') {
+                c1++;
+            }
+            if (f2[i]=='0') {
+                c2++;
+            }
+        }
+        if (c1<c2) {
+            return -1;
+        }
+        else if (c1>c2) {
+            return +1;
+        }
+        else {
+            return strcmp(f1, f2);
         }
     }
 }
 
 
-static khash_t(str_int) *hall_inverse_table(int dim, magma_element_t **H) {
-    khash_t(str_int) *HT = kh_init(str_int);
-    for(int i=0; i<dim; i++) {
-        magma_element_t *h = H[i];
-        char s[3*h->deg-2+1];
-        m2str(h, 0, s);
-        int absent;
-        khint_t k = kh_put(str_int, HT, s, &absent);
-        kh_value(HT, k) = i;
-        if (absent) kh_key(HT, k) = strdup(s);
+static bool ishall(magma_element_t *m, int (*mcmp)(const magma_element_t *, const magma_element_t *)) {
+    if (m->deg==1) {
+        return true;
     }
-    return HT;
+    else if (!ishall(m->l, mcmp) || !ishall(m->r, mcmp) || (mcmp(m->l, m->r)<=0)) {
+        return false;
+    }
+    else if (m->l->deg==1) {
+        return true;
+    }
+    else {
+        return mcmp(m->l->r, m->r)<=0;
+    }
 }
+
+
+void qsort_r(void *base, size_t nmemb, size_t size,
+                  int (*compar)(const void *, const void *, void *),
+                  void *arg);
+
+
+static int _mcmp(const void *m1, const void *m2, void *_mcmp) {
+    int (*mcmp)(const magma_element_t *, const magma_element_t *) = _mcmp;
+    return mcmp(*(magma_element_t * const *) m1, *(magma_element_t * const *) m2);
+}
+
+
+static int hall_data_from_hall_order(int K, int N, int size, 
+        int (*mcmp)(const magma_element_t *, const magma_element_t *), 
+        uint8_t **_nn, uint32_t **_p1, uint32_t **_p2,
+        magma_element_t **H, khash_t(str_int) **HT) {
+    for (int i=0; i<K; i++) {
+        H[i] = gen(i);
+    }
+    int n = 2;
+    int k = K;
+    while (n<=N) {
+        int k0 = k;
+        for(int i=0; i<k0; i++) {
+            for(int j=0; j<k0; j++) {
+                if (H[i]->deg + H[j]->deg==n) {
+                    magma_element_t *h = bracket(H[i], H[j]);
+                    if (ishall(h, mcmp)) {
+                        H[k] = h;
+                        k++;
+                    }
+                    else {
+                        free(h);
+                    }
+                }
+            }
+        }
+        n++;
+    }
+    qsort_r(H, k, sizeof(magma_element_t*), _mcmp, (void *) mcmp);
+    *HT = hall_inverse_table(k, H);
+    data_from_table(k, H, *HT, _nn, _p1, _p2);
+    return k;
+}
+
+
 
 
 static khash_t(LinComb)* rewrite_magma_element(magma_element_t *m, 
@@ -298,7 +479,7 @@ exit: ;
 
 
 
-void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS) {
+void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int basis) {
     double t0 = tic();
     int N = LS->N;
     HS->N = LS->N;
@@ -307,13 +488,23 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS) {
     HS->W = NULL;
     HS->R = NULL;
     HS->c = calloc(LS->dim, sizeof(INTEGER));
-    HS->c[0] = LS->c[0];
 
-    HS->dim = hall_data(LS->K, LS->N, LS->dim, &HS->nn, &HS->p1, &HS->p2);
+    magma_element_t **H = malloc(LS->dim*sizeof(magma_element_t*));
+    khash_t(str_int) *HT;
+
+    if (basis==HALL_BASIS_1) {
+        HS->dim = hall_data_from_hall_order(LS->K, LS->N, LS->dim, mcmp_1, &HS->nn, &HS->p1, &HS->p2, H, &HT);
+    }
+    else if (basis==HALL_BASIS_2) {
+        HS->dim = hall_data_from_hall_order(LS->K, LS->N, LS->dim, mcmp_2, &HS->nn, &HS->p1, &HS->p2, H, &HT);
+    }
+    else if (basis==HALL_BASIS_0) {
+        HS->dim = hall_data_from_hall_order(LS->K, LS->N, LS->dim, mcmp_0, &HS->nn, &HS->p1, &HS->p2, H, &HT);
+    }
+    else {
+        HS->dim = hall_data(LS->K, LS->N, LS->dim, &HS->nn, &HS->p1, &HS->p2, H, &HT);
+    }
     assert(HS->dim==LS->dim);
-    magma_element_t **H = malloc(HS->dim*sizeof(magma_element_t*));
-    data2m(HS->dim, HS->nn, HS->p1, HS->p2, H);
-    khash_t(str_int) *HT = hall_inverse_table(HS->dim, H);
 
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
@@ -321,6 +512,13 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS) {
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }
+    }
+
+    {
+        khint_t k = kh_get(str_int, HT, "0");
+        assert(k != kh_end(HT));
+        int i = kh_value(HT, k);
+        HS->c[i] = LS->c[0];
     }
 
     magma_element_t **L = malloc(LS->dim*sizeof(magma_element_t*));

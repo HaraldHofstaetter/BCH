@@ -45,7 +45,7 @@ size_t get_right_factors(size_t i, size_t J[], size_t kmax, uint32_t *p1, uint32
 }
 
 static int degree_of_generator(lie_series_t *LS, size_t i, uint8_t g) {
-    if (i<LS->K) {
+    if (LS->nn[i]==1) {
         return i==g ? 1 : 0;
     }
     else {
@@ -170,9 +170,9 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis) {
     else {
         convert_to_lie_series(&LS, N);
         LS.R = 0;
-        if (basis==HALL_BASIS) {
+        if (basis>=HALL_BASIS) {
             lie_series_t HS;
-            convert_lyndon_to_hall_lie_series(&LS, &HS);
+            convert_lyndon_to_hall_lie_series(&LS, &HS, basis);
             free_lie_series(LS);
             LS = HS;
         }
@@ -212,9 +212,9 @@ lie_series_t BCH(size_t N, int basis) {
             convert_to_lie_series(&LS, N-1);
             compute_BCH_terms_of_even_order_N(&LS);
         }
-        if (basis==HALL_BASIS) {
+        if (basis>=HALL_BASIS) {
             lie_series_t HS;
-            convert_lyndon_to_hall_lie_series(&LS, &HS);
+            convert_lyndon_to_hall_lie_series(&LS, &HS, basis);
             free_lie_series(LS);
             LS = HS;
         }
@@ -256,9 +256,9 @@ lie_series_t symBCH(size_t N, int basis) {
     }
     else {
         convert_to_lie_series(&LS, N1);
-        if (basis==HALL_BASIS) {
+        if (basis>=HALL_BASIS) {
             lie_series_t HS;
-            convert_lyndon_to_hall_lie_series(&LS, &HS);
+            convert_lyndon_to_hall_lie_series(&LS, &HS, basis);
             free_lie_series(LS);
             LS = HS;
         }
@@ -315,7 +315,7 @@ unsigned int get_verbosity_level(void) {
 
 
 void print_lyndon_word(lie_series_t *LS,  size_t i, char *g) {
-    if (i<LS->K) {
+    if (LS->nn[i]==1) {
         printf("%c", g[i]);
     }
     else {
@@ -333,7 +333,7 @@ void print_rightnormed_word(lie_series_t *LS,  size_t i, char *g) {
 }
 
 void print_basis_element(lie_series_t *LS,  size_t i, char *g) {
-    if (i<LS->K) {
+    if (LS->nn[i]==1) {
         printf("%c", g[i]);
     }
     else {

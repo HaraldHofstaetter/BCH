@@ -4,10 +4,10 @@ CC = gcc
 #CC = clang 
 
 #CFLAGS = -O3 -fPIC -march=ivybridge  -fopenmp  -Wall 
-CFLAGS = -O3 -fPIC  -msse4.1   -fopenmp  -Wall  
+#CFLAGS = -O3 -fPIC  -msse4.1   -fopenmp  -Wall  
 #CFLAGS = -O3 -fPIC -msse4.1 -fopenmp -fsanitize=signed-integer-overflow -fsanitize=undefined -Wall 
 #CFLAGS = -g -fPIC  -Wall 
-#CFLAGS = -g -fPIC   -fsanitize=address -fsanitize=signed-integer-overflow  -Wall  
+CFLAGS = -g -fPIC   -fsanitize=address -fsanitize=signed-integer-overflow  -Wall  
 
 MAKE_SHARED_LIB = $(CC) -fopenmp -shared
 
