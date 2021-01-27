@@ -371,29 +371,27 @@ void print_lie_series(lie_series_t *LS, char *g) {
 
 
 void print_lie_series_statistics(lie_series_t *LS) {
-    int n = 1;
-    int dim_n = 0;
-    int dim = 0;
-    int nonzero_n = 0;
-    int nonzero = 0;
-    printf("# degree         dim    #nonzero   dim(cum.)   #nz(cum.)\n");
+    int dim[LS->N];
+    int nonzero[LS->N];
+    for (int i=0; i<LS->N; i++) {
+        dim[i] = 0;
+        nonzero[i] = 0;
+    }
     for (int i=0; i<LS->dim; i++) {
-        if (LS->nn[i] > n) { 
-            dim += dim_n;
-            nonzero += nonzero_n;
-            printf("#  %5i  %10i  %10i  %10i  %10i\n", n, dim_n, nonzero_n, dim, nonzero);
-            dim_n = 0;
-            nonzero_n = 0;
-            n++;
-        }
-        dim_n++;
+        int n = LS->nn[i];
+        dim[n-1]++;
         if (LS->c[i]!=0) {
-            nonzero_n++;
+            nonzero[n-1]++;
         }
     }
-    dim += dim_n;
-    nonzero += nonzero_n;
-    printf("#  %5i  %10i  %10i  %10i  %10i\n", n, dim_n, nonzero_n, dim, nonzero);
+    printf("# degree         dim    #nonzero   dim(cum.)   #nz(cum.)\n");
+    int dim_cum = 0;
+    int nonzero_cum = 0;
+    for (int n=1; n<=LS->N; n++) {
+        dim_cum += dim[n-1];
+        nonzero_cum += nonzero[n-1];
+        printf("#  %5i  %10i  %10i  %10i  %10i\n", n, dim[n-1], nonzero[n-1], dim_cum, nonzero_cum);
+    }
     printf("#\n");
 }
 

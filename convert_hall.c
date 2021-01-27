@@ -487,6 +487,7 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int b
     HS->denom = LS->denom;
     HS->W = NULL;
     HS->R = NULL;
+    HS->ii = NULL;
     HS->c = calloc(LS->dim, sizeof(INTEGER));
 
     magma_element_t **H = malloc(LS->dim*sizeof(magma_element_t*));
@@ -523,11 +524,6 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int b
 
     magma_element_t **L = malloc(LS->dim*sizeof(magma_element_t*));
     data2m(LS->dim, LS->nn, LS->p1, LS->p2, L);
-
-    HS->ii = malloc((N+1)*sizeof(uint32_t));
-    for (int n=0; n<=N; n++) {
-        HS->ii[n] = LS->ii[n];
-    }
 
     size_t i1 = LS->ii[N-1];
     size_t i2 = LS->ii[N]-1;
