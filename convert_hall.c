@@ -139,7 +139,7 @@ static void data_from_table(int dim, magma_element_t **H, khash_t(str_int) *HT,
         magma_element_t *h = H[i];
         nn[i] = h->deg;
         if (nn[i]==1) {
-            p1[i] = i;
+            p1[i] = h->g;
             p2[i] = 0;
         }
         else {
@@ -260,9 +260,9 @@ static bool ishall(magma_element_t *m, int (*mcmp)(const magma_element_t *, cons
 }
 
 
-void qsort_r(void *base, size_t nmemb, size_t size,
-                  int (*compar)(const void *, const void *, void *),
-                  void *arg);
+//void qsort_r(void *base, size_t nmemb, size_t size,
+//                  int (*compar)(const void *, const void *, void *),
+//                  void *arg);
 
 
 static int _mcmp(const void *m1, const void *m2, void *_mcmp) {

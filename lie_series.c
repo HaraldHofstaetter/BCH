@@ -316,7 +316,7 @@ unsigned int get_verbosity_level(void) {
 
 void print_lyndon_word(lie_series_t *LS,  size_t i, char *g) {
     if (LS->nn[i]==1) {
-        printf("%c", g[i]);
+        printf("%c", g[LS->p1[i]]);
     }
     else {
         print_lyndon_word(LS, LS->p1[i], g);
@@ -334,7 +334,7 @@ void print_rightnormed_word(lie_series_t *LS,  size_t i, char *g) {
 
 void print_basis_element(lie_series_t *LS,  size_t i, char *g) {
     if (LS->nn[i]==1) {
-        printf("%c", g[i]);
+        printf("%c", g[LS->p1[i]]);
     }
     else {
         if (LS->R) { /* rightnormed basis element */
