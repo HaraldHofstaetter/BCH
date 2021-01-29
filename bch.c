@@ -71,6 +71,13 @@ int main(int argc, char*argv[]) {
     }
 
     int basis = get_arg(argc, argv, "basis", 0, 0, 5);
+    int (*hcmp)(int n1, const char *f1, int n2, const char *f2);
+    switch (basis) {
+    case 3: hcmp = hcmp_1; break;
+    case 4: hcmp = hcmp_2; break;
+    case 5: hcmp = hcmp_0; break;
+    default: hcmp = NULL;
+    }
 
     expr_t *A = generator(0);
     expr_t *B = generator(1);
@@ -79,44 +86,44 @@ int main(int argc, char*argv[]) {
     lie_series_t LS;
     switch(get_arg(argc, argv, "expression", 0, 0, 8)) {
         case 0:  /* log(exp(A)*exp(B)), with optimizations spezific for this expression */ 
-            LS = BCH(N, basis);
+            LS = BCH(N, basis, hcmp);
             break;
         case 1: 
-            LS = symBCH(N, basis); /* log(exp(A/2)*exp(B)*exp(A/2), with optimizations spezific for this expression */  
+            LS = symBCH(N, basis, hcmp); /* log(exp(A/2)*exp(B)*exp(A/2), with optimizations spezific for this expression */  
             break;
         case 2: /* log(exp(A)*exp(B)*exp(A)) */
             ex = logarithm(product(product(exponential(A), exponential(B)), 
                                    exponential(A)));
-            LS = lie_series(2, ex, N, basis);
+            LS = lie_series(2, ex, N, basis, hcmp);
             break;
         case 3: /* log(exp(A)*exp(B)*exp(C)), 3 generators */
             ex = logarithm(product(product(exponential(A), exponential(B)), exponential(C)));
-            LS = lie_series(3, ex, N, basis);
+            LS = lie_series(3, ex, N, basis, hcmp);
             break;
         case 4: /* log(exp(A)*exp(B)*exp(-A)*exp(-B)) */
             ex = logarithm(product(product(exponential(A), exponential(B)),
                            product(exponential(negation(A)),exponential(negation(B)))));
-            LS = lie_series(2, ex, N, basis);
+            LS = lie_series(2, ex, N, basis, hcmp);
             break;
         case 5: /* log(exp(B/6)*exp(A/2)*exp(2/3*B+1/72*[B,[A,B]])*exp(A/2)*exp(B/6)) */
             ex = logarithm(product(product(product(product(
                     exponential(term(1, 6, B)), exponential(term(1, 2, A))),
                     exponential(sum(term(2, 3, B), term(1, 72, commutator(B, commutator(A, B)))))), 
                     exponential(term(1, 2, A))), exponential(term(1, 6, B))));
-            LS = lie_series(2, ex, N, basis); 
+            LS = lie_series(2, ex, N, basis, hcmp); 
             break;
         case 6: /* log(exp(A)*exp(B)) computed in Lie algebra over 3 generators */
             ex = logarithm(product(exponential(A), exponential(B)));
-            LS = lie_series(3, ex, N, basis); /* SIC! K=3 */
+            LS = lie_series(3, ex, N, basis, hcmp); /* SIC! K=3 */
             break;
         case 7: /* same as case 0 but without specific optimizations */
             ex = logarithm(product(exponential(A), exponential(B)));
-            LS = lie_series(2, ex, N, basis); 
+            LS = lie_series(2, ex, N, basis, hcmp); 
             break;
         case 8: /* same as case 1 but without specific optimizations */
             ex = logarithm(product(product(exponential(term(1, 2, A)), exponential(B)), 
                                    exponential(term(1, 2, A))));
-            LS = lie_series(2, ex, N, basis); 
+            LS = lie_series(2, ex, N, basis, hcmp); 
             break;
     }
 

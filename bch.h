@@ -83,9 +83,9 @@ typedef struct lie_series_t {
     INTEGER *c;
 } lie_series_t;
 
-lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis);
-lie_series_t BCH(size_t N, int basis);
-lie_series_t symBCH(size_t N, int basis);
+lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
+lie_series_t BCH(size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
+lie_series_t symBCH(size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
 
 void set_verbosity_level(unsigned int verbosity_level);
 unsigned int get_verbosity_level(void);
@@ -174,7 +174,10 @@ typedef int32_t v4int32_t __attribute__ ((vector_size(16), aligned(16)));
 void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t w2[], uint8_t w3[], uint32_t stop);
 #endif
 
-
-void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int basis);
+int hcmp_0(int n1, const char *f1, int n2, const char *f2);
+int hcmp_1(int n1, const char *f1, int n2, const char *f2);
+int hcmp_2(int n1, const char *f1, int n2, const char *f2);
+void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS,
+        int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
 
 #endif /*BCH_H */

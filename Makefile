@@ -36,5 +36,8 @@ bch_lyndon_20.txt: bch
 	./bch N=20 verbosity_level=1 > bch_lyndon_20.txt
 
 bch_rightnormed_20.txt: bch
-	./bch N=20 rightnormed_basis=1 verbosity_level=1 > bch_rightnormed_20.txt
+	./bch N=20 basis=1 verbosity_level=1 > bch_rightnormed_20.txt
+
+bch_hall_20.txt: bch
+	./bch N=20 basis=2 verbosity_level=1 > bch_hall_20.txt
 

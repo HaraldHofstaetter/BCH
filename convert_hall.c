@@ -171,59 +171,58 @@ static void foliage(const magma_element_t *m, uint8_t p, char *f) {
     }
 }
 
+/* hcmp_0, hcmp_1, hcmp_2 are examples of Hall orders. 
+ * n1, n2 ... degrees of first and second hall elements 
+ * f1, f2 ... foliages of first and second hall elements 
+ * Note that it must not be expected that f1[n1]=='\0'
+ * or f2[n2]=='\0', so that comparisons of these strings
+ * should be done with strncmp rather than strcmp.
+ */
 
-static int mcmp_0(const magma_element_t *m1, const magma_element_t *m2) {
-    if (m1==m2) {
-        return 0;
+int hcmp_0(int n1, const char *f1, int n2, const char *f2) {
+    int n = n1<n2 ? n1 : n2;
+    int r = strncmp(f2, f1, n); 
+    if (r==0) {
+        if (n2<n1) {
+            return -1;
+        }
+        else if (n2>n1) {
+            return +1;
+        }
+        else {
+            return 0;
+        }
     }
     else {
-        char f1[m1->deg+1];
-        char f2[m2->deg+1];
-        foliage(m1, 0, f1);
-        foliage(m2, 0, f2);
-        return strcmp(f2, f1);
+        return r;
     }
 }
 
 
-static int mcmp_1(const magma_element_t *m1, const magma_element_t *m2) {
-    if (m1==m2) {
-        return 0;
-    }
-    else if (m1->deg<m2->deg) {
+int hcmp_1(int n1, const char *f1, int n2, const char *f2) {
+    if (n1<n2) {
         return -1;
     }
-    else if (m1->deg>m2->deg) {
+    else if (n1>n2) {
         return +1;
     }
-    else {
-        char f1[m1->deg+1];
-        char f2[m2->deg+1];
-        foliage(m1, 0, f1);
-        foliage(m2, 0, f2);
-        return strcmp(f1, f2);
+    else { /* n1==n2 */
+        return strncmp(f1, f2, n1);
     }
 }
 
 
-static int mcmp_2(const magma_element_t *m1, const magma_element_t *m2) {
-    if (m1==m2) {
-        return 0;
-    }
-    else if (m1->deg<m2->deg) {
+int hcmp_2(int n1, const char *f1, int n2, const char *f2) {
+    if (n1<n2) {
         return -1;
     }
-    else if (m1->deg>m2->deg) {
+    else if (n1>n2) {
         return +1;
     }
     else {
-        char f1[m1->deg+1];
-        char f2[m2->deg+1];
-        foliage(m1, 0, f1);
-        foliage(m2, 0, f2);
         int c1 = 0;
         int c2 = 0;
-        for (int i=0; i<m1->deg; i++) {
+        for (int i=0; i<n1; i++) {
             if (f1[i]=='0') {
                 c1++;
             }
@@ -241,38 +240,48 @@ static int mcmp_2(const magma_element_t *m1, const magma_element_t *m2) {
             return strcmp(f1, f2);
         }
     }
+    assert(0); /* never reach this place */
 }
 
 
-static bool ishall(magma_element_t *m, int (*mcmp)(const magma_element_t *, const magma_element_t *)) {
+static bool ishall(magma_element_t *m, char *f, int (*hcmp)(int n1, const char *f1, int n2, const char *f2)) {
     if (m->deg==1) {
         return true;
     }
-    else if (!ishall(m->l, mcmp) || !ishall(m->r, mcmp) || (mcmp(m->l, m->r)<=0)) {
-        return false;
+    else if (!ishall(m->l, f, hcmp) 
+          || !ishall(m->r, f+m->l->deg, hcmp) 
+          || (hcmp(m->l->deg, f, m->r->deg, f+m->l->deg)<=0)) {
+        return  false;
     }
     else if (m->l->deg==1) {
         return true;
     }
     else {
-        return mcmp(m->l->r, m->r)<=0;
+        return hcmp(m->l->r->deg, f+m->l->l->deg, m->r->deg, f+m->l->deg)<=0;
     }
 }
-
 
 //void qsort_r(void *base, size_t nmemb, size_t size,
 //                  int (*compar)(const void *, const void *, void *),
 //                  void *arg);
 
 
-static int _mcmp(const void *m1, const void *m2, void *_mcmp) {
-    int (*mcmp)(const magma_element_t *, const magma_element_t *) = _mcmp;
-    return mcmp(*(magma_element_t * const *) m1, *(magma_element_t * const *) m2);
+static int cmp_for_qsort_r(const void *_m1, const void *_m2, void *_hcmp) {
+    int (*hcmp)(int n1, const char *f1, int n2, const char *f2) = _hcmp;
+    const magma_element_t *m1 = *(magma_element_t * const *) _m1;
+    const magma_element_t *m2 = *(magma_element_t * const *) _m2;
+    int n1 = m1->deg; 
+    int n2 = m2->deg;
+    char f1[n1+1]; 
+    char f2[n2+1]; 
+    foliage(m1, 0, f1);
+    foliage(m2, 0, f2);
+    return  hcmp(n1, f1, n2, f2);
 }
 
 
 static int hall_data_from_hall_order(int K, int N, int size, 
-        int (*mcmp)(const magma_element_t *, const magma_element_t *), 
+        int (*hcmp)(int n1, const char *f1, int n2, const char *f2),
         uint8_t **_nn, uint32_t **_p1, uint32_t **_p2,
         magma_element_t **H, khash_t(str_int) **HT) {
     for (int i=0; i<K; i++) {
@@ -280,13 +289,16 @@ static int hall_data_from_hall_order(int K, int N, int size,
     }
     int n = 2;
     int k = K;
+    char f[N+1];
     while (n<=N) {
         int k0 = k;
         for(int i=0; i<k0; i++) {
+            foliage(H[i], 0, f);
             for(int j=0; j<k0; j++) {
                 if (H[i]->deg + H[j]->deg==n) {
                     magma_element_t *h = bracket(H[i], H[j]);
-                    if (ishall(h, mcmp)) {
+                    foliage(H[j], H[i]->deg, f);
+                    if (ishall(h, f, hcmp)) {
                         H[k] = h;
                         k++;
                     }
@@ -298,13 +310,11 @@ static int hall_data_from_hall_order(int K, int N, int size,
         }
         n++;
     }
-    qsort_r(H, k, sizeof(magma_element_t*), _mcmp, (void *) mcmp);
+    qsort_r(H, k, sizeof(magma_element_t*), cmp_for_qsort_r, (void *) hcmp);
     *HT = hall_inverse_table(k, H);
     data_from_table(k, H, *HT, _nn, _p1, _p2);
     return k;
 }
-
-
 
 
 static khash_t(LinComb)* rewrite_magma_element(magma_element_t *m, 
@@ -479,7 +489,8 @@ exit: ;
 
 
 
-void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int basis) {
+void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS,
+        int (*hcmp)(int n1, const char *f1, int n2, const char *f2)) {
     double t0 = tic();
     int N = LS->N;
     HS->N = LS->N;
@@ -493,17 +504,11 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int b
     magma_element_t **H = malloc(LS->dim*sizeof(magma_element_t*));
     khash_t(str_int) *HT;
 
-    if (basis==HALL_BASIS_1) {
-        HS->dim = hall_data_from_hall_order(LS->K, LS->N, LS->dim, mcmp_1, &HS->nn, &HS->p1, &HS->p2, H, &HT);
-    }
-    else if (basis==HALL_BASIS_2) {
-        HS->dim = hall_data_from_hall_order(LS->K, LS->N, LS->dim, mcmp_2, &HS->nn, &HS->p1, &HS->p2, H, &HT);
-    }
-    else if (basis==HALL_BASIS_0) {
-        HS->dim = hall_data_from_hall_order(LS->K, LS->N, LS->dim, mcmp_0, &HS->nn, &HS->p1, &HS->p2, H, &HT);
+    if  (hcmp==NULL) {
+        HS->dim = hall_data(LS->K, LS->N, LS->dim, &HS->nn, &HS->p1, &HS->p2, H, &HT);
     }
     else {
-        HS->dim = hall_data(LS->K, LS->N, LS->dim, &HS->nn, &HS->p1, &HS->p2, H, &HT);
+        HS->dim = hall_data_from_hall_order(LS->K, LS->N, LS->dim, hcmp, &HS->nn, &HS->p1, &HS->p2, H, &HT);
     }
     assert(HS->dim==LS->dim);
 

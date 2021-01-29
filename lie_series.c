@@ -154,7 +154,8 @@ static void compute_word_coefficients(lie_series_t *LS, int N, expr_t* ex) {
 
 
 
-lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis) {
+lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis,
+        int (*hcmp)(int n1, const char *f1, int n2, const char *f2)) {
     double t0 = tic();
     lie_series_t LS;
     LS.K = K;
@@ -172,7 +173,7 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis) {
         LS.R = 0;
         if (basis>=HALL_BASIS) {
             lie_series_t HS;
-            convert_lyndon_to_hall_lie_series(&LS, &HS, basis);
+            convert_lyndon_to_hall_lie_series(&LS, &HS, hcmp);
             free_lie_series(LS);
             LS = HS;
         }
@@ -188,7 +189,8 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis) {
 }
 
 
-lie_series_t BCH(size_t N, int basis) {
+lie_series_t BCH(size_t N, int basis,
+        int (*hcmp)(int n1, const char *f1, int n2, const char *f2)) {
     double t0 = tic();
     lie_series_t LS;
     LS.K = 2;
@@ -214,7 +216,7 @@ lie_series_t BCH(size_t N, int basis) {
         }
         if (basis>=HALL_BASIS) {
             lie_series_t HS;
-            convert_lyndon_to_hall_lie_series(&LS, &HS, basis);
+            convert_lyndon_to_hall_lie_series(&LS, &HS, hcmp);
             free_lie_series(LS);
             LS = HS;
         }
@@ -230,7 +232,8 @@ lie_series_t BCH(size_t N, int basis) {
 }
 
 
-lie_series_t symBCH(size_t N, int basis) {
+lie_series_t symBCH(size_t N, int basis,
+        int (*hcmp)(int n1, const char *f1, int n2, const char *f2)) {
     double t0 = tic();
     lie_series_t LS;
     LS.K = 2;
@@ -258,7 +261,7 @@ lie_series_t symBCH(size_t N, int basis) {
         convert_to_lie_series(&LS, N1);
         if (basis>=HALL_BASIS) {
             lie_series_t HS;
-            convert_lyndon_to_hall_lie_series(&LS, &HS, basis);
+            convert_lyndon_to_hall_lie_series(&LS, &HS, hcmp);
             free_lie_series(LS);
             LS = HS;
         }
