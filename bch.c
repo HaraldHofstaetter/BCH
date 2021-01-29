@@ -73,10 +73,10 @@ int main(int argc, char*argv[]) {
     int basis = get_arg(argc, argv, "basis", 0, 0, 5);
     int (*hcmp)(int n1, const char *f1, int n2, const char *f2);
     switch (basis) {
-    case 3: hcmp = hcmp_1; break;
-    case 4: hcmp = hcmp_2; break;
-    case 5: hcmp = hcmp_0; break;
-    default: hcmp = NULL;
+        case 3: hcmp = hcmp_1; break;
+        case 4: hcmp = hcmp_2; break;
+        case 5: hcmp = hcmp_0; break;
+        default: hcmp = NULL;
     }
 
     expr_t *A = generator(0);

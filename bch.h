@@ -67,10 +67,10 @@ enum {
 
 typedef struct lie_series_t {
     uint8_t K;     /* number of generators */
-    uint8_t N;     /* maximum length of Lyndon words (=maximum order of Lie series expansion) */
-    uint32_t dim;  /* number of Lyndon words of length<=N */
-    uint8_t **W;   /* W[i] ... ith Lyndon word, ordered primarily by length and 
-                               secondarily by lexicographical order */
+    uint8_t N;     /* maximum degree of Lie series */ 
+    uint32_t dim;  /* dimension of Lie algebra */ 
+    uint8_t **W;   /* W[i], 0<=i<dim ... ith Lyndon word, ordered primarily by length and 
+                                         secondarily by lexicographical order */
     uint8_t *nn;   /* nn[i] = length of W[i] */
     uint32_t *p1;  /* standard factorization of W[i] is W[p1[i]]*W[p2[i]] */
     uint32_t *p2;
@@ -113,6 +113,7 @@ void print_basis_element(lie_series_t *LS,  size_t i, char *g);
 
 void free_lie_series(lie_series_t LS);
 
+/* examples of Hall orders, which are defined in convert_hall.c: */
 int hcmp_0(int n1, const char *f1, int n2, const char *f2);
 int hcmp_1(int n1, const char *f1, int n2, const char *f2);
 int hcmp_2(int n1, const char *f1, int n2, const char *f2);
