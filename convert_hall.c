@@ -174,7 +174,7 @@ static void foliage(const magma_element_t *m, uint8_t p, char *f) {
 /* hcmp_0, hcmp_1, hcmp_2 are examples of Hall orders. 
  * n1, n2 ... degrees of first and second hall elements 
  * f1, f2 ... foliages of first and second hall elements 
- * Note that it must not be expected that f1[n1]=='\0'
+ * Note that it shold not be expected that f1[n1]=='\0'
  * or f2[n2]=='\0', so that comparisons of these strings
  * should be done with strncmp rather than strcmp.
  */
@@ -261,9 +261,10 @@ static bool ishall(magma_element_t *m, char *f, int (*hcmp)(int n1, const char *
     }
 }
 
-//void qsort_r(void *base, size_t nmemb, size_t size,
-//                  int (*compar)(const void *, const void *, void *),
-//                  void *arg);
+
+void qsort_r(void *base, size_t nmemb, size_t size,
+                  int (*compar)(const void *, const void *, void *),
+                  void *arg);
 
 
 static int cmp_for_qsort_r(const void *_m1, const void *_m2, void *_hcmp) {

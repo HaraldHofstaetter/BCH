@@ -5,6 +5,8 @@
 #include<stddef.h>
 
 #define USE_INT128_T 1
+#define SIMD_VECTORIZED 1
+// #define USE_SIMD_INTRINSICS 1
 
 #ifdef USE_INT128_T
 typedef __int128_t INTEGER; 
@@ -60,9 +62,6 @@ enum {
     LYNDON_BASIS = 0,
     RIGHTNORMED_BASIS = 1,
     HALL_BASIS = 2,
-    HALL_BASIS_1 = 3,
-    HALL_BASIS_2 = 4,
-    HALL_BASIS_0 = 5,
 };        
 
 
@@ -82,6 +81,7 @@ typedef struct lie_series_t {
     INTEGER denom;
     INTEGER *c;
 } lie_series_t;
+
 
 lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
 lie_series_t BCH(size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
@@ -113,71 +113,36 @@ void print_basis_element(lie_series_t *LS,  size_t i, char *g);
 
 void free_lie_series(lie_series_t LS);
 
-
-
-/**********************************************/
-double tic(void); 
-double toc(double t0);
-size_t get_right_factors(size_t i, size_t J[], size_t kmax, uint32_t *p1, uint32_t *p2);
-void init_lyndon_words(lie_series_t *LS);
-size_t word_index(size_t K, uint8_t w[], size_t l, size_t r);
-size_t tuple_index(size_t K, uint8_t h[]);
-uint32_t* multi_degree_indices(size_t K, size_t dim,  uint8_t **W, uint8_t *nn);
-void convert_to_lie_series(lie_series_t *LS, int N);
-void compute_BCH_terms_of_even_order_N(lie_series_t *LS);
-void init_rightnormed(lie_series_t *LS);
-void compute_rightnormed_BCH_terms_of_even_orders(lie_series_t *LS);
-void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_orders_only);
-void lyndon2rightnormed(int lw, uint8_t w[], uint8_t r[]);
-void init_hall(lie_series_t *LS, int basis);
-void convert_to_hall_lie_series(lie_series_t *LS, int N, int odd_orders_only);
-
-#define USE_INT128_T_FOR_FRACTION_FREE_LU 1
-
-#ifdef USE_INT128_T_FOR_FRACTION_FREE_LU
-typedef __int128_t INT_FF_LU_T; 
-/* INT128_MAX does not exist in stdint.h */
-static const __int128_t INT_FF_LU_MAX = (__int128_t)(((__uint128_t) -1) >> 1);
-#else
-typedef int64_t INT_FF_LU_T;
-static const int64_t INT_FF_LU_MAX = INT64_MAX;
-#endif
-
-
-#define SIMD_VECTORIZED 1
-// #define USE_SIMD_INTRINSICS 1
-
-typedef struct P_line_t {
-    uint32_t a11;
-    uint32_t a12;
-    uint32_t a21;
-    uint32_t a22;
-} P_line_t;
-
-
-typedef struct P_t {
-    P_line_t *L;
-    uint32_t len;
-    uint32_t maxlen;
-    uint8_t n;
-    uint8_t K;
-    void *H;
-} P_t;
-
-P_t *P_init(uint8_t K, uint8_t n, uint32_t len);
-void P_free(P_t *P);
-uint32_t P_append(P_t *P, uint32_t i, uint8_t l, uint32_t *p1, uint32_t *p2, uint8_t* nn);
-void P_run(int32_t *X, P_t *P, uint8_t w[], uint32_t stop);
-
-#ifdef SIMD_VECTORIZED
-typedef int32_t v4int32_t __attribute__ ((vector_size(16), aligned(16))); 
-void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t w2[], uint8_t w3[], uint32_t stop);
-#endif
-
 int hcmp_0(int n1, const char *f1, int n2, const char *f2);
 int hcmp_1(int n1, const char *f1, int n2, const char *f2);
 int hcmp_2(int n1, const char *f1, int n2, const char *f2);
+
+
+/**********************************************/
+/* lie_series.c: */
+double tic(void); 
+double toc(double t0);
+size_t get_right_factors(size_t i, size_t J[], size_t kmax, uint32_t *p1, uint32_t *p2);
+
+/* lyndon.c: */
+void init_lyndon_words(lie_series_t *LS);
+uint32_t* multi_degree_indices(size_t K, size_t dim,  uint8_t **W, uint8_t *nn);
+
+/* convert_lyndon.c: */ 
+void convert_to_lie_series(lie_series_t *LS, int N);
+void compute_BCH_terms_of_even_order_N(lie_series_t *LS);
+
+/* convert_rightnormed.c: */ 
+void init_rightnormed(lie_series_t *LS);
+void compute_rightnormed_BCH_terms_of_even_orders(lie_series_t *LS);
+void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_orders_only);
+
+/* rightnormed.c : */
+void lyndon2rightnormed(int lw, uint8_t w[], uint8_t r[]);
+
+/* convert_hall.c: */
 void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS,
         int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
+
 
 #endif /*BCH_H */

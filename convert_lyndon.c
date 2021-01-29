@@ -12,7 +12,26 @@ KHASH_MAP_INIT_INT64(P_Dict, uint32_t)      // instantiate structs and methods
     
 typedef khash_t(P_Dict) PH;
 
-P_t *P_init(uint8_t K, uint8_t n, uint32_t len) {
+
+typedef struct P_line_t {
+    uint32_t a11;
+    uint32_t a12;
+    uint32_t a21;
+    uint32_t a22;
+} P_line_t;
+
+
+typedef struct P_t {
+    P_line_t *L;
+    uint32_t len;
+    uint32_t maxlen;
+    uint8_t n;
+    uint8_t K;
+    void *H;
+} P_t;
+
+
+static P_t *P_init(uint8_t K, uint8_t n, uint32_t len) {
     P_t *P = malloc(sizeof(P_t));
     P->H = kh_init(P_Dict);  // allocate hash table
     P->n = n;
@@ -42,14 +61,14 @@ P_t *P_init(uint8_t K, uint8_t n, uint32_t len) {
 }
 
 
-void P_free(P_t *P) {
+static void P_free(P_t *P) {
     free(P->L);
     kh_destroy(P_Dict, (PH*) P->H);  // deallocate hash table
     free(P);
 }
 
 
-uint32_t P_append(P_t *P, uint32_t i, uint8_t l, uint32_t *p1, uint32_t *p2, uint8_t* nn) {
+static uint32_t P_append(P_t *P, uint32_t i, uint8_t l, uint32_t *p1, uint32_t *p2, uint8_t* nn) {
     uint64_t key = (((uint64_t) i)<< 8) | l;
     khint_t k = kh_get(P_Dict, (PH*) P->H, key);  // query the hash table
     if (k == kh_end((PH*) P->H)) {                // test if the key is missing
@@ -79,7 +98,8 @@ uint32_t P_append(P_t *P, uint32_t i, uint8_t l, uint32_t *p1, uint32_t *p2, uin
 }
 
 
-void P_run(int32_t *X, P_t *P, uint8_t w[], uint32_t stop) { 
+#ifndef SIMD_VECTORIZED
+static void P_run(int32_t *X, P_t *P, uint8_t w[], uint32_t stop) { 
     if (stop>=P->len) {
         stop = P->len-1;
     }
@@ -93,6 +113,7 @@ void P_run(int32_t *X, P_t *P, uint8_t w[], uint32_t stop) {
         X[p] = X[L[p].a11]*X[L[p].a22] - X[L[p].a12]*X[L[p].a21];
     }
 }
+#endif
 
 
 
@@ -101,7 +122,9 @@ void P_run(int32_t *X, P_t *P, uint8_t w[], uint32_t stop) {
 #include <smmintrin.h>
 #endif
 
-void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t w2[], uint8_t w3[], uint32_t stop) {
+typedef int32_t v4int32_t __attribute__ ((vector_size(16), aligned(16))); 
+
+static void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t w2[], uint8_t w3[], uint32_t stop) {
     v4int32_t *X = __builtin_assume_aligned (X0, 16);
     if (stop>=P->len) {
         stop = P->len-1;
@@ -134,8 +157,6 @@ void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t w2[], u
 #endif 
 }
 #endif
-
-
 
 
 void convert_to_lie_series(lie_series_t *LS, int N) {

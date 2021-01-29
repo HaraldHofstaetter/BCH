@@ -74,8 +74,7 @@ static void number_of_lyndon_words(uint8_t K, size_t N, size_t nLW[N]) {
 }
 
 
-/* not static because also neede in convert_hall.c */
-size_t word_index(size_t K, uint8_t w[], size_t l, size_t r) {
+static size_t word_index(size_t K, uint8_t w[], size_t l, size_t r) {
     /* computes the index of the subword w[l:r] of w starting at position l and
      * ending at position r. The index is given as w[l:r] interpreted as a K-adic
      * number plus the number (K^n-1)/(K-1)-1 of words of length < n, where 
@@ -305,8 +304,7 @@ static unsigned int binomial(unsigned int n, unsigned int k) {
     return x;
 }
 
-/* not static, also needed in convert_hall.c */
-size_t tuple_index(size_t K, uint8_t h[]) {
+static size_t tuple_index(size_t K, uint8_t h[]) {
     if (K==2) {
         int s = h[0]+h[1];
         return ((s*(s+1))>>1)+h[1];
@@ -335,6 +333,7 @@ static size_t multi_degree_index(size_t K, uint8_t w[], size_t l, size_t r) {
 
 
 
+/* needed in convert_lyndon, convert_rightnorned.c, and convert_hall.c */ 
 uint32_t* multi_degree_indices(size_t K, size_t dim,  uint8_t **W, uint8_t *nn) {
     uint32_t *DI = malloc(dim*sizeof(uint32_t));
     for (int i=0; i<dim; i++) {
