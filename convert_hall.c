@@ -176,7 +176,7 @@ static void foliage(const magma_element_t *m, uint8_t p, char *f) {
  * f1, f2 ... foliages of first and second hall elements 
  * Note that it shold not be expected that f1[n1]=='\0'
  * or f2[n2]=='\0', so that comparisons of these strings
- * should be done with strncmp rather than strcmp.
+ * should be done with strncmp rather than with strcmp.
  */
 
 int hcmp_0(int n1, const char *f1, int n2, const char *f2) {
@@ -237,7 +237,7 @@ int hcmp_2(int n1, const char *f1, int n2, const char *f2) {
             return +1;
         }
         else {
-            return strcmp(f1, f2);
+            return strncmp(f1, f2, n1);
         }
     }
     assert(0); /* never reach this place */
@@ -268,6 +268,7 @@ void qsort_r(void *base, size_t nmemb, size_t size,
 
 
 static int cmp_for_qsort_r(const void *_m1, const void *_m2, void *_hcmp) {
+    /* wrapper for Hall orders so that they can be handled by q_sort_r */
     int (*hcmp)(int n1, const char *f1, int n2, const char *f2) = _hcmp;
     const magma_element_t *m1 = *(magma_element_t * const *) _m1;
     const magma_element_t *m2 = *(magma_element_t * const *) _m2;
@@ -288,10 +289,9 @@ static int hall_data_from_hall_order(int K, int N, int size,
     for (int i=0; i<K; i++) {
         H[i] = gen(i);
     }
-    int n = 2;
     int k = K;
     char f[N+1];
-    while (n<=N) {
+    for (int n=2; n<=N; n++) {
         int k0 = k;
         for(int i=0; i<k0; i++) {
             foliage(H[i], 0, f);
@@ -309,7 +309,6 @@ static int hall_data_from_hall_order(int K, int N, int size,
                 }
             }
         }
-        n++;
     }
     qsort_r(H, k, sizeof(magma_element_t*), cmp_for_qsort_r, (void *) hcmp);
     *HT = hall_inverse_table(k, H);
