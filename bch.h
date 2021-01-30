@@ -99,16 +99,14 @@ enum {
     PRINT_DEGREE =           1 << 1, 
     PRINT_MULTI_DEGREE =     1 << 2, 
     PRINT_FACTORS =          1 << 3, 
-    PRINT_LYNDON_WORD =      1 << 4, 
-    PRINT_RIGHTNORMED_WORD = 1 << 5, 
-    PRINT_BASIS_ELEMENT =    1 << 6, 
-    PRINT_COEFFICIENT =      1 << 7
+    PRINT_FOLIAGE =          1 << 4, 
+    PRINT_BASIS_ELEMENT =    1 << 5, 
+    PRINT_COEFFICIENT =      1 << 6
 };
 
 
-void print_lists(lie_series_t *LS, unsigned int what, char *g);
-void print_lyndon_word(lie_series_t *LS,  size_t i, char *g);
-void print_rightnormed_word(lie_series_t *LS,  size_t i, char *g);
+void print_table(lie_series_t *LS, unsigned int what, char *g);
+void print_foliage(lie_series_t *LS,  size_t i, char *g);
 void print_basis_element(lie_series_t *LS,  size_t i, char *g);
 
 void free_lie_series(lie_series_t LS);

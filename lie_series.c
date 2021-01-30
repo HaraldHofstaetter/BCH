@@ -317,21 +317,30 @@ unsigned int get_verbosity_level(void) {
 }
 
 
-void print_lyndon_word(lie_series_t *LS,  size_t i, char *g) {
+static void print_hall_foliage(lie_series_t *LS,  size_t i, char *g) {
     if (LS->nn[i]==1) {
         printf("%c", g[LS->p1[i]]);
     }
     else {
-        print_lyndon_word(LS, LS->p1[i], g);
-        print_lyndon_word(LS, LS->p2[i], g);
+        print_hall_foliage(LS, LS->p1[i], g);
+        print_hall_foliage(LS, LS->p2[i], g);
     }
 }   
 
-void print_rightnormed_word(lie_series_t *LS,  size_t i, char *g) {
+static void print_rightnormed_foliage(lie_series_t *LS,  size_t i, char *g) {
     if (LS->R) {
         for (int j=0; j < LS->nn[i]; j++) {
             printf("%c", g[LS->R[i][j]]);
         }
+    }
+}
+
+void print_foliage(lie_series_t *LS,  size_t i, char *g) {
+    if (LS->R) {
+        print_rightnormed_foliage(LS, i, g);
+    }
+    else {
+        print_hall_foliage(LS, i, g);
     }
 }
 
@@ -399,15 +408,14 @@ void print_lie_series_statistics(lie_series_t *LS) {
 }
 
 
-void print_lists(lie_series_t *LS, unsigned int what, char* g) {
+void print_table(lie_series_t *LS, unsigned int what, char* g) {
     if (VERBOSITY_LEVEL>=1) {
         printf("# ");
         if (what & PRINT_INDEX) printf("i");
         if (what & PRINT_DEGREE) printf("\t|i|");
         if (what & PRINT_MULTI_DEGREE) printf("\tmulti degree"); 
         if (what & PRINT_FACTORS) printf("\ti'\ti\"");
-        if (what & PRINT_LYNDON_WORD) printf("\tLyndon word");
-        if ((LS->R) && (what & PRINT_RIGHTNORMED_WORD)) printf("\trightnormed word");
+        if (what & PRINT_FOLIAGE) printf("\tfoliage");
         if (what & PRINT_BASIS_ELEMENT) printf("\tbasis element");
         if (what & PRINT_COEFFICIENT) printf("\tcoefficient"); 
         printf("\n");
@@ -423,13 +431,9 @@ void print_lists(lie_series_t *LS, unsigned int what, char* g) {
             printf(")");
         }
         if (what & PRINT_FACTORS) printf("\t%i\t%i", LS->p1[i], LS->p2[i]);
-        if (what & PRINT_LYNDON_WORD) {
+        if (what & PRINT_FOLIAGE) {
             printf("\t");
-            print_lyndon_word(LS, i, g);
-        }
-        if ((LS->R) && (what & PRINT_RIGHTNORMED_WORD)) {
-            printf("\t");
-            print_rightnormed_word(LS, i, g);
+            print_foliage(LS, i, g);
         }
         if (what & PRINT_BASIS_ELEMENT) {
             printf("\t");
