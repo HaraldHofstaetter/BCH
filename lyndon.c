@@ -266,7 +266,7 @@ void init_lyndon_words(lie_series_t *LS) {
         double t1 = toc(t0);
         printf("#number of Lyndon words of length<=%i over set of %i letters: %i\n", 
                 LS->N, LS->K, LS->dim);
-        printf("#init Lyndon words: time=%g sec\n", t1);
+        printf("#initialize Lyndon words: time=%g sec\n", t1);
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }

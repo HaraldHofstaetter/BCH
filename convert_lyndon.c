@@ -5,6 +5,11 @@
 #include <omp.h>
 #endif
 
+#ifdef __GNUC__ 
+#define SIMD_VECTORIZED 1
+// #define USE_SIMD_INTRINSICS 1
+#endif
+
 extern unsigned int VERBOSITY_LEVEL;
 
 #include"khash.h"
@@ -315,7 +320,7 @@ void convert_to_lie_series(lie_series_t *LS, int N) {
 
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
-        printf("#convert to lie series: time=%g sec\n", t1);
+        printf("#convert to Lie series: time=%g sec\n", t1);
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }
@@ -370,7 +375,7 @@ INTEGER beta_den[16] = {2, 24, 240, 40320, 725760, 159667200, 12454041600, 20922
     263130836933693530*H+167218012160000000};
 
 
-void compute_BCH_terms_of_even_order_N(lie_series_t *LS) {
+void compute_BCH_terms_of_even_degree_N(lie_series_t *LS) {
     double t0 = tic();
     assert(!(LS->N&1));
 
@@ -386,7 +391,7 @@ void compute_BCH_terms_of_even_order_N(lie_series_t *LS) {
             if (k&1) {
                 INTEGER d = LS->c[q]/beta_den[l];
                 if (d*beta_den[l]!=LS->c[q]) {
-                    fprintf(stderr, "ERROR: divisibility check failed in compute_BCH_terms_of_order_N");
+                    fprintf(stderr, "ERROR: divisibility check failed in compute_BCH_terms_of_degree_N");
                     exit(EXIT_FAILURE);
                 }
                 LS->c[i] += beta_num[l]*d; 
@@ -397,7 +402,7 @@ void compute_BCH_terms_of_even_order_N(lie_series_t *LS) {
 
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
-        printf("#compute terms of order %i: time=%g sec\n", LS->N, t1);
+        printf("#compute terms of degree %i: time=%g sec\n", LS->N, t1);
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }

@@ -58,11 +58,11 @@ static void integer_lu_solve(int n, int64_t *A, INTEGER *x) {
 }
 
 
-void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_orders_only) {
+void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_degrees_only) {
     double t0 = tic();
     uint32_t *DI  = multi_degree_indices( LS->K, LS->dim, LS->W, LS->nn);
     for (int n=2; n<=N; n++) { /* over all word sizes */
-    if ((!odd_orders_only)||(n&1)) {
+    if ((!odd_degrees_only)||(n&1)) {
         size_t i1 = LS->ii[n-1];
         size_t i2 = LS->ii[n]-1;
         size_t h1 = DI[i1];
@@ -124,7 +124,7 @@ void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_orders_o
 
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
-        printf("#convert to rightnormed lie series: time=%g sec\n", t1);
+        printf("#convert to rightnormed Lie series: time=%g sec\n", t1);
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }
@@ -136,7 +136,7 @@ extern INTEGER beta_num[];  /* defined in convert_lyndon.c */
 extern INTEGER beta_den[];  /* defined in convert_lyndon.c */
 
 
-void compute_rightnormed_BCH_terms_of_even_orders(lie_series_t *LS) {
+void compute_rightnormed_BCH_terms_of_even_degrees(lie_series_t *LS) {
     double t0 = tic();
 
     for(int n=2; n<=LS->N; n+=2) {
@@ -157,12 +157,12 @@ void compute_rightnormed_BCH_terms_of_even_orders(lie_series_t *LS) {
                         }
                     }
                     if (q>LS->ii[n-k]) {
-                        fprintf(stderr, "ERROR: basis element not found in compute_rightnormed_BCH_terms_of_even_orders");
+                        fprintf(stderr, "ERROR: basis element not found in compute_rightnormed_BCH_terms_of_even_degrees");
                         exit(EXIT_FAILURE);
                     }
                     INTEGER d = LS->c[q]/beta_den[l];
                     if (d*beta_den[l]!=LS->c[q]) {
-                        fprintf(stderr, "ERROR: divisibility check failed in compute_rightnormed_BCH_terms_of_even_orders");
+                        fprintf(stderr, "ERROR: divisibility check failed in compute_rightnormed_BCH_terms_of_even_degrees");
                         exit(EXIT_FAILURE);
                     }
                     LS->c[i] -= beta_num[l]*d; 
@@ -174,7 +174,7 @@ void compute_rightnormed_BCH_terms_of_even_orders(lie_series_t *LS) {
 
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
-        printf("#compute terms of even orders: time=%g sec\n", t1);
+        printf("#compute terms of even degrees: time=%g sec\n", t1);
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }
@@ -202,7 +202,7 @@ void init_rightnormed(lie_series_t *LS) {
 
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
-        printf("#init rightnormed basis elements: time=%g sec\n", t1);
+        printf("#initialize rightnormed basis elements: time=%g sec\n", t1);
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }

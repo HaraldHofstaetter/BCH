@@ -87,7 +87,7 @@ static void compute_goldberg_coefficients(lie_series_t *LS, int N) {
 
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
-        printf("#compute coeffs of words: time=%g sec\n", t1);
+        printf("#compute coefficients of Lyndon words: time=%g sec\n", t1);
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }
@@ -202,7 +202,7 @@ lie_series_t BCH(size_t N, int basis,
         init_rightnormed(&LS);
         compute_goldberg_coefficients(&LS, N);
         convert_to_rightnormed_lie_series(&LS, N, 1);
-        compute_rightnormed_BCH_terms_of_even_orders(&LS);
+        compute_rightnormed_BCH_terms_of_even_degrees(&LS);
     }
     else {
         if (N%2) {
@@ -212,7 +212,7 @@ lie_series_t BCH(size_t N, int basis,
         else {
             compute_goldberg_coefficients(&LS, N-1);
             convert_to_lie_series(&LS, N-1);
-            compute_BCH_terms_of_even_order_N(&LS);
+            compute_BCH_terms_of_even_degree_N(&LS);
         }
         if (basis>=HALL_BASIS) {
             lie_series_t HS;

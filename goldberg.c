@@ -241,7 +241,7 @@ goldberg_t goldberg(size_t n) {
 
     if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
-        printf("#compute goldberg coefficients: time=%g sec\n", t1);
+        printf("#compute Goldberg coefficients: time=%g sec\n", t1);
         if (get_verbosity_level()>=2) {
             fflush(stdout);
         }

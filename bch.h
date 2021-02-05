@@ -5,8 +5,6 @@
 #include<stddef.h>
 
 #define USE_INT128_T 1
-#define SIMD_VECTORIZED 1
-// #define USE_SIMD_INTRINSICS 1
 
 #ifdef USE_INT128_T
 typedef __int128_t INTEGER; 
@@ -129,12 +127,12 @@ uint32_t* multi_degree_indices(size_t K, size_t dim,  uint8_t **W, uint8_t *nn);
 
 /* convert_lyndon.c: */ 
 void convert_to_lie_series(lie_series_t *LS, int N);
-void compute_BCH_terms_of_even_order_N(lie_series_t *LS);
+void compute_BCH_terms_of_even_degree_N(lie_series_t *LS);
 
 /* convert_rightnormed.c: */ 
 void init_rightnormed(lie_series_t *LS);
-void compute_rightnormed_BCH_terms_of_even_orders(lie_series_t *LS);
-void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_orders_only);
+void compute_rightnormed_BCH_terms_of_even_degrees(lie_series_t *LS);
+void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_degrees_only);
 
 /* rightnormed.c : */
 void lyndon2rightnormed(int lw, uint8_t w[], uint8_t r[]);

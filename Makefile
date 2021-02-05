@@ -3,11 +3,11 @@ all: bch
 CC = gcc 
 #CC = clang 
 
-#CFLAGS = -O3 -fPIC -march=ivybridge  -fopenmp  -Wall 
-CFLAGS = -O3 -fPIC  -msse4.1   -fopenmp  -Wall  
-#CFLAGS = -O3 -fPIC -msse4.1 -fopenmp -fsanitize=signed-integer-overflow -fsanitize=undefined -Wall 
-#CFLAGS = -g -fPIC  -Wall 
-#CFLAGS = -g -fPIC   -fsanitize=address -fsanitize=signed-integer-overflow  -Wall  
+CFLAGS = -O3 -fPIC -march=native  -fopenmp  -Wall 
+#CFLAGS = -O3 -fPIC -march=native -fopenmp -fsanitize=signed-integer-overflow -fsanitize=undefined -Wall 
+
+#CFLAGS = -g -fPIC -Wall 
+#CFLAGS = -g -fPIC -fsanitize=address -fsanitize=signed-integer-overflow -fsanitize=undefine -Wall  
 
 MAKE_SHARED_LIB = $(CC) -fopenmp -shared
 
@@ -26,11 +26,12 @@ $(SHARED_LIB): $(OBJS)
 bch: $(SHARED_LIB) bch.h bch.c 
 	$(CC) $(CFLAGS) bch.c -o bch -L. -lbch
 
+
 clean:
 	rm -f *.o $(SHARED_LIB) bch
 
-bch_goldberg_30.txt: bch
-	./bch goldberg_coefficients=1 N=30 > bch_goldberg_30.txt
+
+tables:	bch_goldberg_30.txt bch_lyndon_20.txt bch_rightnormed_20.txt bch_hall_20.txt
 
 bch_lyndon_20.txt: bch
 	./bch N=20 verbosity_level=1 > bch_lyndon_20.txt

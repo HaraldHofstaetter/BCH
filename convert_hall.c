@@ -514,7 +514,7 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS,
 
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
-        printf("#init Hall basis: time=%g sec\n", t1);
+        printf("#initialize Hall basis: time=%g sec\n", t1);
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }
