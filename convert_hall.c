@@ -42,7 +42,7 @@ static magma_element_t* bracket(magma_element_t *l, magma_element_t *r) {
 }
 
 
-static uint8_t m2str(const magma_element_t *m, uint8_t p, char *s) {
+static uint8_t m2key(const magma_element_t *m, uint8_t p, char *s) {
     if (m->deg==1) {
         s[p] = '0' + m->g;
         s[p+1] = '\0';
@@ -51,8 +51,8 @@ static uint8_t m2str(const magma_element_t *m, uint8_t p, char *s) {
     else {
         //s[p] = '(';
         //p++;
-        p = m2str(m->l, p, s);
-        p = m2str(m->r, p, s);
+        p = m2key(m->l, p, s);
+        p = m2key(m->r, p, s);
         s[p] = ')';
         s[p+1] = '\0';
         return p+1;
@@ -76,7 +76,7 @@ static khash_t(str_int) *hall_inverse_table(int dim, magma_element_t **H) {
     for(int i=0; i<dim; i++) {
         magma_element_t *h = H[i];
         char s[3*h->deg-2+1];
-        m2str(h, 0, s);
+        m2key(h, 0, s);
         int absent;
         khint_t k = kh_put(str_int, HT, s, &absent);
         kh_value(HT, k) = i;
@@ -144,11 +144,11 @@ static void data_from_table(int dim, magma_element_t **H, khash_t(str_int) *HT,
         }
         else {
             char s[3*h->deg-2+1];
-            m2str(h->l, 0, s);
+            m2key(h->l, 0, s);
             khint_t k = kh_get(str_int, HT, s);
             assert (k != kh_end(HT));
             p1[i] = kh_value(HT, k); 
-            m2str(h->r, 0, s);
+            m2key(h->r, 0, s);
             k = kh_get(str_int, HT, s);
             assert (k != kh_end(HT));
             p2[i] = kh_value(HT, k); 
@@ -322,7 +322,7 @@ static khash_t(LinComb)* rewrite_magma_element(magma_element_t *m,
                       khash_t(str_LinComb) *LT) {
     khash_t(LinComb) *R;
     char *s = malloc((3*m->deg-2+1)*sizeof(char));
-    m2str(m, 0, s);
+    m2key(m, 0, s);
     if (LT!=NULL) {
         /* Take result from lookup table if it already contains m */
         khint_t k = kh_get(str_LinComb, LT, s);
@@ -346,14 +346,14 @@ static khash_t(LinComb)* rewrite_magma_element(magma_element_t *m,
     khint_t kl;
     {
     char sl[3*m->l->deg-2+1];
-    m2str(m->l, 0, sl);
+    m2key(m->l, 0, sl);
     kl = kh_get(str_int, HT, sl);
     }
     if (kl != kh_end(HT)) {
         khint_t kr;
         {
         char sr[3*m->r->deg-2+1];
-        m2str(m->r, 0, sr);
+        m2key(m->r, 0, sr);
         kr = kh_get(str_int, HT, sr);
         }
         if (kr != kh_end(HT)) {
