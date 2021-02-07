@@ -18,54 +18,51 @@
 \usepackage{fancyvrb}
 
 
-\newcommand\Order{\mathcal{O}}
-\newcommand\nA{\mathcal{A}}
-\newcommand\nS{\mathcal{S}}
-\newcommand\nI{\mathcal{I}}
-\newcommand\nR{\mathcal{R}}
-\newcommand\nB{\mathcal{B}}
-\newcommand\nW{\mathcal{W}}
-\newcommand\nE{\mathcal{E}}
-\newcommand\nL{\mathcal{L}}
+\newcommand{\nL}{\mathcal{L}}
 \newcommand{\ee}{\mathrm{e}}
 \newcommand{\dd}{\mathrm{d}}
 \renewcommand{\AA}{\mathtt{A}}
 \newcommand{\BB}{\mathtt{B}}
 \newcommand{\CC}{\mathtt{C}}
 \newcommand{\ZZ}{\mathtt{Z}}
-
-\renewcommand{\gg}{\mathfrak{g}}
-\newcommand{\Id}{\mathrm{Id}}
-\newcommand{\grade}{\mathrm{grade}}
-\newcommand{\coeff}{\mathrm{coeff}}
-\newcommand{\ad}{\mathrm{ad}}
 \newcommand{\QQ}{\mathbb{Q}}
 
-\newcommand{\denom}{\mathrm{denom}}
-\newcommand{\lcm}{\mathrm{lcm}}
-\newcommand{\denomx}{\widetilde{\mathrm{denom}}}
-\newcommand{\divx}{\widetilde{\mathrm{|}}}
-\newcommand{\lcmx}{\widetilde{\mathrm{lcm}}}
-\newcommand{\dcx}{\widetilde{\mathrm{dc}}}
 
-%\newcommand{\denomx}{\mathrm{denom}_0}
-%\newcommand{\divx}{\mathrm{|}_0}
-%\newcommand{\lcmx}{\mathrm{lcm}_0}
-%\newcommand{\dcx}{\mathrm{dc}_0}
-
-
-\title{User manual for {\tt bch}, a program for the fast computation of the Baker--Campbell--Hausdorff and similar series}
-
-\author{Harald Hofst\"{a}tter}
-
-%\institute{Harald Hofst\"{a}tter \at
-%           Fakult\"{a}t f\"{u}r Mathematik, Universit\"{a}t Wien, 
-%           Oskar-Morgenstern-Platz~1, 1090 Wien, Austria. 
-%           \email{hofi@harald-hofstaetter.at}           
-%}
-
+%\title{User manual for {\tt bch}, a program for the fast computation of the Baker--Campbell--Hausdorff and similar series}
+%
+%\author{Harald Hofst\"{a}tter}
+%
 \begin{document}
-\maketitle
+
+\begin{center}
+    {\LARGE User manual for {\tt bch}, a program for the fast computation of the\\[2mm]
+    Baker--Campbell--Hausdorff and similar series}
+\vskip 20pt
+{\bf Harald Hofst\"atter}\\ %\footnote{any footnote here}}\\
+{\small\it Reitschachersiedlung 4/6, 7100 Neusiedl am See, Austria}\\
+{\tt hofi@harald-hofstaetter.at}\\ %(optional)
+\end{center}
+\vskip 20pt
+
+
+
+\centerline{\bf Abstract}
+\noindent
+An efficient  program written in the C programming language for the fast computation
+of the Baker-Campbell-Hausdorff (BCH) and similar Lie series is described.
+The Lie series can be represented in the Lyndon basis, in the
+classical Hall basis, or in the right-normed basis of 
+E.S.~Chibrikov.  In the Lyndon basis,
+which proves to be particularly efficient for this purpose,
+the computation of 111\,013 coefficients for the BCH series up to terms of degree 20
+takes less than half a second on a common personal computer and requires negligible 11MB of memory.
+Up to terms of degree 30, which is the maximum degree the program can handle, 
+the computation of 74\,248\,451 coefficients takes 55 hours but still requires only a modest 5.5\,GB of  memory.
+
+
+\vskip 30pt
+
+%\maketitle
 \section{Introduction}
 We consider the element 
 \begin{equation}\label{eq:BCH_element}
@@ -79,13 +76,12 @@ This element $H$ is commonly called the Baker--Campbell--Hausdorff (BCH) series.
 A classical result known as the
  Baker--Campbell--Hausdorff theorem (see, e.g.,~\cite{HHproof}) states that 
 $H$
-is a \emph{Lie series}, which means that if $H$ is written as a sum 
-of homogeneous components,
+is a \emph{Lie series}, which means that the 
+homogeneous components $H_n$ of degree $n=1,2,\dots$ in
 \begin{equation}
 H=\sum_{n=1}^\infty H_n, %,\quad\mbox{where}\quad X_1=\AA+\BB,\ X_2=\frac{1}{2}[\AA,\BB],\ 
 %X_3=\frac{1}{12}[\AA,[\AA,\BB]]+\frac{1}{12}[[\AA,\BB],\BB], \dots
 \end{equation}
-then the homogeneous components $H_n$ of degree $n=1,2,\dots$
 can be written as  linear combinations of 
 $\AA$ and $\BB$ and (possibly nested) 
  commutator terms in $\AA$ and $\BB$, i.e., they
@@ -140,21 +136,22 @@ Apart from \verb|khash.h| it is self-contained, i.e., independent of external li
 
 In particular, the program  uses no library for multi-precision integer or rational arithmetic.
 Instead all calculations are carried out in  pure integer arithmetic using the 
-128 bit integer type \verb|__int128|, which is available for most current C compilers on 
+128 bit integer type \verb|__int128_t|, which is available for most current C compilers on 
 current hardware. With  this integer type computations of the BCH series up to degree
 $N=30$ are possible.
 To avoid calculations with rational numbers,
 the program first determines a common denominator for all rational numbers that can 
-occur during the  computation (see \cite{HHdenom}, \cite{HHSmallestDenom}) so that
-all calculations can then actually be carried out in pure integer arithmetic.
+occur during the computation (see \cite{HHdenom}, \cite{HHSmallestDenom}), 
+then all calculations are reorganized in such a way
+that they can actually be carried out in pure integer arithmetic.
 
 
-In a first preliminary step,
+In a  preliminary step,
 the program  computes the coefficients of all Lyndon words up to degree 
 $N$ 
  in the power series of the given expression $X$ of the form (\ref{eq:expression})
 using an adaptation of the algorithm from \cite{HHetalWordAlg}. In the special
-case $X=\log(\ee^\AA\ee^\AA)$ it uses the algorithm from 
+case $X=\log(\ee^\AA\ee^\AA)$ it alternatively uses the algorithm from 
 the appendix of \cite{HHSmallestDenom} and exploits the symmetry that
 the coefficient of the word $\AA^{q_1}\BB^{q_2}\cdots(\AA\lor\BB)^{q_m}$ is
 invariant under permutations of the exponents $q_1,\dots,q_m$, see \cite{G}.
@@ -187,11 +184,14 @@ The special case $X=\log(\ee^\AA\ee^\BB)$ allows a significant optimization in
 the Lyndon basis or right-normed Chibrikov basis case, if $N$ is even: 
 Here the Lie series is computed using the above method only up to terms
 of degree $N-1$. The terms of degree $N$ can then efficiently be computed using a
-formula due to E. Eriksen \cite[Section~III.A]{Eriksen}.
+formula due to E. Eriksen, see \cite[Section~III.A]{Eriksen}.\footnote{Note that
+this formula is applicable only if $N$ is even, so that, unfortunately, this idea cannot be 
+applied recursively.}
 
-As a final remark on the implementation we note that the code can
-be organized in such a way that the computations of the finely homogeneous components 
-$H_{(a,b)}$ of $H$ are carried out completely independently of each other.
+
+As a final remark on the implementation we note that the computation can
+be organized in such a way that  homogeneous components 
+$H_{(a,b)}$ of $H$ are computed completely independently of each other.
 Here a finely homogeneous component $H_{(a,b)}$ of multi-degree $(a,b)$
 is of degree $a$ in $\AA$ and of degree $b$ in $\BB$ such that
 $$H_n = \sum_{a+b=n}H_{(a,b)}.$$
@@ -205,13 +205,16 @@ The source code  can be downloaded from the GitHub repository
 \begin{quote}
 {\tt https://github.com/HaraldHofstaetter/BCH}
 \end{quote}
-In a directory containing the source code type
+On a Unix-like system with \verb|gcc| compiler available just type
 \begin{quote}
 \begin{BVerbatim}
 $ make
 \end{BVerbatim} 
 \end{quote}
-This produces the shared library \verb|libbch.so| and the executable \verb|bch|.
+in a directory containing the source code, which causes 
+the shared library \verb|libbch.so| and the executable \verb|bch|
+to be created.
+To use a different compiler, the \verb|Makefile| has to be adapted accordingly.
 
 
 \section{Usage of the {\tt bch} program}
@@ -305,7 +308,7 @@ $ ./bch basis=2
 \noindent [TODO:] other bases...
 
 \subsection*{\tt generators[=\tt ABC\dots]}
-
+This parameter enables alternative names for the generators:
 \medskip
 
 \quad{\small\begin{BVerbatim}
@@ -537,15 +540,15 @@ memory usage measured with \verb|/usr/bin/time|
 \begin{center}
 \begin{tabular}{rrrrr}
 \hline
-$N$ & dim & nonzero coeffs & time  & memory usage \\
+$N$ & dim & nonzero coeffs & time  & memory \\
 \hline
 18 &  31042 & 21573 &  $0.04$\,sec & 4628\,kB\\
 20 & 111013 & 76760 & $0.22$\,sec  & 10932\,kB \\
 22 & 401428 & 276474 & $2.13$\,sec & 33008\,kB \\
 24 & 1465020 & 1005917 & $54.43$\,sec  & 115\,MB\\
 26 & 5387991 & 3690268 & 16\,min 16\,sec  &  427\,MB\\
-28 & 19945394 & 13632278 & 3\,h 57\,min & \\
-30 & 74248451 & 50657857 & 2\,d 6\,h 46\,min & \\
+28 & 19945394 & 13632278 & 3\,h 57\,min & 1.4\,GB\\
+30 & 74248451 & 50657857 & 54\,h 46\,min & 5.5\,GB\\
 \hline
 \end{tabular}
 \end{center}
@@ -554,11 +557,11 @@ $N$ & dim & nonzero coeffs & time  & memory usage \\
 \begin{center}
 \begin{tabular}{rrrrr}
 \hline
-$N$ & dim & nonzero coeffs & time  & memory usage \\
+$N$ & dim & nonzero coeffs & time  & memory \\
 \hline
-18 & 31042  & 21561 & $0.76$\, sec & 58300\,kB \\
+18 & 31042  & 21561 & $0.76$\,sec & 58300\,kB \\
 20 & 111013 & 76748 & $21.52$\,sec & 637\,MB \\
-22 & 301428 & 276463 & 21\,min 53\,sec & 6.9\,GB\\
+22 & 401428 & 276463 & 21\,min 53\,sec & 6.9\,GB\\
 \hline
 \end{tabular}
 \end{center}
@@ -567,11 +570,11 @@ $N$ & dim & nonzero coeffs & time  & memory usage \\
 \begin{center}
 \begin{tabular}{rrrrr}
 \hline
-$N$ & dim & nonzero coeffs & time  & memory usage \\
+$N$ & dim & nonzero coeffs & time  & memory \\
 \hline
 18 & 31042 & 30477   & $0.35$\,sec & 81248\,kB\\
 20 & 111013 & 109697 & $2.12$\,sec & 428\,MB \\
-22 & 301428 & 398313 & 20\,min 53\,sec & 2.6\,GB\\
+22 & 401428 & 398313 & 20\,min 53\,sec & 2.6\,GB\\
 \hline
 \end{tabular}
 \end{center}
