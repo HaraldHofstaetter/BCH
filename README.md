@@ -24,7 +24,8 @@ To use a different compiler, the `Makefile` has to be adapted accordingly.
 Work in progress...
 
 ## Examples
-```$ ./bch
+```
+$ ./bch
 +1/1*A+1/1*B+1/2*[A,B]+1/12*[A,[A,B]]+1/12*[[A,B],B]+1/24*[A,[[A,B],B]]-1/720*[A
 ,[A,[A,[A,B]]]]+1/180*[A,[A,[[A,B],B]]]+1/360*[[A,[A,B]],[A,B]]+1/180*[A,[[[A,B]
 ,B],B]]+1/120*[[A,B],[[A,B],B]]-1/720*[[[[A,B],B],B],B]
@@ -76,7 +77,8 @@ A,B]],[A,B]],[A,B]]]+13/30240*[A,[A,[[A,B],[[[A,B],B],B]]]]+1/20160*[A,[[A,[[A,B
 ```
 
 ### Output using right-normed Chibrikov basis:
-```$ ./bch basis=1
+```
+$ ./bch basis=1
 +1/1*A+1/1*B-1/2*[B,A]-1/12*[A,[B,A]]+1/12*[B,[B,A]]+1/24*[B,[A,[B,A]]]+1/720*[A
 ,[A,[A,[B,A]]]]-1/360*[B,[A,[A,[B,A]]]]+1/120*[A,[B,[A,[B,A]]]]-1/120*[B,[B,[A,[
 B,A]]]]+1/360*[A,[B,[B,[B,A]]]]-1/720*[B,[B,[B,[B,A]]]]
