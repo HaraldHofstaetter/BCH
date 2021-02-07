@@ -83,7 +83,7 @@ int main(int argc, char*argv[]) {
     expr_t *B = generator(1);
     expr_t *C = generator(2);
     expr_t *ex = NULL;
-    lie_series_t LS;
+    lie_series_t *LS;
     switch(get_arg(argc, argv, "expression", 0, 0, 8)) {
         case 0:  /* log(exp(A)*exp(B)), with optimizations spezific for this expression */ 
             LS = BCH(N, basis, hcmp);
@@ -128,19 +128,19 @@ int main(int argc, char*argv[]) {
     }
 
     char *g = get_string_arg(argc, argv, "generators", default_generators);
-    if (strlen(g)<LS.K) {
-        fprintf(stderr, "WARNING: expected generators of length %i, got \"%s\"\n", LS.K, g);
+    if (strlen(g)<LS->K) {
+        fprintf(stderr, "WARNING: expected generators of length %i, got \"%s\"\n", LS->K, g);
         g = default_generators;
     }
 
     if ( (get_verbosity_level()>0) || (get_arg(argc, argv, "print_statistics", 0, 0, 1)) ) {
-        print_lie_series_statistics(&LS);
+        print_lie_series_statistics(LS);
     }
 
     /* output result: */
-    switch(get_arg(argc, argv, "table_output", LS.dim<=200 ? 0 : 1, 0, 1)) {
+    switch(get_arg(argc, argv, "table_output", LS->dim<=200 ? 0 : 1, 0, 1)) {
         case 0:
-            print_lie_series(&LS, g);
+            print_lie_series(LS, g);
             printf("\n");
             break;
         case 1: {
@@ -152,12 +152,13 @@ int main(int argc, char*argv[]) {
                 PRINT_FOLIAGE         *get_arg(argc, argv, "print_foliage",       basis==RIGHTNORMED_BASIS ? 1 : 0, 0, 1) |
                 PRINT_BASIS_ELEMENT   *get_arg(argc, argv, "print_basis_element", 0, 0, 1) |
                 PRINT_COEFFICIENT     *get_arg(argc, argv, "print_coefficient",   1, 0, 1); 
-            print_table(&LS, what, g);
+            print_table(LS, what, g);
             break;
         }
     }
 
     free_lie_series(LS);
+    free(LS);
     free_expr(A);
     free_expr(B);
     free_expr(C);

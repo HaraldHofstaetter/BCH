@@ -34,6 +34,7 @@ expr_t* exponential(expr_t* arg);
 expr_t* logarithm(expr_t* arg);
 expr_t* commutator(expr_t* arg1, expr_t* arg2);
 
+int str_expr(char *out, expr_t* ex);
 void print_expr(expr_t* ex);
 void free_expr(expr_t* ex);
 
@@ -41,7 +42,8 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]);
 INTEGER common_denominator(int n, expr_t* ex);
 void print_INTEGER(INTEGER x);
 void print_RATIONAL(INTEGER p, INTEGER q);
-
+int str_INTEGER(char *out, INTEGER x);
+int str_RATIONAL(char *out, INTEGER p, INTEGER q);
 
 typedef struct goldberg_t {
     size_t N;
@@ -81,13 +83,27 @@ typedef struct lie_series_t {
 } lie_series_t;
 
 
-lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
-lie_series_t BCH(size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
-lie_series_t symBCH(size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
+lie_series_t* lie_series(size_t K, expr_t* expr, size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
+lie_series_t* BCH(size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
+lie_series_t* symBCH(size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
+
+int dim(lie_series_t *LS);
+int maximum_degree(lie_series_t *LS);
+int number_of_generators(lie_series_t *LS);
+INTEGER denominator(lie_series_t *LS);
+INTEGER numerator_of_coefficient(lie_series_t *LS,  size_t i);
+int degree(lie_series_t *LS, size_t i);
+int degree_of_generator(lie_series_t *LS, size_t i, uint8_t g);
+int str_foliage(char *out, lie_series_t *LS,  size_t i, char *g);
+int str_basis_element(char *out, lie_series_t *LS,  size_t i, char *g);
+int str_coefficient(char *out, lie_series_t *LS,  size_t i);
+void print_foliage(lie_series_t *LS,  size_t i, char *g);
+void print_basis_element(lie_series_t *LS,  size_t i, char *g);
+void print_coefficient(lie_series_t *LS,  size_t i);
+
 
 void set_verbosity_level(unsigned int verbosity_level);
 unsigned int get_verbosity_level(void);
-
 
 void print_lie_series(lie_series_t *LS, char *g);
 void print_lie_series_statistics(lie_series_t *LS);
@@ -102,12 +118,9 @@ enum {
     PRINT_COEFFICIENT =      1 << 6
 };
 
-
 void print_table(lie_series_t *LS, unsigned int what, char *g);
-void print_foliage(lie_series_t *LS,  size_t i, char *g);
-void print_basis_element(lie_series_t *LS,  size_t i, char *g);
 
-void free_lie_series(lie_series_t LS);
+void free_lie_series(lie_series_t *LS);
 
 /* examples of Hall orders, which are defined in convert_hall.c: */
 int hcmp_0(int n1, const char *f1, int n2, const char *f2);

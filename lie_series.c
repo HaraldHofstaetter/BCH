@@ -44,7 +44,13 @@ size_t get_right_factors(size_t i, size_t J[], size_t kmax, uint32_t *p1, uint32
     return k;
 }
 
-static int degree_of_generator(lie_series_t *LS, size_t i, uint8_t g) {
+
+int degree(lie_series_t *LS, size_t i) {
+    return LS->nn[i];
+}
+
+
+int degree_of_generator(lie_series_t *LS, size_t i, uint8_t g) {
     if (LS->nn[i]==1) {
         return i==g ? 1 : 0;
     }
@@ -154,26 +160,26 @@ static void compute_word_coefficients(lie_series_t *LS, int N, expr_t* ex) {
 
 
 
-lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis,
+lie_series_t* lie_series(size_t K, expr_t* expr, size_t N, int basis,
         int (*hcmp)(int n1, const char *f1, int n2, const char *f2)) {
     double t0 = tic();
-    lie_series_t LS;
-    LS.K = K;
-    LS.N = N;
-    init_lyndon_words(&LS);
-    LS.c = malloc(LS.dim*sizeof(INTEGER));
-    LS.denom = common_denominator(N, expr);
-    compute_word_coefficients(&LS, N, expr);
+    lie_series_t *LS = malloc(sizeof(lie_series_t));
+    LS->K = K;
+    LS->N = N;
+    init_lyndon_words(LS);
+    LS->c = malloc(LS->dim*sizeof(INTEGER));
+    LS->denom = common_denominator(N, expr);
+    compute_word_coefficients(LS, N, expr);
     if (basis==RIGHTNORMED_BASIS) {
-        init_rightnormed(&LS);
-        convert_to_rightnormed_lie_series(&LS, N, 0);
+        init_rightnormed(LS);
+        convert_to_rightnormed_lie_series(LS, N, 0);
     }
     else {
-        convert_to_lie_series(&LS, N);
-        LS.R = 0;
+        convert_to_lie_series(LS, N);
+        LS->R = 0;
         if (basis>=HALL_BASIS) {
-            lie_series_t HS;
-            convert_lyndon_to_hall_lie_series(&LS, &HS, hcmp);
+            lie_series_t *HS = malloc(sizeof(lie_series_t));
+            convert_lyndon_to_hall_lie_series(LS, HS, hcmp);
             free_lie_series(LS);
             LS = HS;
         }
@@ -189,34 +195,34 @@ lie_series_t lie_series(size_t K, expr_t* expr, size_t N, int basis,
 }
 
 
-lie_series_t BCH(size_t N, int basis,
+lie_series_t* BCH(size_t N, int basis,
         int (*hcmp)(int n1, const char *f1, int n2, const char *f2)) {
     double t0 = tic();
-    lie_series_t LS;
-    LS.K = 2;
-    LS.N = N;
-    init_lyndon_words(&LS);
-    LS.c = malloc(LS.dim*sizeof(INTEGER));
-    LS.denom = common_denominator(N, 0);
+    lie_series_t *LS = malloc(sizeof(lie_series_t));
+    LS->K = 2;
+    LS->N = N;
+    init_lyndon_words(LS);
+    LS->c = malloc(LS->dim*sizeof(INTEGER));
+    LS->denom = common_denominator(N, 0);
     if (basis==RIGHTNORMED_BASIS) {
-        init_rightnormed(&LS);
-        compute_goldberg_coefficients(&LS, N);
-        convert_to_rightnormed_lie_series(&LS, N, 1);
-        compute_rightnormed_BCH_terms_of_even_degrees(&LS);
+        init_rightnormed(LS);
+        compute_goldberg_coefficients(LS, N);
+        convert_to_rightnormed_lie_series(LS, N, 1);
+        compute_rightnormed_BCH_terms_of_even_degrees(LS);
     }
     else {
         if (N%2) {
-            compute_goldberg_coefficients(&LS, N);
-            convert_to_lie_series(&LS, N);
+            compute_goldberg_coefficients(LS, N);
+            convert_to_lie_series(LS, N);
         }
         else {
-            compute_goldberg_coefficients(&LS, N-1);
-            convert_to_lie_series(&LS, N-1);
-            compute_BCH_terms_of_even_degree_N(&LS);
+            compute_goldberg_coefficients(LS, N-1);
+            convert_to_lie_series(LS, N-1);
+            compute_BCH_terms_of_even_degree_N(LS);
         }
         if (basis>=HALL_BASIS) {
-            lie_series_t HS;
-            convert_lyndon_to_hall_lie_series(&LS, &HS, hcmp);
+            lie_series_t *HS = malloc(sizeof(lie_series_t));
+            convert_lyndon_to_hall_lie_series(LS, HS, hcmp);
             free_lie_series(LS);
             LS = HS;
         }
@@ -232,19 +238,19 @@ lie_series_t BCH(size_t N, int basis,
 }
 
 
-lie_series_t symBCH(size_t N, int basis,
+lie_series_t* symBCH(size_t N, int basis,
         int (*hcmp)(int n1, const char *f1, int n2, const char *f2)) {
     double t0 = tic();
-    lie_series_t LS;
-    LS.K = 2;
-    LS.N = N;
+    lie_series_t *LS = malloc(sizeof(lie_series_t));
+    LS->K = 2;
+    LS->N = N;
     expr_t *halfA = generator(0);
     expr_t *B = generator(1);
     expr_t *expr = logarithm(product(product(exponential(halfA), exponential(B)), 
                                      exponential(halfA)));
-    init_lyndon_words(&LS);
-    LS.c = calloc(LS.dim, sizeof(INTEGER)); /* calloc initializes to zero */
-    LS.denom = common_denominator(N, 0);
+    init_lyndon_words(LS);
+    LS->c = calloc(LS->dim, sizeof(INTEGER)); /* calloc initializes to zero */
+    LS->denom = common_denominator(N, 0);
     if (VERBOSITY_LEVEL>=1) {
         printf("#NOTE: in the following expression, A stands for A/2\n");
         if (VERBOSITY_LEVEL>=2) {
@@ -252,27 +258,27 @@ lie_series_t symBCH(size_t N, int basis,
         }
     }
     int N1 = N%2 ? N : N-1;
-    compute_word_coefficients(&LS, N1, expr);
+    compute_word_coefficients(LS, N1, expr);
     if (basis==RIGHTNORMED_BASIS) {
-        init_rightnormed(&LS);
-        convert_to_rightnormed_lie_series(&LS, N1, 1);
+        init_rightnormed(LS);
+        convert_to_rightnormed_lie_series(LS, N1, 1);
     }
     else {
-        convert_to_lie_series(&LS, N1);
+        convert_to_lie_series(LS, N1);
         if (basis>=HALL_BASIS) {
-            lie_series_t HS;
-            convert_lyndon_to_hall_lie_series(&LS, &HS, hcmp);
+            lie_series_t *HS = malloc(sizeof(lie_series_t));
+            convert_lyndon_to_hall_lie_series(LS, HS, hcmp);
             free_lie_series(LS);
             LS = HS;
         }
     }
-    for (int i=0; i<LS.dim; i++) {
-        int nA = degree_of_generator(&LS, i, 0);
-        LS.c[i] <<= N-1-nA; /* c[i] = c[i]*2^(N-1-nA) */
+    for (int i=0; i<LS->dim; i++) {
+        int nA = degree_of_generator(LS, i, 0);
+        LS->c[i] <<= N-1-nA; /* c[i] = c[i]*2^(N-1-nA) */
     }
-    LS.denom <<= N-1; /* denom = denom*2^(N-1) */
+    LS->denom <<= N-1; /* denom = denom*2^(N-1) */
     if (VERBOSITY_LEVEL>=1) {
-        printf("#denominator changed to "); print_INTEGER(LS.denom); printf("\n");
+        printf("#denominator changed to "); print_INTEGER(LS->denom); printf("\n");
         if (VERBOSITY_LEVEL>=2) {
             fflush(stdout);
         }
@@ -291,20 +297,21 @@ lie_series_t symBCH(size_t N, int basis,
 }
 
 
-void free_lie_series(lie_series_t LS) {
-    if (LS.W) {
-        free(LS.W[0]);
-        free(LS.W);
+void free_lie_series(lie_series_t *LS) {
+    if (LS->W) {
+        free(LS->W[0]);
+        free(LS->W);
     }
-    free(LS.nn);
-    free(LS.p1);
-    free(LS.p2);
-    free(LS.ii);
-    if (LS.R) {
-        free(LS.R[0]);
-        free(LS.R);
+    free(LS->nn);
+    free(LS->p1);
+    free(LS->p2);
+    free(LS->ii);
+    if (LS->R) {
+        free(LS->R[0]);
+        free(LS->R);
     }
-    free(LS.c);
+    free(LS->c);
+    free(LS);
 }
 
 
