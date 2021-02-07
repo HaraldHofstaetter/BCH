@@ -31,7 +31,7 @@ $ ./bch
 ,B],B]]+1/120*[[A,B],[[A,B],B]]-1/720*[[[[A,B],B],B],B]
 
 ```
-### Output in table form:
+### Output in tabular form:
 ```
 $ ./bch table_output=1
 0       1       0       0       1/1
