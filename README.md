@@ -50,7 +50,7 @@ $ ./bch table_output=1
 13      5       7       1       -1/720
 ```
 
-### Maximum degree N=8:
+### Computation up to higher degree:
 ```
 $ ./bch N=8
 +1/1*A+1/1*B+1/2*[A,B]+1/12*[A,[A,B]]+1/12*[[A,B],B]+1/24*[A,[[A,B],B]]-1/720*[A
