@@ -6,7 +6,7 @@ classical Hall basis, or in the right-normed basis of
 E.S. Chibrikov.  In the Lyndon basis,
 which proves to be particularly efficient for this purpose,
 the computation of 111013 coefficients for the BCH series up to terms of degree 20
-takes less than half a second on a common personal computer and requires negligible 11MB of memory.
+takes less than half a second on an ordinary personal computer and requires negligible 11MB of memory.
 Up to terms of degree 30, which is the maximum degree the program can handle, 
 the computation of 74248451 coefficients takes 55 hours but still requires only a modest 5.5GB of  memory.
 
