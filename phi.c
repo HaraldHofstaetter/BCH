@@ -40,8 +40,10 @@ INTEGER FACTORIAL[33] =  {             1,
  263130836933693530*H+167218012160000000 };
 
 
+
 #ifdef USE_INT128_T
-void print_INTEGER(__int128_t x) {
+int str_INTEGER(char *out, __int128_t x) {
+    int pos = 0;
     int s = 1;
     if (x<0) {
         s = -1;
@@ -55,21 +57,53 @@ void print_INTEGER(__int128_t x) {
         x /= F;
         if (x>0) {
             int64_t x3 = x;
-            printf("%li%017li%017li",s*x3,x2,x1);
+            if (out) {
+                pos += sprintf(out+pos, "%li%017li%017li", s*x3,x2,x1);
+            }
+            else {
+                pos += snprintf(NULL, 0, "%li%017li%017li", s*x3,x2,x1);
+            }
         }
         else {
-            printf("%li%017li",s*x2,x1);
+            if (out) {
+                pos += sprintf(out+pos, "%li%017li", s*x2,x1);
+            }
+            else {
+                pos += snprintf(NULL, 0, "%li%017li", s*x2,x1);
+            }
         }
     }
     else {
-        printf("%li",s*x1);
+        if (out) {
+            pos += sprintf(out+pos, "%li", s*x1);
+        }
+        else {
+            pos += snprintf(NULL, 0,  "%li", s*x1);
+        }
     }
+    return pos;
+}
+
+void print_INTEGER(__int128_t x) {
+    char out[40];  /* log10(2^128) = 38.53... */
+    str_INTEGER(out, x);
+    printf("%s", out);
 }
 #else
+int str_INTEGER(char *out, int64_t x) {
+    if (out) {
+        return sprintf(out, "%li",x);
+    }
+    else {
+        return snprintf(NULL, 0, "%li",x);
+    }
+}
+
 void print_INTEGER(int64_t x) {
     printf("%li",x);
 }
 #endif
+
 
 static INTEGER gcd(INTEGER a, INTEGER b) {
     /* computes greatest common divisor of a and b
@@ -81,6 +115,20 @@ static INTEGER gcd(INTEGER a, INTEGER b) {
        a = t; 
     }
     return a>=0 ? a : -a;
+}
+
+int str_RATIONAL(char *out, INTEGER p, INTEGER q) {
+    INTEGER d = gcd(p, q);
+    int pos = 0;
+    if (out) {
+        pos += str_INTEGER(out+pos, p/d);
+        pos += sprintf(out+pos, "/");
+        pos += str_INTEGER(out+pos, q/d);
+    }
+    else {
+        pos += 1 + str_INTEGER(NULL, p/d) + str_INTEGER(NULL, q/d);
+    }
+    return pos;
 }
 
 void print_RATIONAL(INTEGER p, INTEGER q) {
@@ -179,58 +227,116 @@ void free_expr(expr_t* ex) {
         free(ex->arg2);
         free(ex);
     }
-}    
+}   
 
-void print_expr(expr_t* ex) {
+
+int str_expr(char *out, expr_t* ex) {
+    int pos = 0;
     switch(ex->type) {
         case IDENTITY:
-            printf("Id");
+            if (out) {
+                pos += sprintf(out+pos, "Id");
+            }
+            else {
+                pos += 2;
+            }
             break;
         case GENERATOR: 
-            printf("%c", 'A'+ex->num);
+            if (out) {
+                pos += sprintf(out+pos, "%c", 'A'+ex->num);
+            }
+            else {
+                pos += 1;
+            }
             break;
         case SUM:
-            printf("(");
-            print_expr(ex->arg1);
-            printf("+");
-            print_expr(ex->arg2);
-            printf(")");
+            if (out) {
+                pos += sprintf(out+pos, "(");
+                pos += str_expr(out+pos, ex->arg1);
+                pos += sprintf(out+pos, "+");
+                pos += str_expr(out+pos, ex->arg2);
+                pos += sprintf(out+pos, ")");
+            }
+            else {
+                pos += 3 + str_expr(NULL, ex->arg1)+ str_expr(NULL, ex->arg2);
+            }
             break;
         case DIFFERENCE:
-            printf("(");
-            print_expr(ex->arg1);
-            printf("-");
-            print_expr(ex->arg2);
-            printf(")");
+            if (out) {
+                pos += sprintf(out+pos, "(");
+                pos += str_expr(out+pos, ex->arg1);
+                pos += sprintf(out+pos, "-");
+                pos += str_expr(out+pos, ex->arg2);
+                pos += sprintf(out+pos, ")");
+            }
+            else {
+                pos += 3 + str_expr(NULL, ex->arg1)+ str_expr(NULL, ex->arg2);
+            }
             break;
         case PRODUCT: 
-            print_expr(ex->arg1);
-            printf("*");
-            print_expr(ex->arg2);
+            if (out) {
+                pos += str_expr(out+pos, ex->arg1);
+                pos += sprintf(out+pos, "*");
+                pos += str_expr(out+pos, ex->arg2);
+            }
+            else {
+                pos += 1 + str_expr(NULL, ex->arg1)+ str_expr(NULL, ex->arg2);
+            }
             break;
         case NEGATION: 
-            printf("(-1)*");
-            print_expr(ex->arg1);
+            if (out) {
+                pos += sprintf(out+pos, "(-1)*");
+                pos += str_expr(out+pos, ex->arg1);
+            }
+            else {
+                pos += 5 + str_expr(NULL, ex->arg1);
+            }
             break;
         case TERM: 
-            printf("(%i/%i)*", ex->num, ex->den);
-            print_expr(ex->arg1);
+            if (out) {
+                pos += sprintf(out+pos, "(%i/%i)*", ex->num, ex->den);
+                pos += str_expr(out+pos, ex->arg1);
+            }
+            else {
+                pos += snprintf(NULL, 0, "(%i/%i)*", ex->num, ex->den)
+                       + str_expr(NULL, ex->arg1);
+            }
             break;
         case EXPONENTIAL:
-            printf("exp(");
-            print_expr(ex->arg1);
-            printf(")");
+            if (out) {
+                pos += sprintf(out+pos, "exp(");
+                pos += str_expr(out+pos, ex->arg1);
+                pos += sprintf(out+pos, ")");
+            }
+            else {
+                pos += 5 + str_expr(NULL, ex->arg1);
+            }
             break;
         case LOGARITHM: 
-            printf("log(");
-            print_expr(ex->arg1);
-            printf(")");
+            if (out) {
+                pos += sprintf(out+pos, "log(");
+                pos += str_expr(out+pos, ex->arg1);
+                pos += sprintf(out+pos, ")");
+            }
+            else {
+                pos += 5 + str_expr(NULL, ex->arg1);
+            }
             break;
         default:
             fprintf(stderr, "ERROR: unknown expr type %i\n", ex->type);
             exit(EXIT_FAILURE);
     }
+    return pos;
 }
+
+void print_expr(expr_t* ex) {
+    int n = str_expr(NULL, ex) + 1;
+    char *s = malloc(n*sizeof(char));
+    str_expr(s, ex);
+    printf("%s", s);
+    free(s);
+}
+
 
 static inline void check_for_divisibility_by_int(INTEGER p, int q, INTEGER d) {
     if (q*d!=p) {
