@@ -1,6 +1,6 @@
 # Fast computation of the Baker-Campbell-Hausdorff and similar series
-An efficient  program written in the C programming language for the fast computation
-of the Baker-Campbell-Hausdorff (BCH) and similar Lie series is provided.
+We provide an efficient  program written in the C programming language for the fast computation
+of the Baker-Campbell-Hausdorff (BCH) and similar Lie series.
 The Lie series can be represented in the Lyndon basis, in the
 classical Hall basis, or in the right-normed basis of 
 E.S. Chibrikov.  In the Lyndon basis,
