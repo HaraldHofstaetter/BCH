@@ -31,7 +31,7 @@ $ ./bch
 ,B],B]]+1/120*[[A,B],[[A,B],B]]-1/720*[[[[A,B],B],B],B]
 
 ```
-### Output in tabular form:
+#### Output in tabular form:
 ```
 $ ./bch table_output=1
 0       1       0       0       1/1
@@ -50,7 +50,7 @@ $ ./bch table_output=1
 13      5       7       1       -1/720
 ```
 
-### Computation up to higher degree:
+#### Computation up to higher degree:
 ```
 $ ./bch N=8
 +1/1*A+1/1*B+1/2*[A,B]+1/12*[A,[A,B]]+1/12*[[A,B],B]+1/24*[A,[[A,B],B]]-1/720*[A
@@ -76,7 +76,7 @@ A,B]],[A,B]],[A,B]]]+13/30240*[A,[A,[[A,B],[[[A,B],B],B]]]]+1/20160*[A,[[A,[[A,B
 ]]
 ```
 
-### Output using right-normed Chibrikov basis:
+#### Output using right-normed Chibrikov basis:
 ```
 $ ./bch basis=1
 +1/1*A+1/1*B-1/2*[B,A]-1/12*[A,[B,A]]+1/12*[B,[B,A]]+1/24*[B,[A,[B,A]]]+1/720*[A
@@ -84,7 +84,7 @@ $ ./bch basis=1
 B,A]]]]+1/360*[A,[B,[B,[B,A]]]]-1/720*[B,[B,[B,[B,A]]]]
 ```
 
-### Compute symmetric BCH formula:
+#### Compute symmetric BCH formula:
 ``` 
 $./bch expression=1
 +1/1*A+1/1*B-1/24*[A,[A,B]]+1/12*[[A,B],B]+7/5760*[A,[A,[A,[A,B]]]]-7/1440*[A,[A
