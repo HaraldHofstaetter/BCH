@@ -40,10 +40,10 @@ void free_expr(expr_t* ex);
 
 int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]);
 INTEGER common_denominator(int n, expr_t* ex);
-void print_INTEGER(INTEGER x);
-void print_RATIONAL(INTEGER p, INTEGER q);
 int str_INTEGER(char *out, INTEGER x);
 int str_RATIONAL(char *out, INTEGER p, INTEGER q);
+void print_INTEGER(INTEGER x);
+void print_RATIONAL(INTEGER p, INTEGER q);
 
 typedef struct goldberg_t {
     size_t N;
@@ -86,6 +86,7 @@ typedef struct lie_series_t {
 lie_series_t* lie_series(size_t K, expr_t* expr, size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
 lie_series_t* BCH(size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
 lie_series_t* symBCH(size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
+
 
 int dim(lie_series_t *LS);
 int maximum_degree(lie_series_t *LS);

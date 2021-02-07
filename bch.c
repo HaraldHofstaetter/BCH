@@ -83,7 +83,7 @@ int main(int argc, char*argv[]) {
     expr_t *B = generator(1);
     expr_t *C = generator(2);
     expr_t *ex = NULL;
-    lie_series_t *LS;
+    lie_series_t *LS = NULL;
     switch(get_arg(argc, argv, "expression", 0, 0, 8)) {
         case 0:  /* log(exp(A)*exp(B)), with optimizations spezific for this expression */ 
             LS = BCH(N, basis, hcmp);
@@ -158,7 +158,6 @@ int main(int argc, char*argv[]) {
     }
 
     free_lie_series(LS);
-    free(LS);
     free_expr(A);
     free_expr(B);
     free_expr(C);

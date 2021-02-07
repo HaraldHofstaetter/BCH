@@ -55,7 +55,7 @@ classical Hall basis, or in the right-normed basis of
 E.S.~Chibrikov.  In the Lyndon basis,
 which proves to be particularly efficient for this purpose,
 the computation of 111\,013 coefficients for the BCH series up to terms of degree 20
-takes less than half a second on a common personal computer and requires negligible 11MB of memory.
+takes less than half a second on a ordinary personal computer and requires negligible 11MB of memory.
 Up to terms of degree 30, which is the maximum degree the program can handle, 
 the computation of 74\,248\,451 coefficients takes 55 hours but still requires only a modest 5.5\,GB of  memory.
 
@@ -386,7 +386,7 @@ $./bch expression=5
 With \verb|table_output=0| the result is displayed as a linear combination of commutators. 
 This is the default if the result consists of less than 200 terms.
 With
-\verb|table_output=1|, on the other hand, the result is displayed as a table.
+\verb|table_output=1|, on the other hand, the result is displayed in tabular form.
 Each row of the table corresponds to a basis element of the respective Lie basis,
 %chosen by the \verb|basis| parameter, 
 where by default, for the Lyndon or the Hall
@@ -453,7 +453,7 @@ which should be self-explanatory:
 \end{itemize}
 \begin{quote} %
 {\small\begin{BVerbatim}
-$ ./bch lists_output=1 print_basis_element=1 print_multi_degree=1
+$ ./bch table_output=1 print_basis_element=1 print_multi_degree=1
 0       1       (1,0)   0       0       A       1/1
 1       1       (0,1)   1       0       B       1/1
 2       2       (1,1)   0       1       [A,B]   1/2

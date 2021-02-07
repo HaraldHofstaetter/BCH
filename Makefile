@@ -7,7 +7,7 @@ CFLAGS = -O3 -fPIC -march=native  -fopenmp  -Wall
 #CFLAGS = -O3 -fPIC -march=native -fopenmp -fsanitize=signed-integer-overflow -fsanitize=undefined -Wall 
 
 #CFLAGS = -g -fPIC -Wall 
-#CFLAGS = -g -fPIC -fsanitize=address -fsanitize=signed-integer-overflow -fsanitize=undefine -Wall  
+#CFLAGS = -g -fPIC -fsanitize=address -fsanitize=signed-integer-overflow -fsanitize=undefined -Wall  
 
 MAKE_SHARED_LIB = $(CC) -fopenmp -shared
 

@@ -45,22 +45,6 @@ size_t get_right_factors(size_t i, size_t J[], size_t kmax, uint32_t *p1, uint32
 }
 
 
-int degree(lie_series_t *LS, size_t i) {
-    return LS->nn[i];
-}
-
-
-int degree_of_generator(lie_series_t *LS, size_t i, uint8_t g) {
-    if (LS->nn[i]==1) {
-        return i==g ? 1 : 0;
-    }
-    else {
-        return degree_of_generator(LS, LS->p1[i], g)
-              +degree_of_generator(LS, LS->p2[i], g);
-    }
-}
-
-
 static void compute_goldberg_coefficients(lie_series_t *LS, int N) {
     /* computes coefficients of Lyndon words LS->W[] up to length N<=LS->N
      * in log(exp(A)exp(B)) and stores them in LS->c[]
@@ -322,6 +306,43 @@ void set_verbosity_level(unsigned int level) {
 unsigned int get_verbosity_level(void) {
     return VERBOSITY_LEVEL;
 }
+
+
+int dim(lie_series_t *LS) {
+    return LS->dim;
+}
+
+int maximum_degree(lie_series_t *LS) {
+    return LS->N;
+}
+
+int number_of_generators(lie_series_t *LS) {
+    return LS->K;
+}
+
+INTEGER denominator(lie_series_t *LS){
+    return LS->denom;
+}
+
+INTEGER numerator_of_coefficient(lie_series_t *LS,  size_t i) {
+    return LS->c[i];
+}
+
+int degree(lie_series_t *LS, size_t i) {
+    return LS->nn[i];
+}
+
+
+int degree_of_generator(lie_series_t *LS, size_t i, uint8_t g) {
+    if (LS->nn[i]==1) {
+        return i==g ? 1 : 0;
+    }
+    else {
+        return degree_of_generator(LS, LS->p1[i], g)
+              +degree_of_generator(LS, LS->p2[i], g);
+    }
+}
+
 
 
 static void print_hall_foliage(lie_series_t *LS,  size_t i, char *g) {
