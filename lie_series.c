@@ -308,7 +308,7 @@ unsigned int get_verbosity_level(void) {
 }
 
 
-int dim(lie_series_t *LS) {
+int dimension(lie_series_t *LS) {
     return LS->dim;
 }
 
@@ -344,95 +344,98 @@ int degree_of_generator(lie_series_t *LS, size_t i, uint8_t g) {
 }
 
 
-
-static void print_hall_foliage(lie_series_t *LS,  size_t i, char *g) {
+int str_foliage(char *out, lie_series_t *LS,  size_t i, char *g) {
+    if (!out) {
+        return LS->nn[i];
+    }
+    int pos = 0;
     if (LS->nn[i]==1) {
-        printf("%c", g[LS->p1[i]]);
+        out[pos++] = g[LS->p1[i]];
     }
-    else {
-        print_hall_foliage(LS, LS->p1[i], g);
-        print_hall_foliage(LS, LS->p2[i], g);
-    }
-}   
-
-static void print_rightnormed_foliage(lie_series_t *LS,  size_t i, char *g) {
-    if (LS->R) {
+    else if (LS->R) {
         for (int j=0; j < LS->nn[i]; j++) {
-            printf("%c", g[LS->R[i][j]]);
+            out[pos++] = g[LS->R[i][j]];
         }
     }
+    else {
+        pos += str_foliage(out+pos, LS, LS->p1[i], g);
+        pos += str_foliage(out+pos, LS, LS->p2[i], g);
+    }
+    out[pos] = '\0';
+    return pos;
 }
+
 
 void print_foliage(lie_series_t *LS,  size_t i, char *g) {
-    if (LS->R) {
-        print_rightnormed_foliage(LS, i, g);
-    }
-    else {
-        print_hall_foliage(LS, i, g);
-    }
+    int n = LS->nn[i];
+    char out[n+1];
+    str_foliage(out, LS, i , g);
+    printf("%s", out);
 }
+
+
+int str_basis_element(char *out, lie_series_t *LS,  size_t i, char *g) {
+    int n = LS->nn[i];
+    if (!out) {
+        return n+3*(n-1);
+    }
+    int pos = 0;
+    if (n==1) {
+        out[pos++] = g[LS->p1[i]];
+    }
+    else if (LS->R) { /* rightnormed basis element */
+        for (int j=0; j < n-1; j++) {
+            out[pos++] = '[';
+            out[pos++] = g[LS->R[i][j]];
+            out[pos++] = ',';
+        }
+        out[pos++] = g[LS->R[i][n-1]];
+        for (int j=0; j < n-1; j++) {
+            out[pos++] = ']';
+        }
+    }
+    else { /* Lyndon or Hall basis element */
+        out[pos++] = '[';
+        pos += str_basis_element(out+pos, LS, LS->p1[i], g);
+        out[pos++] = ',';
+        pos += str_basis_element(out+pos, LS, LS->p2[i], g);
+        out[pos++] = ']';
+    }
+    out[pos] = '\0';
+    return pos;
+}
+
 
 void print_basis_element(lie_series_t *LS,  size_t i, char *g) {
-    if (LS->nn[i]==1) {
-        printf("%c", g[LS->p1[i]]);
-    }
-    else {
-        if (LS->R) { /* rightnormed basis element */
-            for (int j=0; j < LS->nn[i]-1; j++) {
-                printf("[%c,", g[LS->R[i][j]]);
-            }
-            printf("%c", g[LS->R[i][LS->nn[i]-1]]);
-            for (int j=0; j < LS->nn[i]-1; j++) {
-                printf("]");
-            }
-        }
-        else { /* Lyndon or Hall basis element */
-            printf("[");
-            print_basis_element(LS, LS->p1[i], g);
-            printf(",");
-            print_basis_element(LS, LS->p2[i], g);
-            printf("]");
-        }
-    }
+    int n = LS->nn[i];
+    char out[n+3*(n-1)+1];
+    str_basis_element(out, LS, i , g);
+    printf("%s", out);
 }
 
+
+int str_coefficient(char *out, lie_series_t *LS,  size_t i) {
+    return str_RATIONAL(out, LS->c[i], LS->denom);
+}
+
+
+void print_coefficient(lie_series_t *LS,  size_t i) {
+    print_RATIONAL(LS->c[i], LS->denom);
+}
+
+
 void print_lie_series(lie_series_t *LS, char *g) {
-    for (int i=0; i<LS->dim; i++) {
-        if (LS->c[i]!=0) {
-            if (LS->c[i]>0) {
+    for (int i=0; i<dimension(LS); i++) {
+        INTEGER num = numerator_of_coefficient(LS, i);
+        if (num!=0) {
+            if (num>0) {
                 printf("+");
             }
-            print_RATIONAL(LS->c[i], LS->denom);
+            print_coefficient(LS, i);
             printf("*");
             print_basis_element(LS, i, g);
         }
     }
-}
-
-
-void print_lie_series_statistics(lie_series_t *LS) {
-    int dim[LS->N];
-    int nonzero[LS->N];
-    for (int i=0; i<LS->N; i++) {
-        dim[i] = 0;
-        nonzero[i] = 0;
-    }
-    for (int i=0; i<LS->dim; i++) {
-        int n = LS->nn[i];
-        dim[n-1]++;
-        if (LS->c[i]!=0) {
-            nonzero[n-1]++;
-        }
-    }
-    printf("# degree         dim    #nonzero   dim(cum.)   #nz(cum.)\n");
-    int dim_cum = 0;
-    int nonzero_cum = 0;
-    for (int n=1; n<=LS->N; n++) {
-        dim_cum += dim[n-1];
-        nonzero_cum += nonzero[n-1];
-        printf("#  %5i  %10i  %10i  %10i  %10i\n", n, dim[n-1], nonzero[n-1], dim_cum, nonzero_cum);
-    }
-    printf("#\n");
 }
 
 
@@ -448,12 +451,12 @@ void print_table(lie_series_t *LS, unsigned int what, char* g) {
         if (what & PRINT_COEFFICIENT) printf("\tcoefficient"); 
         printf("\n");
     }
-    for (int i=0; i<LS->dim; i++) {
+    for (int i=0; i<dimension(LS); i++) {
         if (what & PRINT_INDEX) printf("%i", i);
-        if (what & PRINT_DEGREE) printf("\t%i", LS->nn[i]);
+        if (what & PRINT_DEGREE) printf("\t%i", degree(LS, i));
         if (what & PRINT_MULTI_DEGREE) {
             printf("\t(%i", degree_of_generator(LS, i, 0));
-            for (int g=1; g<LS->K; g++) {
+            for (int g=1; g<number_of_generators(LS); g++) {
                 printf(",%i", degree_of_generator(LS, i, g));
             }
             printf(")");
@@ -470,11 +473,36 @@ void print_table(lie_series_t *LS, unsigned int what, char* g) {
         }
         if (what & PRINT_COEFFICIENT) {
             printf("\t");
-            print_RATIONAL(LS->c[i], LS->denom);
+            print_coefficient(LS, i);
         }
         printf("\n");
     }
 }
 
 
+void print_lie_series_statistics(lie_series_t *LS) {
+    int N = maximum_degree(LS);
+    int dim[N];
+    int nonzero[N];
+    for (int i=0; i<N; i++) {
+        dim[i] = 0;
+        nonzero[i] = 0;
+    }
+    for (int i=0; i<dimension(LS); i++) {
+        int n = degree(LS, i);
+        dim[n-1]++;
+        if (numerator_of_coefficient(LS, i)!=0) {
+            nonzero[n-1]++;
+        }
+    }
+    printf("# degree         dim    #nonzero   dim(cum.)   #nz(cum.)\n");
+    int dim_cum = 0;
+    int nonzero_cum = 0;
+    for (int n=1; n<=N; n++) {
+        dim_cum += dim[n-1];
+        nonzero_cum += nonzero[n-1];
+        printf("#  %5i  %10i  %10i  %10i  %10i\n", n, dim[n-1], nonzero[n-1], dim_cum, nonzero_cum);
+    }
+    printf("#\n");
+}
 
