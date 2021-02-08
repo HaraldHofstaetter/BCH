@@ -9,12 +9,8 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
-\usepackage{amsthm}
 \usepackage{enumerate}   
 \usepackage{enumitem}   
-\newtheorem{theorem}{Theorem}
-\newtheorem{lemma}{Lemma}
-\newtheorem{example}{Example}
 \usepackage{fancyvrb}
 
 
@@ -171,8 +167,9 @@ In the right-normed Chibrikov basis case, the coefficient matrix is no longer
 triangular, but it still has determinant $\pm 1$, and its leading principal
 minors are all equal $\pm 1$. It follows that the matrix has a $LU$-decomposition
 with triangular matrices $L$, $U$ whose entries are all integers and whose diagonal
-elements are equal $\pm 1$.
-Again solving a linear system with such a matrix introduces no further denominators.
+elements are equal $\pm 1$. This $LU$-decomposition can be computed 
+in pure integer arithmetic using Gaussian elimination without any row or column permutations.
+Again solving such a linear system  introduces no further denominators.
 
 In the Hall basis case, the program first computes the representation of
 the Lie series in the Lyndon basis, and then uses a standard rewriting algorithm
@@ -483,6 +480,9 @@ and timings of the main steps of the computation as described in Section~\ref{Se
 Lie basis elements and the number of nonzero coefficients of the Lie series is printed.
 For easy identification, each line of this output has the character \verb|#| at the leading position.
 
+With \verb|verbosity_level| set to a value $\geq 2$ this  output is not buffered but flushed immediately. 
+This is only recommended if long running times of the program are expected.
+
 \begin{quote} %
 {\small\begin{BVerbatim}
 $ ./bch N=20 verbosity_level=1 | head -n 40
@@ -541,7 +541,7 @@ memory usage measured with \verb|/usr/bin/time|
 \begin{center}
 \begin{tabular}{rrrrr}
 \hline
-$N$ & dim & nonzero coeffs & time  & memory \\
+$N$ & dimension & \#nonzero & time  & memory \\
 \hline
 18 &  31042 & 21573 &  $0.04$\,sec & 4628\,kB\\
 20 & 111013 & 76760 & $0.22$\,sec  & 10932\,kB \\
@@ -558,7 +558,7 @@ $N$ & dim & nonzero coeffs & time  & memory \\
 \begin{center}
 \begin{tabular}{rrrrr}
 \hline
-$N$ & dim & nonzero coeffs & time  & memory \\
+$N$ & dimension & \#nonzero & time  & memory \\
 \hline
 18 & 31042  & 21561 & $0.76$\,sec & 58300\,kB \\
 20 & 111013 & 76748 & $21.52$\,sec & 637\,MB \\
@@ -571,7 +571,7 @@ $N$ & dim & nonzero coeffs & time  & memory \\
 \begin{center}
 \begin{tabular}{rrrrr}
 \hline
-$N$ & dim & nonzero coeffs & time  & memory \\
+$N$ & dimension & \#nonzero & time  & memory \\
 \hline
 18 & 31042 & 30477   & $0.35$\,sec & 81248\,kB\\
 20 & 111013 & 109697 & $2.12$\,sec & 428\,MB \\

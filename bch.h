@@ -83,18 +83,20 @@ typedef struct lie_series_t {
 } lie_series_t;
 
 
-lie_series_t* lie_series(size_t K, expr_t* expr, size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
-lie_series_t* BCH(size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
-lie_series_t* symBCH(size_t N, int basis, int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
+lie_series_t* lie_series(size_t K, expr_t* expr, size_t N, int basis);
+lie_series_t* BCH(size_t N, int basis);
+lie_series_t* symBCH(size_t N, int basis);
 
 
-int dim(lie_series_t *LS);
+int dimension(lie_series_t *LS);
 int maximum_degree(lie_series_t *LS);
 int number_of_generators(lie_series_t *LS);
 INTEGER denominator(lie_series_t *LS);
 INTEGER numerator_of_coefficient(lie_series_t *LS,  size_t i);
 int degree(lie_series_t *LS, size_t i);
 int degree_of_generator(lie_series_t *LS, size_t i, uint8_t g);
+int left_factor(lie_series_t *LS, int i);
+int right_factor(lie_series_t *LS, int i);
 int str_foliage(char *out, lie_series_t *LS,  size_t i, char *g);
 int str_basis_element(char *out, lie_series_t *LS,  size_t i, char *g);
 int str_coefficient(char *out, lie_series_t *LS,  size_t i);
@@ -123,11 +125,6 @@ void print_table(lie_series_t *LS, unsigned int what, char *g);
 
 void free_lie_series(lie_series_t *LS);
 
-/* examples of Hall orders, which are defined in convert_hall.c: */
-int hcmp_0(int n1, const char *f1, int n2, const char *f2);
-int hcmp_1(int n1, const char *f1, int n2, const char *f2);
-int hcmp_2(int n1, const char *f1, int n2, const char *f2);
-
 
 /**********************************************/
 /* lie_series.c: */
@@ -152,8 +149,7 @@ void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_degrees_
 void lyndon2rightnormed(int lw, uint8_t w[], uint8_t r[]);
 
 /* convert_hall.c: */
-void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS,
-        int (*hcmp)(int n1, const char *f1, int n2, const char *f2));
+void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int basis);
 
 
 #endif /*BCH_H */

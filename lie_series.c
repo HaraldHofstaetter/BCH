@@ -144,8 +144,7 @@ static void compute_word_coefficients(lie_series_t *LS, int N, expr_t* ex) {
 
 
 
-lie_series_t* lie_series(size_t K, expr_t* expr, size_t N, int basis,
-        int (*hcmp)(int n1, const char *f1, int n2, const char *f2)) {
+lie_series_t* lie_series(size_t K, expr_t* expr, size_t N, int basis) {
     double t0 = tic();
     lie_series_t *LS = malloc(sizeof(lie_series_t));
     LS->K = K;
@@ -163,7 +162,7 @@ lie_series_t* lie_series(size_t K, expr_t* expr, size_t N, int basis,
         LS->R = 0;
         if (basis>=HALL_BASIS) {
             lie_series_t *HS = malloc(sizeof(lie_series_t));
-            convert_lyndon_to_hall_lie_series(LS, HS, hcmp);
+            convert_lyndon_to_hall_lie_series(LS, HS, basis);
             free_lie_series(LS);
             LS = HS;
         }
@@ -179,8 +178,7 @@ lie_series_t* lie_series(size_t K, expr_t* expr, size_t N, int basis,
 }
 
 
-lie_series_t* BCH(size_t N, int basis,
-        int (*hcmp)(int n1, const char *f1, int n2, const char *f2)) {
+lie_series_t* BCH(size_t N, int basis) {
     double t0 = tic();
     lie_series_t *LS = malloc(sizeof(lie_series_t));
     LS->K = 2;
@@ -206,7 +204,7 @@ lie_series_t* BCH(size_t N, int basis,
         }
         if (basis>=HALL_BASIS) {
             lie_series_t *HS = malloc(sizeof(lie_series_t));
-            convert_lyndon_to_hall_lie_series(LS, HS, hcmp);
+            convert_lyndon_to_hall_lie_series(LS, HS, basis);
             free_lie_series(LS);
             LS = HS;
         }
@@ -222,8 +220,7 @@ lie_series_t* BCH(size_t N, int basis,
 }
 
 
-lie_series_t* symBCH(size_t N, int basis,
-        int (*hcmp)(int n1, const char *f1, int n2, const char *f2)) {
+lie_series_t* symBCH(size_t N, int basis) {
     double t0 = tic();
     lie_series_t *LS = malloc(sizeof(lie_series_t));
     LS->K = 2;
@@ -251,7 +248,7 @@ lie_series_t* symBCH(size_t N, int basis,
         convert_to_lie_series(LS, N1);
         if (basis>=HALL_BASIS) {
             lie_series_t *HS = malloc(sizeof(lie_series_t));
-            convert_lyndon_to_hall_lie_series(LS, HS, hcmp);
+            convert_lyndon_to_hall_lie_series(LS, HS, basis);
             free_lie_series(LS);
             LS = HS;
         }
@@ -341,6 +338,16 @@ int degree_of_generator(lie_series_t *LS, size_t i, uint8_t g) {
         return degree_of_generator(LS, LS->p1[i], g)
               +degree_of_generator(LS, LS->p2[i], g);
     }
+}
+
+
+int left_factor(lie_series_t *LS, int i) {
+    return LS->p1[i];
+}
+
+
+int right_factor(lie_series_t *LS, int i) {
+    return LS->p2[i];
 }
 
 
@@ -461,7 +468,7 @@ void print_table(lie_series_t *LS, unsigned int what, char* g) {
             }
             printf(")");
         }
-        if (what & PRINT_FACTORS) printf("\t%i\t%i", LS->p1[i], LS->p2[i]);
+        if (what & PRINT_FACTORS) printf("\t%i\t%i", left_factor(LS, i), right_factor(LS, i));
         if (what & PRINT_FOLIAGE) {
             printf("\t");
             print_foliage(LS, i, g);

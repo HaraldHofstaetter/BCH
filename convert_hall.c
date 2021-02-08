@@ -489,8 +489,7 @@ exit: ;
 
 
 
-void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS,
-        int (*hcmp)(int n1, const char *f1, int n2, const char *f2)) {
+void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int basis) {
     double t0 = tic();
     int N = LS->N;
     HS->N = LS->N;
@@ -504,7 +503,14 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS,
     magma_element_t **H = malloc(LS->dim*sizeof(magma_element_t*));
     khash_t(str_int) *HT;
 
-    if  (hcmp==NULL) {
+    int (*hcmp)(int n1, const char *f1, int n2, const char *f2) = NULL;
+    switch (basis) { /* here additional Hall orders can be registered */
+        case 3: hcmp = hcmp_1; break;
+        case 4: hcmp = hcmp_2; break;
+        case 5: hcmp = hcmp_0; break;
+        default: hcmp = NULL;
+    }
+    if (hcmp==NULL) {
         HS->dim = hall_data(LS->K, LS->N, LS->dim, &HS->nn, &HS->p1, &HS->p2, H, &HT);
     }
     else {
