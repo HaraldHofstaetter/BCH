@@ -8,7 +8,7 @@
 #include <omp.h>
 #endif
 
-unsigned int VERBOSITY_LEVEL = 0;
+int VERBOSITY_LEVEL = 0;
 
 double tic(void) {
 #ifdef _OPENMP
@@ -49,36 +49,36 @@ static void compute_goldberg_coefficients(lie_series_t *LS, int N) {
     /* computes coefficients of Lyndon words LS->W[] up to length N<=LS->N
      * in log(exp(A)exp(B)) and stores them in LS->c[]
      */
-    if (VERBOSITY_LEVEL>=1) {
-        printf("#expression=log(exp(A)*exp(A))\n");
+    if (get_verbosity_level()>=1) {
+        printf("#expression=log(exp(A)*exp(B))\n");
         printf("#denominator="); print_INTEGER(LS->denom); printf("\n");
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }
     double t0 = tic();
     
-    goldberg_t G = goldberg(N);        
-    int f = LS->denom/G.denom;
+    goldberg_t *G = goldberg(N);        
+    int f = LS->denom/G->denom;
     if (f!=1) {
         #pragma omp for schedule(dynamic,256) 
         for (int i=LS->ii[N]-1; i>=0; i--) {
-            LS->c[i] = f*goldberg_coefficient(LS->nn[i], LS->W[i], &G); 
+            LS->c[i] = f*goldberg_coefficient(LS->nn[i], LS->W[i], G); 
         }       
     }
     else {
         #pragma omp for schedule(dynamic,256) 
         for (int i=LS->ii[N]-1; i>=0; i--) {
-            LS->c[i] = goldberg_coefficient(LS->nn[i], LS->W[i], &G); 
+            LS->c[i] = goldberg_coefficient(LS->nn[i], LS->W[i], G); 
         }       
     }
 
     free_goldberg(G);
 
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
         printf("#compute coefficients of Lyndon words: time=%g sec\n", t1);
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }
@@ -89,10 +89,10 @@ static void compute_word_coefficients(lie_series_t *LS, int N, expr_t* ex) {
     /* computes coefficients of Lyndon words LS->W[] up to length N<=LS->N
      * in expression ex and stores them in LS->c[]
      */
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         printf("#expression="); print_expr(ex); printf("\n"); 
         printf("#denominator="); print_INTEGER(LS->denom); printf("\n");
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }
@@ -133,10 +133,10 @@ static void compute_word_coefficients(lie_series_t *LS, int N, expr_t* ex) {
     }
     }
 
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
         printf("#compute coeffs of words: time=%g sec\n", t1);
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }
@@ -144,7 +144,7 @@ static void compute_word_coefficients(lie_series_t *LS, int N, expr_t* ex) {
 
 
 
-lie_series_t* lie_series(size_t K, expr_t* expr, size_t N, int basis) {
+lie_series_t* lie_series(int K, expr_t* expr, int N, int basis) {
     double t0 = tic();
     lie_series_t *LS = malloc(sizeof(lie_series_t));
     LS->K = K;
@@ -167,10 +167,10 @@ lie_series_t* lie_series(size_t K, expr_t* expr, size_t N, int basis) {
             LS = HS;
         }
     }
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
         printf("#total time=%g sec\n", t1);
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }
@@ -178,7 +178,7 @@ lie_series_t* lie_series(size_t K, expr_t* expr, size_t N, int basis) {
 }
 
 
-lie_series_t* BCH(size_t N, int basis) {
+lie_series_t* BCH(int N, int basis) {
     double t0 = tic();
     lie_series_t *LS = malloc(sizeof(lie_series_t));
     LS->K = 2;
@@ -209,10 +209,10 @@ lie_series_t* BCH(size_t N, int basis) {
             LS = HS;
         }
     }
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
         printf("#total time=%g sec\n", t1);
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }
@@ -220,7 +220,7 @@ lie_series_t* BCH(size_t N, int basis) {
 }
 
 
-lie_series_t* symBCH(size_t N, int basis) {
+lie_series_t* symBCH(int N, int basis) {
     double t0 = tic();
     lie_series_t *LS = malloc(sizeof(lie_series_t));
     LS->K = 2;
@@ -232,9 +232,9 @@ lie_series_t* symBCH(size_t N, int basis) {
     init_lyndon_words(LS);
     LS->c = calloc(LS->dim, sizeof(INTEGER)); /* calloc initializes to zero */
     LS->denom = common_denominator(N, 0);
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         printf("#NOTE: in the following expression, A stands for A/2\n");
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }
@@ -258,9 +258,9 @@ lie_series_t* symBCH(size_t N, int basis) {
         LS->c[i] <<= N-1-nA; /* c[i] = c[i]*2^(N-1-nA) */
     }
     LS->denom <<= N-1; /* denom = denom*2^(N-1) */
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         printf("#denominator changed to "); print_INTEGER(LS->denom); printf("\n");
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }
@@ -270,7 +270,7 @@ lie_series_t* symBCH(size_t N, int basis) {
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
         printf("#total time=%g sec\n", t1);
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }
@@ -296,11 +296,11 @@ void free_lie_series(lie_series_t *LS) {
 }
 
 
-void set_verbosity_level(unsigned int level) {
+void set_verbosity_level(int level) {
     VERBOSITY_LEVEL = level;
 }
 
-unsigned int get_verbosity_level(void) {
+int get_verbosity_level(void) {
     return VERBOSITY_LEVEL;
 }
 
@@ -321,16 +321,16 @@ INTEGER denominator(lie_series_t *LS){
     return LS->denom;
 }
 
-INTEGER numerator_of_coefficient(lie_series_t *LS,  size_t i) {
+INTEGER numerator_of_coefficient(lie_series_t *LS,  int i) {
     return LS->c[i];
 }
 
-int degree(lie_series_t *LS, size_t i) {
+int degree(lie_series_t *LS, int i) {
     return LS->nn[i];
 }
 
 
-int degree_of_generator(lie_series_t *LS, size_t i, uint8_t g) {
+int degree_of_generator(lie_series_t *LS, int i, uint8_t g) {
     if (LS->nn[i]==1) {
         return i==g ? 1 : 0;
     }
@@ -351,7 +351,7 @@ int right_factor(lie_series_t *LS, int i) {
 }
 
 
-int str_foliage(char *out, lie_series_t *LS,  size_t i, char *g) {
+int str_foliage(char *out, lie_series_t *LS,  int i, char *g) {
     if (!out) {
         return LS->nn[i];
     }
@@ -373,7 +373,7 @@ int str_foliage(char *out, lie_series_t *LS,  size_t i, char *g) {
 }
 
 
-void print_foliage(lie_series_t *LS,  size_t i, char *g) {
+void print_foliage(lie_series_t *LS,  int i, char *g) {
     int n = LS->nn[i];
     char out[n+1];
     str_foliage(out, LS, i , g);
@@ -381,7 +381,7 @@ void print_foliage(lie_series_t *LS,  size_t i, char *g) {
 }
 
 
-int str_basis_element(char *out, lie_series_t *LS,  size_t i, char *g) {
+int str_basis_element(char *out, lie_series_t *LS,  int i, char *g) {
     int n = LS->nn[i];
     if (!out) {
         return n+3*(n-1);
@@ -413,7 +413,7 @@ int str_basis_element(char *out, lie_series_t *LS,  size_t i, char *g) {
 }
 
 
-void print_basis_element(lie_series_t *LS,  size_t i, char *g) {
+void print_basis_element(lie_series_t *LS,  int i, char *g) {
     int n = LS->nn[i];
     char out[n+3*(n-1)+1];
     str_basis_element(out, LS, i , g);
@@ -421,12 +421,12 @@ void print_basis_element(lie_series_t *LS,  size_t i, char *g) {
 }
 
 
-int str_coefficient(char *out, lie_series_t *LS,  size_t i) {
+int str_coefficient(char *out, lie_series_t *LS,  int i) {
     return str_RATIONAL(out, LS->c[i], LS->denom);
 }
 
 
-void print_coefficient(lie_series_t *LS,  size_t i) {
+void print_coefficient(lie_series_t *LS,  int i) {
     print_RATIONAL(LS->c[i], LS->denom);
 }
 
@@ -446,8 +446,8 @@ void print_lie_series(lie_series_t *LS, char *g) {
 }
 
 
-void print_table(lie_series_t *LS, unsigned int what, char* g) {
-    if (VERBOSITY_LEVEL>=1) {
+void print_table(lie_series_t *LS, int what, char* g) {
+    if (get_verbosity_level()>=1) {
         printf("# ");
         if (what & PRINT_INDEX) printf("i");
         if (what & PRINT_DEGREE) printf("\t|i|");
@@ -487,7 +487,7 @@ void print_table(lie_series_t *LS, unsigned int what, char* g) {
 }
 
 
-void print_lie_series_statistics(lie_series_t *LS) {
+void print_statistics(lie_series_t *LS) {
     int N = maximum_degree(LS);
     int dim[N];
     int nonzero[N];
@@ -511,5 +511,51 @@ void print_lie_series_statistics(lie_series_t *LS) {
         printf("#  %5i  %10i  %10i  %10i  %10i\n", n, dim[n-1], nonzero[n-1], dim_cum, nonzero_cum);
     }
     printf("#\n");
+}
+
+
+void print_statistics_n(lie_series_t *LS, int n) {
+    assert(n<=maximum_degree(LS));
+    int K = number_of_generators(LS);
+    int m = 1;
+    for (int k=0; k<K-1; k++) {
+        m *= n;
+    }
+    int* dim = calloc(m, sizeof(int));
+    int* nonzero = calloc(m, sizeof(int));
+    for (int i=0; i<dimension(LS); i++) {
+        if (degree(LS, i)==n) {
+            int j = 0;
+            int d = 1;
+            for (int k=0; k<K-1; k++) {
+                j += d*degree_of_generator(LS, i, k);
+                d *= n;
+            }
+            dim[j]++;
+            if (numerator_of_coefficient(LS, i)!=0) {
+                nonzero[j]++;
+            }
+        }
+    }
+    printf("# multi-degree\tdim\t#nonzero\n");
+    for (int j=0; j<m; j++) {
+        if (dim[j]>0) {
+        printf("# (");
+        int jj = j;
+        int s = 0;
+        for (int k=0; k<K-1; k++) {
+            int d = jj % n;
+            printf("%2i,", d);
+            s += d;
+
+            jj /= n;
+        }
+        printf("%2i)\t%i\t%i\n", n-s, dim[j], nonzero[j]);
+        }
+    }
+    printf("#\n");
+
+    free(dim);
+    free(nonzero);
 }
 

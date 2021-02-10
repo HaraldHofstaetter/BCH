@@ -12,6 +12,79 @@ typedef __int128_t INTEGER;
 typedef int64_t INTEGER;
 #endif
 
+int str_INTEGER(char *out, INTEGER x);
+int str_RATIONAL(char *out, INTEGER p, INTEGER q);
+void print_INTEGER(INTEGER x);
+void print_RATIONAL(INTEGER p, INTEGER q);
+
+
+typedef struct lie_series_t {
+    uint8_t K;     /* number of generators */
+    uint8_t N;     /* maximum degree of Lie series */ 
+    uint32_t dim;  /* dimension of Lie algebra */ 
+    uint8_t **W;   /* W[i], 0<=i<dim ... ith Lyndon word, ordered primarily by length and 
+                                         secondarily by lexicographical order */
+    uint8_t *nn;   /* nn[i] = length of W[i] */
+    uint32_t *p1;  /* standard factorization of W[i] is W[p1[i]]*W[p2[i]] */
+    uint32_t *p2;
+    uint32_t *ii;  /* W[ii[n-1]] = first Lyndon word of length n; 
+                      W[ii[n]-1] = last Lyndon word of length n; 
+                      ii[N] = dim */
+    uint8_t **R;   /* R[i] ... ith rightnormed basis element corresponding to ith Lyndon word */
+    INTEGER denom;
+    INTEGER *c;
+} lie_series_t;
+
+
+enum {
+    LYNDON_BASIS = 0,
+    RIGHTNORMED_BASIS = 1,
+    HALL_BASIS = 2,
+};     
+
+
+lie_series_t* BCH(int N, int basis);
+lie_series_t* symBCH(int N, int basis);
+
+void free_lie_series(lie_series_t *LS);
+
+void set_verbosity_level(int verbosity_level);
+int get_verbosity_level(void);
+
+int dimension(lie_series_t *LS);
+int maximum_degree(lie_series_t *LS);
+int number_of_generators(lie_series_t *LS);
+INTEGER denominator(lie_series_t *LS);
+INTEGER numerator_of_coefficient(lie_series_t *LS,  int i);
+int degree(lie_series_t *LS, int i);
+int degree_of_generator(lie_series_t *LS, int i, uint8_t g);
+int left_factor(lie_series_t *LS, int i);
+int right_factor(lie_series_t *LS, int i);
+int str_foliage(char *out, lie_series_t *LS,  int i, char *generators);
+int str_basis_element(char *out, lie_series_t *LS,  int i, char *generators);
+int str_coefficient(char *out, lie_series_t *LS,  int i);
+void print_foliage(lie_series_t *LS,  int i, char *generators);
+void print_basis_element(lie_series_t *LS,  int i, char *generators);
+void print_coefficient(lie_series_t *LS,  int i);
+
+void print_lie_series(lie_series_t *LS, char *generators);
+void print_statistics(lie_series_t *LS);
+void print_statistics_n(lie_series_t *LS, int n);
+
+enum {
+    PRINT_INDEX =            1 << 0, 
+    PRINT_DEGREE =           1 << 1, 
+    PRINT_MULTI_DEGREE =     1 << 2, 
+    PRINT_FACTORS =          1 << 3, 
+    PRINT_FOLIAGE =          1 << 4, 
+    PRINT_BASIS_ELEMENT =    1 << 5, 
+    PRINT_COEFFICIENT =      1 << 6
+};
+
+void print_table(lie_series_t *LS, int what, char *generators);
+
+
+
 enum expr_type { UNDEFINED, IDENTITY, GENERATOR, SUM, DIFFERENCE, PRODUCT, 
                  NEGATION, TERM, EXPONENTIAL, LOGARITHM };
 
@@ -40,10 +113,9 @@ void free_expr(expr_t* ex);
 
 int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]);
 INTEGER common_denominator(int n, expr_t* ex);
-int str_INTEGER(char *out, INTEGER x);
-int str_RATIONAL(char *out, INTEGER p, INTEGER q);
-void print_INTEGER(INTEGER x);
-void print_RATIONAL(INTEGER p, INTEGER q);
+
+lie_series_t* lie_series(int K, expr_t* expr, int N, int basis);
+
 
 typedef struct goldberg_t {
     size_t N;
@@ -53,77 +125,10 @@ typedef struct goldberg_t {
     INTEGER *c;
 } goldberg_t;
 
-goldberg_t goldberg(size_t N);
+goldberg_t* goldberg(size_t N);
 INTEGER goldberg_coefficient(int n, uint8_t w[], goldberg_t *G);
 void print_goldberg(goldberg_t *G);
-void free_goldberg(goldberg_t G);
-
-enum {
-    LYNDON_BASIS = 0,
-    RIGHTNORMED_BASIS = 1,
-    HALL_BASIS = 2,
-};        
-
-
-typedef struct lie_series_t {
-    uint8_t K;     /* number of generators */
-    uint8_t N;     /* maximum degree of Lie series */ 
-    uint32_t dim;  /* dimension of Lie algebra */ 
-    uint8_t **W;   /* W[i], 0<=i<dim ... ith Lyndon word, ordered primarily by length and 
-                                         secondarily by lexicographical order */
-    uint8_t *nn;   /* nn[i] = length of W[i] */
-    uint32_t *p1;  /* standard factorization of W[i] is W[p1[i]]*W[p2[i]] */
-    uint32_t *p2;
-    uint32_t *ii;  /* W[ii[n-1]] = first Lyndon word of length n; 
-                      W[ii[n]-1] = last Lyndon word of length n; 
-                      ii[N] = dim */
-    uint8_t **R;   /* R[i] ... ith rightnormed basis element corresponding to ith Lyndon word */
-    INTEGER denom;
-    INTEGER *c;
-} lie_series_t;
-
-
-lie_series_t* lie_series(size_t K, expr_t* expr, size_t N, int basis);
-lie_series_t* BCH(size_t N, int basis);
-lie_series_t* symBCH(size_t N, int basis);
-
-
-int dimension(lie_series_t *LS);
-int maximum_degree(lie_series_t *LS);
-int number_of_generators(lie_series_t *LS);
-INTEGER denominator(lie_series_t *LS);
-INTEGER numerator_of_coefficient(lie_series_t *LS,  size_t i);
-int degree(lie_series_t *LS, size_t i);
-int degree_of_generator(lie_series_t *LS, size_t i, uint8_t g);
-int left_factor(lie_series_t *LS, int i);
-int right_factor(lie_series_t *LS, int i);
-int str_foliage(char *out, lie_series_t *LS,  size_t i, char *g);
-int str_basis_element(char *out, lie_series_t *LS,  size_t i, char *g);
-int str_coefficient(char *out, lie_series_t *LS,  size_t i);
-void print_foliage(lie_series_t *LS,  size_t i, char *g);
-void print_basis_element(lie_series_t *LS,  size_t i, char *g);
-void print_coefficient(lie_series_t *LS,  size_t i);
-
-
-void set_verbosity_level(unsigned int verbosity_level);
-unsigned int get_verbosity_level(void);
-
-void print_lie_series(lie_series_t *LS, char *g);
-void print_lie_series_statistics(lie_series_t *LS);
-
-enum {
-    PRINT_INDEX =            1 << 0, 
-    PRINT_DEGREE =           1 << 1, 
-    PRINT_MULTI_DEGREE =     1 << 2, 
-    PRINT_FACTORS =          1 << 3, 
-    PRINT_FOLIAGE =          1 << 4, 
-    PRINT_BASIS_ELEMENT =    1 << 5, 
-    PRINT_COEFFICIENT =      1 << 6
-};
-
-void print_table(lie_series_t *LS, unsigned int what, char *g);
-
-void free_lie_series(lie_series_t *LS);
+void free_goldberg(goldberg_t *G);
 
 
 /**********************************************/

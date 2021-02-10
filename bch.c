@@ -64,8 +64,8 @@ int main(int argc, char*argv[]) {
     set_verbosity_level(get_arg(argc, argv ,"verbosity_level", 0, 0, 9));
 
     if (get_arg(argc, argv, "goldberg_coefficients", 0, 0, 1)) {
-        goldberg_t G = goldberg(N);
-        print_goldberg(&G);
+        goldberg_t *G = goldberg(N);
+        print_goldberg(G);
         free_goldberg(G);
         return EXIT_SUCCESS;
     }
@@ -127,7 +127,8 @@ int main(int argc, char*argv[]) {
     }
 
     if ( (get_verbosity_level()>0) || (get_arg(argc, argv, "print_statistics", 0, 0, 1)) ) {
-        print_lie_series_statistics(LS);
+        print_statistics(LS);
+        print_statistics_n(LS, N);
     }
 
     /* output result: */

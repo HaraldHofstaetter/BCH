@@ -10,7 +10,6 @@
 // #define USE_SIMD_INTRINSICS 1
 #endif
 
-extern unsigned int VERBOSITY_LEVEL;
 
 #include"khash.h"
 KHASH_MAP_INIT_INT64(P_Dict, uint32_t)      // instantiate structs and methods
@@ -165,7 +164,7 @@ static void  P_run_4(v4int32_t* X0, P_t *P, uint8_t w0[], uint8_t w1[], uint8_t 
 
 
 void convert_to_lie_series(lie_series_t *LS, int N) {
-    if (VERBOSITY_LEVEL>=2) {
+    if (get_verbosity_level()>=2) {
 #ifdef _OPENMP
         printf("# degree     #basis        time thread\n");
 #else
@@ -305,7 +304,7 @@ void convert_to_lie_series(lie_series_t *LS, int N) {
         free(X);
         LS->R = 0;
         h_time[k] = toc(h_time[k]); 
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
 #ifdef _OPENMP
             printf("#%7i %10i %11.2f %11.2f %11.2f %10i %4i\n", k+1, h_n[k], h_time1[k], h_time2[k], h_time[k], len, h_thread[k]);
 #else
@@ -318,10 +317,10 @@ void convert_to_lie_series(lie_series_t *LS, int N) {
     }
     free(DI);
 
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
         printf("#convert to Lie series: time=%g sec\n", t1);
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }
@@ -400,10 +399,10 @@ void compute_BCH_terms_of_even_degree_N(lie_series_t *LS) {
         }
     } 
 
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
         printf("#compute terms of degree %i: time=%g sec\n", LS->N, t1);
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }

@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-extern unsigned int VERBOSITY_LEVEL;
-
 
 static int coeff_word_in_rightnormed(uint8_t w[], uint8_t c[], int l1, int r1, int l2) {
     if (l1==r1) {
@@ -122,10 +120,10 @@ void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_degrees_
     }
     free(DI);
 
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
         printf("#convert to rightnormed Lie series: time=%g sec\n", t1);
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }
@@ -172,10 +170,10 @@ void compute_rightnormed_BCH_terms_of_even_degrees(lie_series_t *LS) {
         }
     }
 
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
         printf("#compute terms of even degrees: time=%g sec\n", t1);
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }
@@ -200,10 +198,10 @@ void init_rightnormed(lie_series_t *LS) {
         lyndon2rightnormed(LS->nn[i], LS->W[i], LS->R[i]);
     }
 
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
         printf("#initialize rightnormed basis elements: time=%g sec\n", t1);
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }

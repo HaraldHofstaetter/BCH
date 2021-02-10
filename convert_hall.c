@@ -6,8 +6,6 @@
 #include<stdbool.h>
 #include<assert.h>
 
-extern unsigned int VERBOSITY_LEVEL;
-
 
 #include"khash.h"
 KHASH_MAP_INIT_STR(str_int, int)
@@ -518,10 +516,10 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int b
     }
     assert(HS->dim==LS->dim);
 
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
         printf("#initialize Hall basis: time=%g sec\n", t1);
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }
@@ -590,10 +588,10 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int b
     kh_destroy(str_int, HT);
 
 
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
         printf("#convert from Lyndon to Hall Lie series: time=%g sec\n", t1);
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }

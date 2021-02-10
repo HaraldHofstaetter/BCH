@@ -3,8 +3,6 @@
 #include<stdio.h>
 #include<assert.h>
 
-extern unsigned int VERBOSITY_LEVEL;
-
 
 static int ipow(int base, unsigned int exp) {
     /* computes base^exp 
@@ -262,12 +260,12 @@ void init_lyndon_words(lie_series_t *LS) {
         free(WI);
     }
 
-    if (VERBOSITY_LEVEL>=1) {
+    if (get_verbosity_level()>=1) {
         double t1 = toc(t0);
         printf("#number of Lyndon words of length<=%i over set of %i letters: %i\n", 
                 LS->N, LS->K, LS->dim);
         printf("#initialize Lyndon words: time=%g sec\n", t1);
-        if (VERBOSITY_LEVEL>=2) {
+        if (get_verbosity_level()>=2) {
             fflush(stdout);
         }
     }

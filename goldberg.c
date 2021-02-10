@@ -144,10 +144,10 @@ static void compute_goldberg_coeffs(INTEGER y[], uint8_t q[], int Afirst, INTEGE
 #endif
 
 
-goldberg_t goldberg(size_t n) {
+goldberg_t* goldberg(size_t n) {
     double t0 = tic();
 
-    goldberg_t G;
+    goldberg_t *G = malloc(sizeof(goldberg_t));
     int jj[n];
     for (int j=0; j<n; j++) {
         jj[j] = 0;
@@ -160,27 +160,27 @@ goldberg_t goldberg(size_t n) {
         mem_len += n_partitions[j]*(j+1);
     }
 
-    G.N = n;
+    G->N = n;
     int np = ii[n];
-    G.n_partitions = np;
+    G->n_partitions = np;
 
-    G.c = malloc(np*sizeof(INTEGER));     
-    G.P = malloc(np*sizeof(uint8_t *));     
-    G.P[0] = malloc(2*mem_len*sizeof(uint8_t));
+    G->c = malloc(np*sizeof(INTEGER));     
+    G->P = malloc(np*sizeof(uint8_t *));     
+    G->P[0] = malloc(2*mem_len*sizeof(uint8_t));
     int i=0;
     for (int j=1; j<=n; j++) {
         for (int k=0; k<n_partitions[j]; k++) {
             if (i>0) {
-                G.P[i] = G.P[i-1]+j+1;
+                G->P[i] = G->P[i-1]+j+1;
             }
             i++;
         }
     }
     
-    uint8_t **Pn = G.P+ii[n-1];
+    uint8_t **Pn = G->P+ii[n-1];
     partitions(n, Pn);
 
-    G.denom = FACTORIAL[n]*goldberg_denominator[n];
+    G->denom = FACTORIAL[n]*goldberg_denominator[n];
 
 #ifdef USE_PHI_FOR_GOLDBERG    
     expr_t *A = generator(0);
@@ -191,7 +191,7 @@ goldberg_t goldberg(size_t n) {
     for (int j=0; j<n; j++){
         e[j] = 0;
     }
-    e[n] = G.denom;
+    e[n] = G->denom;
 
     uint8_t w[n];
 #else
@@ -213,19 +213,19 @@ goldberg_t goldberg(size_t n) {
 #else
         int l=0;
         for ( ; Pn[k][l]!=0; l++) { }
-        compute_goldberg_coeffs(t, Pn[k], 1, G.denom, C);
+        compute_goldberg_coeffs(t, Pn[k], 1, G->denom, C);
 #endif
 
         int j = n-1;
         int q = Pn[k][0];
         while (1) {
-            G.c[ii[j]+jj[j]] = t[n-j-1];
+            G->c[ii[j]+jj[j]] = t[n-j-1];
             if (j<n-1) {
-                G.P[ii[j]+jj[j]][0] = q;
+                G->P[ii[j]+jj[j]][0] = q;
                 for (int i=1; i<l; i++) {
-                    G.P[ii[j]+jj[j]][i] = Pn[k][i];
+                    G->P[ii[j]+jj[j]][i] = Pn[k][i];
                 }
-                G.P[ii[j]+jj[j]][l] = 0;
+                G->P[ii[j]+jj[j]][l] = 0;
             }
             jj[j]++;
             if (!((l==1 && q>1) || (l>1 && q>Pn[k][1]))) {
@@ -324,9 +324,10 @@ void print_goldberg(goldberg_t *G) {
 }
 
 
-void free_goldberg(goldberg_t G) {
-    free(G.P[0]);
-    free(G.P);
-    free(G.c);
+void free_goldberg(goldberg_t *G) {
+    free(G->P[0]);
+    free(G->P);
+    free(G->c);
+    free(G);
 }
 
