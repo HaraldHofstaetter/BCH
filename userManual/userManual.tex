@@ -538,7 +538,12 @@ a 3.0\,GHz Intel Core i5-2320 processor with 4 CPU cores and
 8\,GB of RAM running an Ubuntu Linux operating system. The 
 C compiler was \verb|gcc| version 9.3.0.
 The memory usage was measured with \verb|/usr/bin/time|.
-\paragraph{Lyndon basis:}
+For the test runs of the program we used different 
+maximum degrees $N$ and different bases. The results
+are as follows: (Here, dimension is the number of basis elements of degree $\leq N$
+and \#nonzero is the number of coefficients $\neq 0$.)
+
+\subsection*{Lyndon basis:}
 
 \nopagebreak
 
@@ -558,7 +563,20 @@ $N$ & dimension & \#nonzero & time  & memory \\
 \end{tabular}
 \end{center}
 
-\paragraph{Right-normed Chibrikov basis:}
+\subsection*{Classical Hall basis:}
+\begin{center}
+\begin{tabular}{rrrrr}
+\hline
+$N$ & dimension & \#nonzero & time  & memory \\
+\hline
+18 & 31042 & 30477   & $0.35$\,sec & 81248\,kB\\
+20 & 111013 & 109697 & $2.12$\,sec & 428\,MB \\
+22 & 401428 & 398313 & 20\,min 53\,sec & 2.6\,GB\\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection*{Right-normed Chibrikov basis:}
 \begin{center}
 \begin{tabular}{rrrrr}
 \hline
@@ -571,18 +589,45 @@ $N$ & dimension & \#nonzero & time  & memory \\
 \end{tabular}
 \end{center}
 
-\paragraph{Classical Hall basis:}
-\begin{center}
-\begin{tabular}{rrrrr}
-\hline
-$N$ & dimension & \#nonzero & time  & memory \\
-\hline
-18 & 31042 & 30477   & $0.35$\,sec & 81248\,kB\\
-20 & 111013 & 109697 & $2.12$\,sec & 428\,MB \\
-22 & 401428 & 398313 & 20\,min 53\,sec & 2.6\,GB\\
-\hline
-\end{tabular}
-\end{center}
+For the Lyndon basis, the maximum degree $N=30$ that the program
+can in principle handle could actually be achieved.
+For the other bases, $N=22$ was the limit due to memory constraints
+(the computer system had 8\,GB of RAM).
+
+It is natural to compare the performance of our program with that
+of other implementations of algorithms for computing the BCH series
+up to terms of high degree.
+Ref.~\cite{CasasMurua} is the only recent report 
+of such an implementation
+that we know of. 
+Results obtained with this implementation are available at 
+\begin{quote}
+\verb|http://www.ehu.eus/ccwmuura/bch.html|.
+\end{quote}    
+It should be acknowledged that these results served us well in verifying the computations of our \verb|bch| program.
+
+For the implementation of \cite{CasasMurua} in {\sc Mathematica}
+a completely different and much more sophisticated 
+approach than ours was used. This approach, which is
+based on a Lie algebraic structure of labeled rooted trees,
+has the  obvious disadvantage  that
+it is not easily adapted to arbitrary expressions 
+of the form (\ref{eq:expression}). Thus, only the classical and the symmetric BCH series are handled in \cite{CasasMurua}.
+%Furthermore, our simpler approach is arguably better suited for massive optimizations.
+
+In \cite{CasasMurua} it is reported  that the computation of the BCH series
+up to terms of degree $N=20$ in the classical Hall basis required  less than
+15\,min CPU time and 1.5\,GB of memory 
+on a 2.4\,GHz Intel Core 2 Duo processor with 2\,GB of RAM.
+For the computation in the Lyndon basis it required 3.6\,GB of memory, but no
+specific information about the CPU time is given, only that
+it required more time than the computation in the classical Hall basis.
+This has to be compared with  our implementation, which  requires
+only 0.22\,sec CPU time and 11\,MB of RAM for the Lyndon basis, 
+and 2.12\,sec CPU time and 428\,MB of RAM for the classical Hall basis.
+These numbers speak for themselves, even if we take into account that a direct comparison 
+of two implementations in different programming languages running on different hardware 
+have to be interpreted with caution.
 
 \section{Usage of the {\tt libbch} library}
 The \verb|main()| function 
@@ -693,7 +738,7 @@ index \verb|i| is requested.
 The argument \verb|generators| shold be a string like \verb|"ABCDEFG"| containing at 
 position 0 the name for generator 0, at position 1 the name for generator 1, etc.
 
-The functions \verb|str_foliage|, \verb|str_basis_element|, and \verb|str_RATIONAL| write
+The functions \verb|str_foliage|, \verb|str_basis_element|, and \verb|str_coefficient| write
 to a character string \verb|str| which has to be long enough 
 to contain the output including a terminating \verb|'\0'|.
 They return the number of characters written (excluding the terminating \verb|'\0'|).
@@ -704,7 +749,7 @@ string \verb|str|.
 The functions \verb|left_factor| and \verb|right_factor|
 respectively
 return the index of the left factor $h'$ and the index of the right
-factor $h''$ for the basis element $h=[h',h'']$ with index \verb|i|.
+factor $h''$ of the basis element $h=[h',h'']$ with index \verb|i|.
 Note that the result is well-defined only if the Lie series \verb|LS| 
 was generated with  \verb|basis| equal 0 (Lyndon basis) or 
 equal 2 (classical Hall basis),
