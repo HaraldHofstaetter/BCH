@@ -215,7 +215,7 @@ to be created.
 To use a different compiler, the \verb|Makefile| has to be adapted accordingly.
 
 
-\section{Usage of the {\tt bch} program}
+\section{Usage of the {\tt bch} program}\label{Sec:usage_bch}
 The program invoked without any arguments produces the following output:
 
 \medskip
@@ -378,7 +378,8 @@ $./bch expression=5
 \end{BVerbatim}
 }
 \end{itemize}
-[TODO:] other expressions...
+The program can easily be extended to handle additional expressions
+of the form (\ref{eq:expression}), see Subsection~\ref{SubSec:UserDefExpr} below.
 
 \subsection*{\tt table\_output[=0 {\em or} =1 {\em depending on size of result}]}
 With \verb|table_output=0| the result is displayed as a linear combination of commutators. 
@@ -488,7 +489,7 @@ This is only recommended if long running times of the program are expected.
 $ ./bch N=20 verbosity_level=1 | head -n 40
 #number of Lyndon words of length<=20 over set of 2 letters: 111013
 #initialize Lyndon words: time=0.0344573 sec
-#expression=log(exp(A)*exp(A))
+#expression=log(exp(A)*exp(B))
 #denominator=102181884343418880000
 #compute Goldberg coefficients: time=0.0137833 sec
 #compute coefficients of Lyndon words: time=0.0226991 sec
@@ -530,14 +531,17 @@ $ ./bch N=20 verbosity_level=1 | head -n 40
 }\end{quote}
 
 \section{Performance of the {\tt bch} program}
-\begin{itemize}
-\item Processor: 3.0GHz Intel Core i5-2320 with 4 CPU cores
-\item Compiler: gcc version 9.3.0
-\item Operating system: 5.4.0-65-generic \#73-Ubuntu SMP
-\end{itemize}
-
-memory usage measured with \verb|/usr/bin/time|
+We document the performance of typical runs of the \verb|bch|
+program on an ordinary personal computer.
+More specifically, the computer system was a
+a 3.0\,GHz Intel Core i5-2320 processor with 4 CPU cores and
+8\,GB of RAM running an Ubuntu Linux operating system. The 
+C compiler was \verb|gcc| version 9.3.0.
+The memory usage was measured with \verb|/usr/bin/time|.
 \paragraph{Lyndon basis:}
+
+\nopagebreak
+
 \begin{center}
 \begin{tabular}{rrrrr}
 \hline
@@ -581,6 +585,183 @@ $N$ & dimension & \#nonzero & time  & memory \\
 \end{center}
 
 \section{Usage of the {\tt libbch} library}
+The \verb|main()| function 
+of  the executable \verb|bch|, which is
+defined in the source file \verb|bch.c|, essentially does nothing else
+than processing the command line arguments and then calling 
+the appropriate functions from the \verb|libbch| library, which
+perform the actual computations.
+In the same way, these functions can also be called from a user-defined program,
+which has to be linked to the 
+shared library \verb|libbch.so| for this purpose.
+Each such program should include the header file
+\verb|bch.h|, which contains declarations 
+for the functions and data structures provided by the library.
+In any case can the \verb|bch| program serve as a model for
+the usage of the  \verb|libbch| library.
+
+In the following we give an 
+excerpt from the header file \verb|bch.h|
+covering  essential declarations together with some
+necessary explanations. 
+It has been tried to use names for the functions and their arguments
+that are as self-explanatory as possible, and that are consistent with
+the names of the corresponding parameters for the executable \verb|bch|
+as described in Section~\ref{Sec:usage_bch}.
+
+\subsection{128 bit integer type}
+Essentially all computations of the \verb|libbch| library are carried out in pure integer arithmetic, a
+large part of them in 128 bit integer arithmetic (the other part can be done
+using integers with fewer bits). In \verb|bch.h| 
+the 128 bit integer type  \verb|INTEGER| is defined
+as an alias for the built-in type \verb|__int128_t|:
+\begin{verbatim}
+typedef __int128_t INTEGER; 
+\end{verbatim}
+Altough such 128 bit integers are available for most modern
+C compilers, the C %programming language and its 
+standard library does not
+provide functions for converting such integers to strings, or print them 
+on standard output. The \verb|libbch| library provides such functions and also functions 
+for converting and printing rational numbers, which are 
+specified by their numerators and denominators of type \verb|INTEGER|.
+Note that the rational numbers are reduced to lowest terms first.
+\begin{verbatim}
+int str_INTEGER(char *str, INTEGER x);
+int str_RATIONAL(char *str, INTEGER num, INTEGER den);
+void print_INTEGER(INTEGER x);
+void print_RATIONAL(INTEGER num, INTEGER den);
+\end{verbatim}
+The functions \verb|str_INTEGER| and \verb|str_RATIONAL| write
+to a character string \verb|str| which has to be long enough 
+to contain the output including a terminating \verb|'\0'|.
+They return the number of characters written (excluding the terminating \verb|'\0'|).
+If \verb|str| is \verb|NULL|, then these functions return the number
+of characters that would have been written in case of a proper output
+string \verb|str|.
+
+
+\subsection{Lie series}
+The follwing two functions compute respectively the classical BCH series
+(i.e., the Lie series for $\log(\ee^{\AA}\ee^{\BB})$) and
+the symmetric BCH series (i.e., the Lie series for 
+$\log(\ee^{\frac{1}{2}\AA}\ee^{\BB}\ee^{\frac{1}{2}\AA)})$:
+\begin{verbatim}
+lie_series_t* BCH(int maximum_degree, int basis);
+lie_series_t* symBCH(int maximum_degree, int basis);
+\end{verbatim}
+Here the argument \verb|maximum_degree| specifies the maximum degree
+up to which terms of the Lie series shall be computed. The argument
+\verb|basis| specifies the basis in which the resulting Lie series
+shall be represented, where the values 0,1,2 respectively correspond to the
+Lyndon basis, the right-normed Chibrikov basis, and the classical Hall basis.
+These functions return a pointer to a structure of type \verb|lie_series_t| which 
+contains the resulting Lie series. 
+This structure should be considered as an opaque data type for 
+which acccess to its data is provided by data access functions (see below).
+\begin{verbatim}
+void set_verbosity_level(int verbosity_level);
+int get_verbosity_level(void);
+\end{verbatim}
+
+\subsection{Data access functions}
+\begin{verbatim}
+int dimension(lie_series_t *LS);
+int maximum_degree(lie_series_t *LS);
+int number_of_generators(lie_series_t *LS);
+INTEGER denominator(lie_series_t *LS);
+INTEGER numerator_of_coefficient(lie_series_t *LS,  int i);
+int degree(lie_series_t *LS, int i);
+int degree_of_generator(lie_series_t *LS, int i, uint8_t g);
+int left_factor(lie_series_t *LS, int i);
+int right_factor(lie_series_t *LS, int i);
+int str_foliage(char *str, lie_series_t *LS, int i, char *generators);
+int str_basis_element(char *str, lie_series_t *LS, int i, char *generators);
+int str_coefficient(char *str, lie_series_t *LS, int i);
+void print_foliage(lie_series_t *LS, int i, char *generators);
+void print_basis_element(lie_series_t *LS, int i, char *generators);
+void print_coefficient(lie_series_t *LS,  int i);
+\end{verbatim}
+Here, the argument \verb|LS| is a pointer which was
+previously returned by the functions \verb|BCH| or \verb|symBCH|
+(or \verb|lie_series|, see below).
+The argument \verb|i| is the index of the basis element, for which
+the respective information is requested.
+The argument \verb|g| in \verb|degree_of_generator| specifies
+the (index of the) generator for which the degree in the basis element with
+index \verb|i| is requested.
+The argument \verb|generators| shold be a string like \verb|"ABCDEFG"| containing at 
+position 0 the name for generator 0, at position 1 the name for generator 1, etc.
+
+The functions \verb|str_foliage|, \verb|str_basis_element|, and \verb|str_RATIONAL| write
+to a character string \verb|str| which has to be long enough 
+to contain the output including a terminating \verb|'\0'|.
+They return the number of characters written (excluding the terminating \verb|'\0'|).
+If \verb|str| is \verb|NULL|, then these functions return the number
+of characters that would have been written in case of a proper output
+string \verb|str|.
+
+The functions \verb|left_factor| and \verb|right_factor|
+respectively
+return the index of the left factor $h'$ and the index of the right
+factor $h''$ for the basis element $h=[h',h'']$ with index \verb|i|.
+Note that the result is well-defined only if the Lie series \verb|LS| 
+was generated with  \verb|basis| equal 0 (Lyndon basis) or 
+equal 2 (classical Hall basis),
+and if the basis element $h$ with index \verb|i| has degree $\geq 2$.
+Otherwise the result is undefined.
+
+\subsection{Cleaning up}
+\begin{verbatim}
+void free_lie_series(lie_series_t *LS);
+\end{verbatim}
+
+
+\subsection{User-defined expressions}\label{SubSec:UserDefExpr}
+
+\begin{verbatim}
+enum expr_type { UNDEFINED, IDENTITY, GENERATOR, SUM, DIFFERENCE, PRODUCT, 
+                 NEGATION, TERM, EXPONENTIAL, LOGARITHM };
+
+typedef struct expr_t {
+    enum expr_type type;
+    struct expr_t *arg1;
+    struct expr_t *arg2;
+    int num;
+    int den;
+} expr_t;
+\end{verbatim}
+
+\begin{verbatim}
+expr_t* identity(void);
+expr_t* generator(uint8_t n);
+expr_t* sum(expr_t* arg1, expr_t* arg2);
+expr_t* difference(expr_t* arg1, expr_t* arg2);
+expr_t* product(expr_t* arg1, expr_t* arg2);
+expr_t* negation(expr_t* arg);
+expr_t* term(int num, int den, expr_t* arg);
+expr_t* exponential(expr_t* arg);
+expr_t* logarithm(expr_t* arg);
+expr_t* commutator(expr_t* arg1, expr_t* arg2);
+\end{verbatim}
+
+\begin{verbatim}
+int str_expr(char *str, expr_t* ex);
+void print_expr(expr_t* ex);
+void free_expr(expr_t* ex);
+\end{verbatim}
+
+\begin{verbatim}
+int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]);
+INTEGER common_denominator(int n, expr_t* ex);
+\end{verbatim}
+
+\begin{verbatim}
+lie_series_t* lie_series(int K, expr_t* expr, int N, int basis);
+\end{verbatim}
+
+
+
 
 \begin{thebibliography}{10}\footnotesize
 
