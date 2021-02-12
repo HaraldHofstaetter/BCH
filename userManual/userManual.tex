@@ -46,13 +46,13 @@
 \noindent
 This manual describes \verb|bch|, 
 an efficient  program written in the C programming language for the fast computation
-of the Baker-Campbell-Hausdorff (BCH) and similar Lie series.
+of the Baker--Campbell--Hausdorff (BCH) and similar Lie series.
 The Lie series can be represented in the Lyndon basis, in the
 classical Hall basis, or in the right-normed basis of 
 E.S.~Chibrikov.  In the Lyndon basis,
 which proves to be particularly efficient for this purpose,
 the computation of 111\,013 coefficients for the BCH series up to terms of degree 20
-takes less than half a second on a ordinary personal computer and requires negligible 11MB of memory.
+takes less than half a second on an ordinary personal computer and requires negligible 11\,MB of memory.
 Up to terms of degree 30, which is the maximum degree the program can handle, 
 the computation of 74\,248\,451 coefficients takes 55 hours but still requires only a modest 5.5\,GB of  memory.
 
@@ -73,7 +73,7 @@ This element $H$ is commonly called the Baker--Campbell--Hausdorff (BCH) series.
 A classical result known as the
  Baker--Campbell--Hausdorff theorem (see, e.g.,~\cite{HHproof}) states that 
 $H$
-is a \emph{Lie series}, which means that the 
+is a Lie series, which means that the 
 homogeneous components $H_n$ of degree $n=1,2,\dots$ in
 \begin{equation}
 H=\sum_{n=1}^\infty H_n, %,\quad\mbox{where}\quad X_1=\AA+\BB,\ X_2=\frac{1}{2}[\AA,\BB],\ 
@@ -303,13 +303,13 @@ $ ./bch basis=2
 
 \medskip
 
-\noindent [TODO:] other bases...
+%\noindent [TODO:] other bases...
 
 \subsection*{\tt generators[=\tt ABC\dots]}
 This parameter enables alternative names for the generators:
 \medskip
 
-\quad{\small\begin{BVerbatim}
+{\small\begin{BVerbatim}
 $ ./bch generators=xy
 +1/1*x+1/1*y+1/2*[x,y]+1/12*[x,[x,y]]+1/12*[[x,y],y]+1/24*[x,[[x,y],y]]-1/720*[x
 ,[x,[x,[x,y]]]]+1/180*[x,[x,[[x,y],y]]]+1/360*[[x,[x,y]],[x,y]]+1/180*[x,[[[x,y]
@@ -447,7 +447,7 @@ which should be self-explanatory:
 \item {\tt print\_multi\_degree[=0]}
 \item {\tt print\_factors[=1 {\em or} =0 {\em depending on} basis]}
 \item {\tt print\_foliage[=0 {\em or} =1 {\em depending on} basis]}
-\item {\tt print\_basis\_element[=1]}
+\item {\tt print\_basis\_element[=0]}
 \item {\tt print\_coefficient[=1]}
 \end{itemize}
 \begin{quote} %
@@ -485,7 +485,7 @@ With \verb|verbosity_level| set to a value $\geq 2$ this  output is not buffered
 This is only recommended if long running times of the program are expected.
 
 \begin{quote} %
-{\small\begin{BVerbatim}
+{\small\begin{verbatim}
 $ ./bch N=20 verbosity_level=1 | head -n 40
 #number of Lyndon words of length<=20 over set of 2 letters: 111013
 #initialize Lyndon words: time=0.0344573 sec
@@ -518,16 +518,16 @@ $ ./bch N=20 verbosity_level=1 | head -n 40
 #     19       27594       27594       58636       49167
 #     20       52377       27593      111013       76760
 #
-# i	|i|	i'	i"	coefficient
-0	1	0	0	1/1
-1	1	1	0	1/1
-2	2	0	1	1/2
-3	3	0	2	1/12
-4	3	2	1	1/12
-5	4	0	3	0/1
-6	4	0	4	1/24
-7	4	4	1	0/1
-\end{BVerbatim}
+# i     |i|     i'      i"      coefficient
+0       1       0       0       1/1
+1       1       1       0       1/1
+2       2       0       1       1/2
+3       3       0       2       1/12
+4       3       2       1       1/12
+5       4       0       3       0/1
+6       4       0       4       1/24
+7       4       4       1       0/1
+\end{verbatim}
 }\end{quote}
 
 \section{Performance of the {\tt bch} program}
@@ -543,7 +543,7 @@ maximum degrees $N$ and different bases. The results
 are as follows: (Here, dimension is the number of basis elements of degree $\leq N$
 and \#nonzero is the number of coefficients $\neq 0$.)
 
-\subsection*{Lyndon basis:}
+\subsubsection*{Lyndon basis:}
 
 \nopagebreak
 
@@ -563,7 +563,7 @@ $N$ & dimension & \#nonzero & time  & memory \\
 \end{tabular}
 \end{center}
 
-\subsection*{Classical Hall basis:}
+\subsubsection*{Classical Hall basis:}
 \begin{center}
 \begin{tabular}{rrrrr}
 \hline
@@ -576,7 +576,7 @@ $N$ & dimension & \#nonzero & time  & memory \\
 \end{tabular}
 \end{center}
 
-\subsection*{Right-normed Chibrikov basis:}
+\subsubsection*{Right-normed Chibrikov basis:}
 \begin{center}
 \begin{tabular}{rrrrr}
 \hline
@@ -597,7 +597,7 @@ For the other bases, $N=22$ was the limit due to memory constraints
 It is natural to compare the performance of our program with that
 of other implementations of algorithms for computing the BCH series
 up to terms of high degree.
-Ref.~\cite{CasasMurua} is the only recent report 
+Ref.~\cite{CasasMurua} is the only recently published report 
 of such an implementation
 that we know of. 
 Results obtained with this implementation are available at 
@@ -607,7 +607,7 @@ Results obtained with this implementation are available at
 It should be acknowledged that these results served us well in verifying the computations of our \verb|bch| program.
 
 For the implementation of \cite{CasasMurua} in {\sc Mathematica}
-a completely different and much more sophisticated 
+a completely different and  more sophisticated 
 approach than ours was used. This approach, which is
 based on a Lie algebraic structure of labeled rooted trees,
 has the  obvious disadvantage  that
@@ -625,9 +625,9 @@ it required more time than the computation in the classical Hall basis.
 This has to be compared with  our implementation, which  requires
 only 0.22\,sec CPU time and 11\,MB of RAM for the Lyndon basis, 
 and 2.12\,sec CPU time and 428\,MB of RAM for the classical Hall basis.
-These numbers speak for themselves, even if we take into account that a direct comparison 
-of two implementations in different programming languages running on different hardware 
-have to be interpreted with caution.
+These numbers speak for themselves, even if  direct comparisons 
+of different implementations in different programming languages that run on different hardware 
+must be interpreted with caution.
 
 \section{Usage of the {\tt libbch} library}
 The \verb|main()| function 
@@ -642,7 +642,7 @@ shared library \verb|libbch.so| for this purpose.
 Each such program should include the header file
 \verb|bch.h|, which contains declarations 
 for the functions and data structures provided by the library.
-In any case can the \verb|bch| program serve as a model for
+The source file \verb|bch.c| for the executable \verb|bch| can serve as a model for
 the usage of the  \verb|libbch| library.
 
 In the following we give an 
@@ -651,7 +651,7 @@ covering  essential declarations together with some
 necessary explanations. 
 It has been tried to use names for the functions and their arguments
 that are as self-explanatory as possible, and that are consistent with
-the names of the corresponding parameters for the executable \verb|bch|
+the names of the corresponding parameters for the  \verb|bch| program
 as described in Section~\ref{Sec:usage_bch}.
 
 \subsection{128 bit integer type}
@@ -663,7 +663,7 @@ as an alias for the built-in type \verb|__int128_t|:
 \begin{verbatim}
 typedef __int128_t INTEGER; 
 \end{verbatim}
-Altough such 128 bit integers are available for most modern
+Although such 128 bit integers are available for most modern
 C compilers, the C %programming language and its 
 standard library does not
 provide functions for converting such integers to strings, or print them 
@@ -687,7 +687,7 @@ string \verb|str|.
 
 
 \subsection{Lie series}
-The follwing two functions compute respectively the classical BCH series
+The following two functions compute respectively the classical BCH series
 (i.e., the Lie series for $\log(\ee^{\AA}\ee^{\BB})$) and
 the symmetric BCH series (i.e., the Lie series for 
 $\log(\ee^{\frac{1}{2}\AA}\ee^{\BB}\ee^{\frac{1}{2}\AA)})$:
@@ -703,11 +703,19 @@ Lyndon basis, the right-normed Chibrikov basis, and the classical Hall basis.
 These functions return a pointer to a structure of type \verb|lie_series_t| which 
 contains the resulting Lie series. 
 This structure should be considered as an opaque data type for 
-which acccess to its data is provided by data access functions (see below).
+which access to its data is provided by data access functions (see below).
+
+
+
 \begin{verbatim}
 void set_verbosity_level(int verbosity_level);
-int get_verbosity_level(void);
 \end{verbatim}
+If the verbosity level is set to a value $\geq 1$ {\em before} calling
+the functions \verb|BCH| or \verb|symBCH|, then these function print
+some useful information about the performance of the computation to the standard output.
+%\begin{verbatim}
+%int get_verbosity_level(void);
+%\end{verbatim}
 
 \subsection{Data access functions}
 \begin{verbatim}
@@ -735,7 +743,7 @@ the respective information is requested.
 The argument \verb|g| in \verb|degree_of_generator| specifies
 the (index of the) generator for which the degree in the basis element with
 index \verb|i| is requested.
-The argument \verb|generators| shold be a string like \verb|"ABCDEFG"| containing at 
+The argument \verb|generators| should be a string like \verb|"ABCDEFG"| containing at 
 position 0 the name for generator 0, at position 1 the name for generator 1, etc.
 
 The functions \verb|str_foliage|, \verb|str_basis_element|, and \verb|str_coefficient| write
@@ -754,7 +762,6 @@ Note that the result is well-defined only if the Lie series \verb|LS|
 was generated with  \verb|basis| equal 0 (Lyndon basis) or 
 equal 2 (classical Hall basis),
 and if the basis element $h$ with index \verb|i| has degree $\geq 2$.
-Otherwise the result is undefined.
 
 \subsection{Cleaning up}
 \begin{verbatim}
@@ -763,47 +770,101 @@ void free_lie_series(lie_series_t *LS);
 
 
 \subsection{User-defined expressions}\label{SubSec:UserDefExpr}
-
-\begin{verbatim}
-enum expr_type { UNDEFINED, IDENTITY, GENERATOR, SUM, DIFFERENCE, PRODUCT, 
-                 NEGATION, TERM, EXPONENTIAL, LOGARITHM };
-
-typedef struct expr_t {
-    enum expr_type type;
-    struct expr_t *arg1;
-    struct expr_t *arg2;
-    int num;
-    int den;
-} expr_t;
-\end{verbatim}
-
+Besides Lie series for  $\log(\ee^{\AA}\ee^{\BB})$ and
+$\log(\ee^{\frac{1}{2}\AA}\ee^{\BB}\ee^{\frac{1}{2}\AA)})$, also 
+Lie series for arbitrary expressions of the form (\ref{eq:expression})
+can be computed.
+Such expressions are represented as  binary expression
+trees, for the generation of which  the \verb|libbch| library
+provides the following functions:
+%\begin{verbatim}
+%enum expr_type { UNDEFINED, IDENTITY, GENERATOR, SUM, DIFFERENCE, PRODUCT, 
+                 %NEGATION, TERM, EXPONENTIAL, LOGARITHM };
+%
+%typedef struct expr_t {
+    %enum expr_type type;
+    %struct expr_t *arg1;
+    %struct expr_t *arg2;
+    %int num;
+    %int den;
+%} expr_t;
+%\end{verbatim}
 \begin{verbatim}
 expr_t* identity(void);
-expr_t* generator(uint8_t n);
+expr_t* generator(uint8_t g);
 expr_t* sum(expr_t* arg1, expr_t* arg2);
 expr_t* difference(expr_t* arg1, expr_t* arg2);
 expr_t* product(expr_t* arg1, expr_t* arg2);
 expr_t* negation(expr_t* arg);
-expr_t* term(int num, int den, expr_t* arg);
+expr_t* term(int numerator, int denominator, expr_t* arg);
 expr_t* exponential(expr_t* arg);
 expr_t* logarithm(expr_t* arg);
 expr_t* commutator(expr_t* arg1, expr_t* arg2);
 \end{verbatim}
-
+These functions return a pointer to a structure of type \verb|expr_t|
+which represents a node of the expression tree and contains data,
+depending on the type of the node,
+like pointers to subexpressions, the index of a generator, or numerator and
+denominator of a rational coefficient.
+For example, the following code generates the 
+expression 
+$\log(\ee^{\frac{1}{6}\BB}\ee^{\frac{1}{2}\AA}
+\ee^{\frac{2}{3}\BB+\frac{1}{72}[B,[A,B]}\ee^{\frac{1}{2}\AA}\ee^{\frac{1}{6}\BB})$:
+%(see also further examples in the source code file \verb|bch.c|
+%for the executable \verb|bch|):
+\begin{quote} %
+{\small\begin{BVerbatim}
+expr_t *A = generator(0);
+expr_t *B = generator(1);
+expr_t* expression =
+    logarithm(product(product(product(product(
+    exponential(term(1, 6, B)), exponential(term(1, 2, A))),
+    exponential(sum(term(2, 3, B), 
+                    term(1, 72, commutator(B, commutator(A, B)))))), 
+    exponential(term(1, 2, A))), exponential(term(1, 6, B))));
+\end{BVerbatim}
+}
+\end{quote}
+For an expression obtained in this way, the following function
+computes the corresponding Lie series:\footnote{Of course, it is possible to generate more general expressions 
+than those of the form (\ref{eq:expression}). 
+For such more general expression, the result of the function {\tt lie\_series} does not necessarily make any sense, 
+since it cannot be guaranteed that such expressions can be represented as  Lie series or even
+as  formal power series.}
+%
+%\begin{verbatim}
+%int str_expr(char *str, expr_t* ex);
+%void print_expr(expr_t* ex);
+%\end{verbatim}
+%
+%\begin{verbatim}
+%int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]);
+%INTEGER common_denominator(int n, expr_t* ex);
+%\end{verbatim}
+%
 \begin{verbatim}
-int str_expr(char *str, expr_t* ex);
-void print_expr(expr_t* ex);
-void free_expr(expr_t* ex);
+lie_series_t* lie_series(int number_of_generators, expr_t* expression, 
+                         int maximum_degree, int basis);
 \end{verbatim}
+Regarding arguments and return value, this function is analogous to the functions \verb|BCH| and \verb|symBCH|,
+with the exception of additional arguments \verb|number_of_generators| and \verb|expression|. 
+Here, \verb|number_of_generators| is the number of generators occurring in the expression (or more
+precisely the highest index plus 1 of all generators occurring in the expression). In the above example
+it should have the value 2.
 
+For cleaning up, the following function frees all resources that were allocated for an expression:
 \begin{verbatim}
-int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]);
-INTEGER common_denominator(int n, expr_t* ex);
+void free_expr(expr_t* expression);
 \end{verbatim}
-
-\begin{verbatim}
-lie_series_t* lie_series(int K, expr_t* expr, int N, int basis);
-\end{verbatim}
+Expressions should be freed in the same order as they were generated, i.e., for the above example:
+\begin{quote} %
+{\small\begin{BVerbatim}
+free_expr(A);
+free_expr(B);
+free_expr(expression);
+\end{BVerbatim}
+}
+\end{quote}
 
 
 
