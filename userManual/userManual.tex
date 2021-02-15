@@ -188,7 +188,7 @@ applied recursively.}
 
 
 As a final remark on the implementation we note that the computation can
-be organized in such a way that  homogeneous components 
+be organized in such a way that finely homogeneous components 
 $H_{(a,b)}$ of $H$ are computed completely independently of each other.
 Here a finely homogeneous component $H_{(a,b)}$ of multi-degree $(a,b)$
 is of degree $a$ in $\AA$ and of degree $b$ in $\BB$ such that
@@ -365,7 +365,7 @@ $./bch expression=4
 \end{BVerbatim}
 }
 
-\item {\tt expression=5}: -- compute Lie series for $\log(\ee^{\frac{1}{6}\BB}\ee^{\frac{1}{2}\AA}
+\item {\tt expression=5} -- compute Lie series for $\log(\ee^{\frac{1}{6}\BB}\ee^{\frac{1}{2}\AA}
 \ee^{\frac{2}{3}\BB+\frac{1}{72}[B,[A,B]}\ee^{\frac{1}{2}\AA}\ee^{\frac{1}{6}\BB})$,
 a more complicated version of the BCH formula, which is constructed in such a way that 
 besides $\AA+\BB$ all terms have degree $\geq 5$:
@@ -690,7 +690,7 @@ string \verb|str|.
 The following two functions compute respectively the classical BCH series
 (i.e., the Lie series for $\log(\ee^{\AA}\ee^{\BB})$) and
 the symmetric BCH series (i.e., the Lie series for 
-$\log(\ee^{\frac{1}{2}\AA}\ee^{\BB}\ee^{\frac{1}{2}\AA)})$:
+$\log(\ee^{\frac{1}{2}\AA}\ee^{\BB}\ee^{\frac{1}{2}\AA}))$:
 \begin{verbatim}
 lie_series_t* BCH(int maximum_degree, int basis);
 lie_series_t* symBCH(int maximum_degree, int basis);
@@ -847,7 +847,7 @@ lie_series_t* lie_series(int number_of_generators, expr_t* expression,
                          int maximum_degree, int basis);
 \end{verbatim}
 Regarding arguments and return value, this function is analogous to the functions \verb|BCH| and \verb|symBCH|,
-with the exception of additional arguments \verb|number_of_generators| and \verb|expression|. 
+with the exception of the additional arguments \verb|number_of_generators| and \verb|expression|. 
 Here, \verb|number_of_generators| is the number of generators occurring in the expression (or more
 precisely the highest index plus 1 of all generators occurring in the expression). In the above example
 it should have the value 2.
@@ -892,7 +892,7 @@ E.S. Chibrikov, A right normed basis for free Lie algebras and Lyndon--Shirshov
 
 \bibitem{HHdenom} H. Hofst\"atter, Denominators of coefficients of the Baker--Campbell--Hausdorff series, available at {\tt https://arxiv.org/abs/2010.03440}.
 
-\bibitem{HHSmallestDenom} H. Hofst\"atter, Smallest common denominators for the homogeneous components of the Baker-Campbell-Hausdorff series, available at {\tt https://arxiv.org/abs/2012.03818}.
+\bibitem{HHSmallestDenom} H. Hofst\"atter, Smallest common denominators for the homogeneous components of the Baker--Campbell--Hausdorff series, available at {\tt https://arxiv.org/abs/2012.03818}.
 
 \bibitem{HHfast} H. Hofst\"atter, Fast computation of the Baker--Campbell--Hausdorff and similar series, in preparation.
 
