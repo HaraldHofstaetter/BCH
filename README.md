@@ -21,7 +21,7 @@ to be created.
 To use a different compiler, the `Makefile` has to be adapted accordingly.
 
 ## Documentation
-Work in progress...
+A user guide is available at [arXiv:2102.06570](https://arxiv.org/pdf/2012.03818).
 
 ## Examples
 ```
