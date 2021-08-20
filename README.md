@@ -23,7 +23,7 @@ To use a different compiler, the `Makefile` has to be adapted accordingly.
 ## Documentation
 A user manual is available at [arXiv:2102.06570](https://arxiv.org/pdf/2102.06570).
 
-## Try the programm without installing it
+## Try the program without installing it
 The `bch` program has been compiled into  [WebAssembly](https://webassembly.org). 
 So you can try it in your browser without installing it.
 For example, to compute the Baker-Campbell-Hausdorff series represented
