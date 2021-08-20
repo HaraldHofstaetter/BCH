@@ -259,14 +259,23 @@ static bool ishall(magma_element_t *m, char *f, int (*hcmp)(int n1, const char *
     }
 }
 
-
+#ifdef QSORT_R_AVAILABLE
 void qsort_r(void *base, size_t nmemb, size_t size,
                   int (*compar)(const void *, const void *, void *),
                   void *arg);
+#else
+static __thread void *_hcmp;
+#endif
 
 
-static int cmp_for_qsort_r(const void *_m1, const void *_m2, void *_hcmp) {
-    /* wrapper for Hall orders so that they can be handled by q_sort_r */
+
+/* wrapper for Hall orders so that they can be handled by q_sort_r (or qsort) */
+#ifdef QSORT_R_AVAILABLE
+static int cmp_for_qsort_r(const void *_m1, const void *_m2, void *_hcmp) 
+#else
+static int cmp_for_qsort(const void *_m1, const void *_m2) 
+#endif
+{
     int (*hcmp)(int n1, const char *f1, int n2, const char *f2) = _hcmp;
     const magma_element_t *m1 = *(magma_element_t * const *) _m1;
     const magma_element_t *m2 = *(magma_element_t * const *) _m2;
@@ -308,7 +317,12 @@ static int hall_data_from_hall_order(int K, int N, int size,
             }
         }
     }
+#ifdef QSORT_R_AVAILABLE
     qsort_r(H, k, sizeof(magma_element_t*), cmp_for_qsort_r, (void *) hcmp);
+#else    
+    _hcmp = (void*) hcmp;
+    qsort(H, k, sizeof(magma_element_t*), cmp_for_qsort);
+#endif    
     *HT = hall_inverse_table(k, H);
     data_from_table(k, H, *HT, _nn, _p1, _p2);
     return k;
