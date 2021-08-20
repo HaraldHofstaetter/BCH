@@ -1,6 +1,7 @@
 #include"bch.h"
 #include<stdlib.h>
 #include<stdio.h>
+#include <inttypes.h>
 
 static const INTEGER H =  1000000000000000000;
 
@@ -58,27 +59,27 @@ int str_INTEGER(char *out, __int128_t x) {
         if (x>0) {
             int64_t x3 = x;
             if (out) {
-                pos += sprintf(out+pos, "%li%017li%017li", s*x3,x2,x1);
+                pos += sprintf(out+pos, "%" PRId64 "%017" PRId64 "%017" PRId64, s*x3,x2,x1);
             }
             else {
-                pos += snprintf(NULL, 0, "%li%017li%017li", s*x3,x2,x1);
+                pos += snprintf(NULL, 0, "%" PRId64 "%017" PRId64 "%017" PRId64, s*x3,x2,x1);
             }
         }
         else {
             if (out) {
-                pos += sprintf(out+pos, "%li%017li", s*x2,x1);
+                pos += sprintf(out+pos, "%" PRId64 "%017" PRId64, s*x2,x1);
             }
             else {
-                pos += snprintf(NULL, 0, "%li%017li", s*x2,x1);
+                pos += snprintf(NULL, 0, "%" PRId64 "%017" PRId64, s*x2,x1);
             }
         }
     }
     else {
         if (out) {
-            pos += sprintf(out+pos, "%li", s*x1);
+            pos += sprintf(out+pos, "%" PRId64, s*x1);
         }
         else {
-            pos += snprintf(NULL, 0,  "%li", s*x1);
+            pos += snprintf(NULL, 0,  "%" PRId64, s*x1);
         }
     }
     return pos;
