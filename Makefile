@@ -31,7 +31,7 @@ clean:
 	rm -f *.o $(SHARED_LIB) bch
 
 
-tables:	bch_goldberg_30.txt bch_lyndon_20.txt bch_rightnormed_20.txt bch_hall_20.txt
+tables:	bch_lyndon_20.txt bch_rightnormed_20.txt bch_hall_20.txt
 
 bch_lyndon_20.txt: bch
 	./bch N=20 verbosity_level=1 > bch_lyndon_20.txt
@@ -41,4 +41,18 @@ bch_rightnormed_20.txt: bch
 
 bch_hall_20.txt: bch
 	./bch N=20 basis=2 verbosity_level=1 > bch_hall_20.txt
+
+
+
+#Compile to WebAssembly (if the Emscripten SDK is properly installed):
+
+wasm: bch.wasm bch.js bch.html
+
+SRCS_WASM = bch.c phi.c lie_series.c lyndon.c rightnormed.c goldberg.c \
+       convert_lyndon.c convert_rightnormed.c convert_hall.c
+
+bch.wasm bch.js bch.html: $(DEPS) $(SRCS_WASM) shell_bch.html
+	emcc $(SRCS_WASM) -O3 -s EXIT_RUNTIME=1 -s ALLOW_MEMORY_GROWTH=1 \
+	    -o bch.html --shell-file ./shell_bch.html 
+	
 

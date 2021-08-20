@@ -3,7 +3,15 @@
 #include<stdio.h>
 #include<string.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+static void call_onMainFinished(void) 
+{
+    EM_ASM(onMainFinished(););
+}    
+#endif
 
+static
 long long int get_arg(int argc, char*argv[], char* varname, 
                       long long int default_value, 
                       long long int min, 
@@ -37,6 +45,7 @@ long long int get_arg(int argc, char*argv[], char* varname,
     return default_value;
 }
 
+static
 char* get_string_arg(int argc, char*argv[], char* varname, char* default_value) {
     for (int k=1; k<argc; k++) {
         char* sep = strchr(argv[k], '=');
@@ -55,6 +64,11 @@ static char *default_generators = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 
 int main(int argc, char*argv[]) {
+
+#ifdef __EMSCRIPTEN__
+    atexit(call_onMainFinished);
+#endif
+
 #ifdef USE_INT128_T
     /* Note: N>30 almost certainly causes overflow */
     size_t N = get_arg(argc, argv, "N", 5, 1, 30);
