@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Fast computation of the Baker-Campbell-Hausdorff-series</title>
+    <style>
+      .emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
+      pre.emscripten { font-family: monospace; }
+      div.emscripten { text-align: center; }
+
+      .spinner {
+        height: 50px;
+        width: 50px;
+        margin: 0px auto;
+        -webkit-animation: rotation .8s linear infinite;
+        -moz-animation: rotation .8s linear infinite;
+        -o-animation: rotation .8s linear infinite;
+        animation: rotation 0.8s linear infinite;
+        border-left: 10px solid rgb(0,150,240);
+        border-right: 10px solid rgb(0,150,240);
+        border-bottom: 10px solid rgb(0,150,240);
+        border-top: 10px solid rgb(100,0,200);
+        border-radius: 100%;
+        background-color: rgb(200,100,250);
+      }
+      @-webkit-keyframes rotation {
+        from {-webkit-transform: rotate(0deg);}
+        to {-webkit-transform: rotate(360deg);}
+      }
+      @-moz-keyframes rotation {
+        from {-moz-transform: rotate(0deg);}
+        to {-moz-transform: rotate(360deg);}
+      }
+      @-o-keyframes rotation {
+        from {-o-transform: rotate(0deg);}
+        to {-o-transform: rotate(360deg);}
+      }
+      @keyframes rotation {
+        from {transform: rotate(0deg);}
+        to {transform: rotate(360deg);}
+      }
+
+    </style>
+  </head>
+  <body>
+    <figure style="overflow:visible;" id="spinner">
+        <div class="spinner"></div>
+    </figure>
+    <div class="emscripten" id="status">Downloading...</div>
+    <div class="emscripten">
+      <progress value="0" max="100" id="progress" hidden=1></progress>  
+    </div>
+
+    <pre class="emscripten" id="output"></pre>
+
+    <script type='text/javascript'>
+      var statusElement = document.getElementById('status');
+      var progressElement = document.getElementById('progress');
+      var spinnerElement = document.getElementById('spinner');
+      var OUTPUT = '';
+
+      function onMainFinished() {
+          var element = document.getElementById('output');
+          element.textContent = OUTPUT;
+      }
+
+      var Module = {
+        arguments: (function () {return location.search.split('?')[1] ? location.search.split('?')[1].split('&'): []; })(),
+        preRun:  [],
+        postRun: [], 
+        print: function(text) {
+            OUTPUT += text + "\n";
+        },
+        printErr: function(text) {
+            OUTPUT += text + "\n";
+        },
+        setStatus: function(text) {
+          if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
+          if (text === Module.setStatus.last.text) return;
+          var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+          var now = Date.now();
+          if (m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, skip it if too soon
+          Module.setStatus.last.time = now;
+          Module.setStatus.last.text = text;
+          if (m) {
+            text = m[1];
+            progressElement.value = parseInt(m[2])*100;
+            progressElement.max = parseInt(m[4])*100;
+            progressElement.hidden = false;
+            spinnerElement.hidden = false;
+          } else {
+            progressElement.value = null;
+            progressElement.max = null;
+            progressElement.hidden = true;
+            if (!text) spinnerElement.hidden = true;
+          }
+          statusElement.innerHTML = text;
+        }
+      };
+      Module.setStatus('Running...');
+      window.onerror = function() {
+        Module.setStatus('Exception thrown, see JavaScript console');
+        spinnerElement.style.display = 'none';
+        Module.setStatus = function(text) {
+          if (text) Module.printErr('[post-exception status] ' + text);
+        };
+      };
+    </script>
+   {{{ SCRIPT }}}
+  </body>
+</html>
