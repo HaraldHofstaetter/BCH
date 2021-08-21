@@ -110,7 +110,7 @@ the BCH series with 3 generators
 $\log(\ee^\AA\ee^\BB\ee^\CC)$,
 or the more complex expression 
 $\log(\ee^{\frac{1}{6}\BB}\ee^{\frac{1}{2}\AA}
-\ee^{\frac{2}{3}\BB+\frac{1}{72}[B,[A,B]}\ee^{\frac{1}{2}\AA}\ee^{\frac{1}{6}\BB})$
+\ee^{\frac{2}{3}\BB+\frac{1}{72}[B,[A,B]]}\ee^{\frac{1}{2}\AA}\ee^{\frac{1}{6}\BB})$
 with a commutator in an exponential.
 The program can straightforwardly be extended to handle arbitrary expressions of
 the form
@@ -148,7 +148,7 @@ the program  computes the coefficients of all Lyndon words up to degree
 $N$ 
  in the power series of the given expression $X$ of the form (\ref{eq:expression})
 using an adaptation of the algorithm from \cite{HHetalWordAlg}. In the special
-case $X=\log(\ee^\AA\ee^\AA)$ it alternatively uses the algorithm from 
+case $X=\log(\ee^\AA\ee^\BB)$ it alternatively uses the algorithm from 
 the appendix of \cite{HHSmallestDenom} and exploits the symmetry that
 the coefficient of the word $\AA^{q_1}\BB^{q_2}\cdots(\AA\lor\BB)^{q_m}$ is
 invariant under permutations of the exponents $q_1,\dots,q_m$, see \cite{G}.
@@ -182,9 +182,7 @@ The special case $X=\log(\ee^\AA\ee^\BB)$ allows a significant optimization in
 the Lyndon basis or right-normed Chibrikov basis case, if $N$ is even: 
 Here the Lie series is computed using the above method only up to terms
 of degree $N-1$. The terms of degree $N$ can then efficiently be computed using a
-formula due to E. Eriksen, see \cite[Section~III.A]{Eriksen}.\footnote{Note that
-this formula is applicable only if $N$ is even, so that, unfortunately, this idea cannot be 
-applied recursively.}
+formula due to E. Eriksen, see \cite[Section~III.A]{Eriksen}.
 
 
 As a final remark on the implementation we note that the computation can
@@ -366,7 +364,7 @@ $./bch expression=4
 }
 
 \item {\tt expression=5} -- compute Lie series for $\log(\ee^{\frac{1}{6}\BB}\ee^{\frac{1}{2}\AA}
-\ee^{\frac{2}{3}\BB+\frac{1}{72}[B,[A,B]}\ee^{\frac{1}{2}\AA}\ee^{\frac{1}{6}\BB})$,
+\ee^{\frac{2}{3}\BB+\frac{1}{72}[B,[A,B]]}\ee^{\frac{1}{2}\AA}\ee^{\frac{1}{6}\BB})$,
 a more complicated version of the BCH formula, which is constructed in such a way that 
 besides $\AA+\BB$ all terms have degree $\geq 5$:
 
@@ -388,13 +386,11 @@ With
 \verb|table_output=1|, on the other hand, the result is displayed in tabular form.
 Each row of the table corresponds to a basis element of the respective Lie basis,
 %chosen by the \verb|basis| parameter, 
-where by default, for the Lyndon or the Hall
-basis (\verb|basis=0| or \verb|basis=2|),
-the index, the indices of the left and
+where by default the index, the indices of the left and
 the right factors, and the coefficient of the basis element is displayed. 
 This information uniquely determines the basis element, which follows from the
 fact that 
-for Hall and Lyndon bases the factors $h', h''$ of basis elements $h=[h',h'']$ of degree $\geq 2$ are
+for all the bases we consider (i.e., Lyndon, Hall, and right-normed Chibrikov) the factors $h', h''$ of basis elements $h=[h',h'']$ of degree $\geq 2$ are
 basis elements themselves.
 \begin{quote} %
 {\small\begin{BVerbatim}
@@ -415,38 +411,14 @@ $ ./bch table_output=1
 13      5       7       1       -1/720
 \end{BVerbatim}
 }\end{quote}
-For the right-normed basis (\verb|basis=1|) the factors of
-the basis element are not necessarily
-basis elements themselves, so that instead of these factors the foliage 
-of the basis element (i.e., the commutator written without commas and brackets)
-is displayed, which uniquely determines the basis element  in this case.
-\begin{quote} %
-{\small\begin{BVerbatim}
-$ ./bch basis=1 table_output=1
-0       1       A       1/1
-1       1       B       1/1
-2       2       BA      -1/2
-3       3       ABA     -1/12
-4       3       BBA     1/12
-5       4       AABA    0/1
-6       4       BABA    1/24
-7       4       BBBA    0/1
-8       5       AAABA   1/720
-9       5       BAABA   -1/360
-10      5       ABABA   1/120
-11      5       BBABA   -1/120
-12      5       ABBBA   1/360
-13      5       BBBBA   -1/720
-\end{BVerbatim}
-}\end{quote}
 The displayed items can be customized by specifying the following parameters
 which should be self-explanatory:
 \begin{itemize}
 \item {\tt print\_index[=1]}
 \item {\tt print\_degree[=1]}
 \item {\tt print\_multi\_degree[=0]}
-\item {\tt print\_factors[=1 {\em or} =0 {\em depending on} basis]}
-\item {\tt print\_foliage[=0 {\em or} =1 {\em depending on} basis]}
+\item {\tt print\_factors[=1]}
+\item {\tt print\_foliage[=0]}
 \item {\tt print\_basis\_element[=0]}
 \item {\tt print\_coefficient[=1]}
 \end{itemize}
@@ -690,7 +662,7 @@ string \verb|str|.
 The following two functions compute respectively the classical BCH series
 (i.e., the Lie series for $\log(\ee^{\AA}\ee^{\BB})$) and
 the symmetric BCH series (i.e., the Lie series for 
-$\log(\ee^{\frac{1}{2}\AA}\ee^{\BB}\ee^{\frac{1}{2}\AA}))$:
+$\log(\ee^{\frac{1}{2}\AA}\ee^{\BB}\ee^{\frac{1}{2}\AA})$:
 \begin{verbatim}
 lie_series_t* BCH(int maximum_degree, int basis);
 lie_series_t* symBCH(int maximum_degree, int basis);
@@ -758,10 +730,10 @@ The functions \verb|left_factor| and \verb|right_factor|
 respectively
 return the index of the left factor $h'$ and the index of the right
 factor $h''$ of the basis element $h=[h',h'']$ with index \verb|i|.
-Note that the result is well-defined only if the Lie series \verb|LS| 
-was generated with  \verb|basis| equal 0 (Lyndon basis) or 
-equal 2 (classical Hall basis),
-and if the basis element $h$ with index \verb|i| has degree $\geq 2$.
+%Note that the result is well-defined only if the Lie series \verb|LS| 
+%was generated with  \verb|basis| equal 0 (Lyndon basis) or 
+%equal 2 (classical Hall basis),
+%and if the basis element $h$ with index \verb|i| has degree $\geq 2$.
 
 \subsection{Cleaning up}
 \begin{verbatim}
@@ -771,7 +743,7 @@ void free_lie_series(lie_series_t *LS);
 
 \subsection{User-defined expressions}\label{SubSec:UserDefExpr}
 Besides Lie series for  $\log(\ee^{\AA}\ee^{\BB})$ and
-$\log(\ee^{\frac{1}{2}\AA}\ee^{\BB}\ee^{\frac{1}{2}\AA)})$, also 
+$\log(\ee^{\frac{1}{2}\AA}\ee^{\BB}\ee^{\frac{1}{2}\AA})$, also 
 Lie series for arbitrary expressions of the form (\ref{eq:expression})
 can be computed.
 Such expressions are represented as  binary expression
@@ -809,7 +781,7 @@ denominator of a rational coefficient.
 For example, the following code generates the 
 expression 
 $\log(\ee^{\frac{1}{6}\BB}\ee^{\frac{1}{2}\AA}
-\ee^{\frac{2}{3}\BB+\frac{1}{72}[B,[A,B]}\ee^{\frac{1}{2}\AA}\ee^{\frac{1}{6}\BB})$:
+\ee^{\frac{2}{3}\BB+\frac{1}{72}[B,[A,B]]}\ee^{\frac{1}{2}\AA}\ee^{\frac{1}{6}\BB})$:
 %(see also further examples in the source code file \verb|bch.c|
 %for the executable \verb|bch|):
 \begin{quote} %
