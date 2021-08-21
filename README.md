@@ -24,7 +24,7 @@ To use a different compiler, the `Makefile` has to be adapted accordingly.
 A user manual is available at [arXiv:2102.06570](https://arxiv.org/pdf/2102.06570).
 
 ## Try the program without installing it
-The `bch` program has been compiled into  [WebAssembly](https://webassembly.org). 
+The `bch` program has been compiled to  [WebAssembly](https://webassembly.org). 
 So you can try it in your browser without installing it.
 For example, to compute the Baker-Campbell-Hausdorff series represented
 in the Lyndon basis up to terms of degree `N=20`, just click on the
