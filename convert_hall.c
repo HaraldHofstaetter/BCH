@@ -259,12 +259,25 @@ static bool ishall(magma_element_t *m, char *f, int (*hcmp)(int n1, const char *
     }
 }
 
+
 #ifdef QSORT_R_AVAILABLE
+/* Note: if _GNU_SOURCE__ were defined, the following declaration
+ * would be available in stdlib.h:
+ */ 
 void qsort_r(void *base, size_t nmemb, size_t size,
                   int (*compar)(const void *, const void *, void *),
                   void *arg);
 #else
-static __thread void *_hcmp;
+#include<threads.h>
+thread_local void *_hcmp;  
+/* Note: If qsort_r is not available, we use instead qsort with parameters
+ * for the comparison function passed by the global variable _hcmp.
+ * If this variable is declared thread local, it is save to use in threads.
+ * The qualifier thread_local (which is a synonym for the keyword _Thread_local)
+ * is standard C11. For the gcc compiler you could use
+ *   static __thread void *_hcmp;
+ * instead.
+ */  
 #endif
 
 
