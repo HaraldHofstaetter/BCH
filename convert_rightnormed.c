@@ -1,6 +1,7 @@
 #include"bch.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 
 static int coeff_word_in_rightnormed(uint8_t w[], uint8_t c[], int l1, int r1, int l2) {
@@ -180,6 +181,37 @@ void compute_rightnormed_BCH_terms_of_even_degrees(lie_series_t *LS) {
 }
 
 
+static void adjust_p1_p2(lie_series_t *LS) {
+    
+    for (int k=0; k<LS->K; k++) {
+        LS->p1[k] = k;
+        LS->p2[k] = 0;
+    }
+
+    for (int n=2; n<=LS->N; n++) {
+        for (int i=LS->ii[n-1]; i<LS->ii[n]; i++) {
+            int l = LS->R[i][0];
+            LS->p1[i] = l;
+            int c=LS->ii[n-2];
+            for (; c<LS->ii[n-1]; c++) {
+                /* Test if R[i][2:end]==R[c] */
+                int j=0;
+                for ( ; j<LS->nn[i]-1; j++) {
+                    if (LS->R[i][j+1]!=LS->R[c][j]) {
+                        break;
+                    }
+                }
+                if (j==LS->nn[i]-1) {
+                    LS->p2[i] = c;
+                    break;
+                }
+            }
+            assert(c<LS->ii[n-1]);
+        }
+    }
+}
+
+
 void init_rightnormed(lie_series_t *LS) {
     double t0 = tic();
     size_t mem_len = 0;
@@ -197,6 +229,8 @@ void init_rightnormed(lie_series_t *LS) {
     for (int i=0; i<LS->dim; i++) {
         lyndon2rightnormed(LS->nn[i], LS->W[i], LS->R[i]);
     }
+
+    adjust_p1_p2(LS);
 
     if (get_verbosity_level()>=1) {
         double t1 = toc(t0);

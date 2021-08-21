@@ -359,11 +359,6 @@ int str_foliage(char *out, lie_series_t *LS,  int i, char *g) {
     if (LS->nn[i]==1) {
         out[pos++] = g[LS->p1[i]];
     }
-    else if (LS->R) {
-        for (int j=0; j < LS->nn[i]; j++) {
-            out[pos++] = g[LS->R[i][j]];
-        }
-    }
     else {
         pos += str_foliage(out+pos, LS, LS->p1[i], g);
         pos += str_foliage(out+pos, LS, LS->p2[i], g);
@@ -390,18 +385,7 @@ int str_basis_element(char *out, lie_series_t *LS,  int i, char *g) {
     if (n==1) {
         out[pos++] = g[LS->p1[i]];
     }
-    else if (LS->R) { /* rightnormed basis element */
-        for (int j=0; j < n-1; j++) {
-            out[pos++] = '[';
-            out[pos++] = g[LS->R[i][j]];
-            out[pos++] = ',';
-        }
-        out[pos++] = g[LS->R[i][n-1]];
-        for (int j=0; j < n-1; j++) {
-            out[pos++] = ']';
-        }
-    }
-    else { /* Lyndon or Hall basis element */
+    else { 
         out[pos++] = '[';
         pos += str_basis_element(out+pos, LS, LS->p1[i], g);
         out[pos++] = ',';

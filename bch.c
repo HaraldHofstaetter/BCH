@@ -156,8 +156,8 @@ int main(int argc, char*argv[]) {
                 PRINT_INDEX           *get_arg(argc, argv, "print_index",         1, 0, 1) |
                 PRINT_DEGREE          *get_arg(argc, argv, "print_degree",        1, 0, 1) |
                 PRINT_MULTI_DEGREE    *get_arg(argc, argv, "print_multi_degree",  0, 0, 1) |
-                PRINT_FACTORS         *get_arg(argc, argv, "print_factors",       (basis==LYNDON_BASIS)||(basis>=HALL_BASIS) ? 1 : 0, 0, 1) |
-                PRINT_FOLIAGE         *get_arg(argc, argv, "print_foliage",       basis==RIGHTNORMED_BASIS ? 1 : 0, 0, 1) |
+                PRINT_FACTORS         *get_arg(argc, argv, "print_factors",       1, 0, 1) |
+                PRINT_FOLIAGE         *get_arg(argc, argv, "print_foliage",       0, 0, 1) |
                 PRINT_BASIS_ELEMENT   *get_arg(argc, argv, "print_basis_element", 0, 0, 1) |
                 PRINT_COEFFICIENT     *get_arg(argc, argv, "print_coefficient",   1, 0, 1); 
             print_table(LS, what, g);
