@@ -23,6 +23,22 @@ To use a different compiler, the `Makefile` has to be adapted accordingly.
 ## Documentation
 A user manual is available at [arXiv:2102.06570](https://arxiv.org/pdf/2102.06570).
 
+## Try the program without installing it
+The `bch` program has been compiled into  [WebAssembly](https://webassembly.org). 
+So you can try it in your browser without installing it.
+For example, to compute the Baker-Campbell-Hausdorff series represented
+in the Lyndon basis up to terms of degree `N=20`, just click on the
+following link:
+
+http://www.harald-hofstaetter.at/BCH/bch.html?verbosity_level=1&N=20&basis=0
+
+Parameters are specified as shown in this link. Their usage is exactly as described in the user manual for
+the command line version of the `bch` program.
+
+Note that the actual computation  is suprisingly fast. However, in the current version, the generation  of the output and its transfer
+via JavaScript into HTML is not very efficient. This can certainly be improved by replacing the driver program
+`bch.c` by one specifically optimized for WebAssembly.
+
 ## Examples
 ```
 $ ./bch
