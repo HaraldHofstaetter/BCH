@@ -23,7 +23,7 @@ To use a different compiler, the `Makefile` has to be adapted accordingly.
 ## Documentation
 A user manual is available at [arXiv:2102.06570](https://arxiv.org/pdf/2102.06570).
 
-## Try the program without installing it
+## Trying the program without installing it
 The `bch` program has been compiled to  [WebAssembly](https://webassembly.org). 
 So you can try it in your browser without installing it.
 For example, to compute the Baker-Campbell-Hausdorff series represented
@@ -102,9 +102,17 @@ B,A]]]]+1/360*[A,[B,[B,[B,A]]]]-1/720*[B,[B,[B,[B,A]]]]
 
 #### Compute symmetric BCH formula:
 ``` 
-$./bch expression=1
+$ ./bch expression=1
 +1/1*A+1/1*B-1/24*[A,[A,B]]+1/12*[[A,B],B]+7/5760*[A,[A,[A,[A,B]]]]-7/1440*[A,[A
 ,[[A,B],B]]]+1/360*[[A,[A,B]],[A,B]]+1/180*[A,[[[A,B],B],B]]+1/120*[[A,B],[[A,B]
 ,B]]-1/720*[[[[A,B],B],B],B]
 ```
 
+#### Compute Lie series for more general expressions
+```
+$ ./bch "expression=log(exp(3/8*A)*exp(4/5*B)*exp(5/8*A)*exp(1/5*B))"
++1/1*A+1/1*B-1/96*[A,[A,B]]+1/30*[[A,B],B]+1/256*[A,[A,[A,B]]]-3/320*[A,[[A,B],B
+]]+1/200*[[[A,B],B],B]+163/368640*[A,[A,[A,[A,B]]]]-43/23040*[A,[A,[[A,B],B]]]+1
+9/23040*[[A,[A,B]],[A,B]]+67/28800*[A,[[[A,B],B],B]]+1/384*[[A,B],[[A,B],B]]-13/
+18000*[[[[A,B],B],B],B]
+```
