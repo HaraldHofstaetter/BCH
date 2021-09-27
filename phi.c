@@ -230,9 +230,11 @@ void free_expr(expr_t* ex) {
     }
 }   
 
-
-int str_expr(char *out, expr_t* ex) {
+int str_expr(char *out, expr_t* ex, char* gens) {
     int pos = 0;
+    if (gens == 0) {
+        gens = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    }
     switch(ex->type) {
         case IDENTITY:
             if (out) {
@@ -244,7 +246,7 @@ int str_expr(char *out, expr_t* ex) {
             break;
         case GENERATOR: 
             if (out) {
-                pos += sprintf(out+pos, "%c", 'A'+ex->num);
+                pos += sprintf(out+pos, "%c", gens[ex->num]);
             }
             else {
                 pos += 1;
@@ -253,74 +255,74 @@ int str_expr(char *out, expr_t* ex) {
         case SUM:
             if (out) {
                 pos += sprintf(out+pos, "(");
-                pos += str_expr(out+pos, ex->arg1);
+                pos += str_expr(out+pos, ex->arg1, gens);
                 pos += sprintf(out+pos, "+");
-                pos += str_expr(out+pos, ex->arg2);
+                pos += str_expr(out+pos, ex->arg2, gens);
                 pos += sprintf(out+pos, ")");
             }
             else {
-                pos += 3 + str_expr(NULL, ex->arg1)+ str_expr(NULL, ex->arg2);
+                pos += 3 + str_expr(NULL, ex->arg1, gens)+str_expr(NULL, ex->arg2, gens);
             }
             break;
         case DIFFERENCE:
             if (out) {
                 pos += sprintf(out+pos, "(");
-                pos += str_expr(out+pos, ex->arg1);
+                pos += str_expr(out+pos, ex->arg1, gens);
                 pos += sprintf(out+pos, "-");
-                pos += str_expr(out+pos, ex->arg2);
+                pos += str_expr(out+pos, ex->arg2, gens);
                 pos += sprintf(out+pos, ")");
             }
             else {
-                pos += 3 + str_expr(NULL, ex->arg1)+ str_expr(NULL, ex->arg2);
+                pos += 3 + str_expr(NULL, ex->arg1, gens)+str_expr(NULL, ex->arg2, gens);
             }
             break;
         case PRODUCT: 
             if (out) {
-                pos += str_expr(out+pos, ex->arg1);
+                pos += str_expr(out+pos, ex->arg1, gens);
                 pos += sprintf(out+pos, "*");
-                pos += str_expr(out+pos, ex->arg2);
+                pos += str_expr(out+pos, ex->arg2, gens);
             }
             else {
-                pos += 1 + str_expr(NULL, ex->arg1)+ str_expr(NULL, ex->arg2);
+                pos += 1 + str_expr(NULL, ex->arg1, gens)+str_expr(NULL, ex->arg2, gens);
             }
             break;
         case NEGATION: 
             if (out) {
                 pos += sprintf(out+pos, "(-1)*");
-                pos += str_expr(out+pos, ex->arg1);
+                pos += str_expr(out+pos, ex->arg1, gens);
             }
             else {
-                pos += 5 + str_expr(NULL, ex->arg1);
+                pos += 5 + str_expr(NULL, ex->arg1, gens);
             }
             break;
         case TERM: 
             if (out) {
                 pos += sprintf(out+pos, "(%i/%i)*", ex->num, ex->den);
-                pos += str_expr(out+pos, ex->arg1);
+                pos += str_expr(out+pos, ex->arg1, gens);
             }
             else {
                 pos += snprintf(NULL, 0, "(%i/%i)*", ex->num, ex->den)
-                       + str_expr(NULL, ex->arg1);
+                       + str_expr(NULL, ex->arg1, gens);
             }
             break;
         case EXPONENTIAL:
             if (out) {
                 pos += sprintf(out+pos, "exp(");
-                pos += str_expr(out+pos, ex->arg1);
+                pos += str_expr(out+pos, ex->arg1, gens);
                 pos += sprintf(out+pos, ")");
             }
             else {
-                pos += 5 + str_expr(NULL, ex->arg1);
+                pos += 5 + str_expr(NULL, ex->arg1, gens);
             }
             break;
         case LOGARITHM: 
             if (out) {
                 pos += sprintf(out+pos, "log(");
-                pos += str_expr(out+pos, ex->arg1);
+                pos += str_expr(out+pos, ex->arg1, gens);
                 pos += sprintf(out+pos, ")");
             }
             else {
-                pos += 5 + str_expr(NULL, ex->arg1);
+                pos += 5 + str_expr(NULL, ex->arg1, gens);
             }
             break;
         default:
@@ -330,13 +332,14 @@ int str_expr(char *out, expr_t* ex) {
     return pos;
 }
 
-void print_expr(expr_t* ex) {
-    int n = str_expr(NULL, ex) + 1;
+void print_expr(expr_t* ex, char* gens) {
+    int n = str_expr(NULL, ex, gens) + 1;
     char *s = malloc(n*sizeof(char));
-    str_expr(s, ex);
+    str_expr(s, ex, gens);
     printf("%s", s);
     free(s);
 }
+
 
 
 static inline void check_for_divisibility_by_int(INTEGER p, int q, INTEGER d) {

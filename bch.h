@@ -107,9 +107,11 @@ expr_t* exponential(expr_t* arg);
 expr_t* logarithm(expr_t* arg);
 expr_t* commutator(expr_t* arg1, expr_t* arg2);
 
-int str_expr(char *out, expr_t* ex);
-void print_expr(expr_t* ex);
+int str_expr(char *out, expr_t* ex, char *gens);
+void print_expr(expr_t* ex, char *gens);
 void free_expr(expr_t* ex);
+
+expr_t* parse(char *inp, char *generators, int *num_generators);
 
 int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]);
 INTEGER common_denominator(int n, expr_t* ex);

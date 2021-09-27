@@ -90,7 +90,7 @@ static void compute_word_coefficients(lie_series_t *LS, int N, expr_t* ex) {
      * in expression ex and stores them in LS->c[]
      */
     if (get_verbosity_level()>=1) {
-        printf("#expression="); print_expr(ex); printf("\n"); 
+        printf("#expression="); print_expr(ex, 0); printf("\n"); 
         printf("#denominator="); print_INTEGER(LS->denom); printf("\n");
         if (get_verbosity_level()>=2) {
             fflush(stdout);

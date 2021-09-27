@@ -52,6 +52,7 @@ char* get_string_arg(int argc, char*argv[], char* varname, char* default_value) 
         if (sep) {
             *sep ='\0';
             if (strcmp(argv[k], varname)==0) {
+                *sep = '=';
                 return sep+1;
             }
             *sep = '=';
@@ -60,8 +61,7 @@ char* get_string_arg(int argc, char*argv[], char* varname, char* default_value) 
     return default_value;
 }
 
-static char *default_generators = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
+static char default_generators[57] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 int main(int argc, char*argv[]) {
 
@@ -91,7 +91,11 @@ int main(int argc, char*argv[]) {
     expr_t *C = generator(2);
     expr_t *ex = NULL;
     lie_series_t *LS = NULL;
-    switch(get_arg(argc, argv, "expression", 0, 0, 8)) {
+
+    char *inp = get_string_arg(argc, argv, "expression", NULL);
+    if ((inp==0) || (strlen(inp)==1 && inp[0]>='0' && inp[0]<='9')) {
+      /* predefined expressions */
+      switch(get_arg(argc, argv, "expression", 0, 0, 8)) {
         case 0:  /* log(exp(A)*exp(B)), with optimizations spezific for this expression */ 
             LS = BCH(N, basis);
             break;
@@ -132,6 +136,19 @@ int main(int argc, char*argv[]) {
                                    exponential(term(1, 2, A))));
             LS = lie_series(2, ex, N, basis); 
             break;
+      }
+    }
+    else {
+        /* parse expression */
+        int num_generators;
+        ex = parse(inp, default_generators, &num_generators);
+        if (ex==0) {
+            /* parse error, function parse() should have already printed 
+             * an error message
+             */
+            exit(EXIT_FAILURE);
+        }
+        LS = lie_series(num_generators, ex, N, basis);
     }
 
     char *g = get_string_arg(argc, argv, "generators", default_generators);
