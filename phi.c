@@ -589,6 +589,12 @@ static void delta(INTEGER d[], int N, expr_t* ex) {
             return;
             }
         case TERM:
+            if (ex->num==0) {
+                for (int n=0; n<=N; n++) {
+                    d[n] = 0;
+                }
+                return;
+            }
             delta(d, N, ex->arg1);
             for (int n=0; n<=N; n++) {
                 INTEGER x = ex->den*d[n];
