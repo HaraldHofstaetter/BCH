@@ -3,8 +3,7 @@
 %option noinput
 
 natural  [0-9]+
-integer  [+|-]?{natural}
-rational {integer}|({integer}\/{natural})
+rational {natural}|({natural}\/{natural})
 
 %{
 #include"bch.h"
@@ -27,7 +26,7 @@ static rational_t parse_rational(char *s);
 "log"      { return LOG;}
 "exp"      { return EXP;}
 [\+\-\*\(\)\[\],]  { return yytext[0]; }
-{rational} { yylval.rat = parse_rational(yytext); return RAT; }
+{rational} { yylval.rat = parse_rational(yytext); return RAT; } 
 [ \t]      { /* ignore whitespace */ }
 <<EOF>>    { return END; } 
 

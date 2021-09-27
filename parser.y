@@ -51,9 +51,20 @@ expr: GEN { if (gens_tab[(size_t) $1]==-1) {
     | expr '+' expr         { $$ = sum($1, $3); }
     | expr '-' expr         { $$ = difference($1, $3); } 
     | expr '*' expr         { $$ = product($1, $3); }
+    | '-' RAT '*' expr      { if ($2.den==0) { 
+                                yyerror("zero denominator");
+                                YYABORT;
+                              }
+                              $$ = term(-$2.num, $2.den, $4); 
+                            }
+    | RAT '*' expr          { if ($1.den==0) { 
+                                yyerror("zero denominator");
+                                YYABORT;
+                              }
+                              $$ = term($1.num, $1.den, $3); 
+                            }
     | '-' expr              { $$ = negation($2); }
     | '+' expr              { $$ = $2; }
-    | RAT '*' expr          { $$ = term($1.num, $1.den, $3); }
     | EXP '(' expr ')'      { $$ = exponential($3); }
     | LOG '(' expr ')'      { $$ = logarithm($3); }
     | '[' expr ',' expr ']' { $$ = commutator($2, $4); }

@@ -194,6 +194,10 @@ expr_t* negation(expr_t* arg) {
 }
 
 expr_t* term(int num, int den, expr_t* arg) {
+    if (den==0) { 
+        fprintf(stderr, "ERROR: zero denominator");
+        exit(EXIT_FAILURE);
+    }
     expr_t *ex = undefined_expr();
     ex->type = TERM;
     ex->arg1 = arg;

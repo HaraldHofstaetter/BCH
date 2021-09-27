@@ -13,7 +13,6 @@ MAKE_SHARED_LIB = $(CC) -fopenmp -shared
 
 SHARED_LIB = libbch.so
 
-DEPS = bch.h khash.h parser.l parser.y
 OBJS = phi.o lie_series.o lyndon.o rightnormed.o goldberg.o \
        convert_lyndon.o convert_rightnormed.o convert_hall.o \
        parser.tab.o lex.yy.o
@@ -21,10 +20,12 @@ OBJS = phi.o lie_series.o lyndon.o rightnormed.o goldberg.o \
 parser.tab.c parser.tab.h: parser.y
 	bison -d parser.y
 
-lex.yy.c: parser.tab.h
+lex.yy.c: parser.tab.h parser.l
 	flex parser.l
 
-%.o: %.c $(DEPS)
+convert_hall.c convert_lyndon.c: khash.h
+
+%.o: %.c bch.h 
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(SHARED_LIB): $(OBJS)
@@ -59,7 +60,7 @@ SRCS_WASM = bch.c phi.c lie_series.c lyndon.c rightnormed.c goldberg.c \
        convert_lyndon.c convert_rightnormed.c convert_hall.c \
        parser.tab.c lex.yy.c
 
-bch.wasm bch.js bch.html: $(DEPS) $(SRCS_WASM) shell_bch.html
+bch.wasm bch.js bch.html: bch.h $(SRCS_WASM) shell_bch.html
 	emcc $(SRCS_WASM) -O3 -s EXIT_RUNTIME=1 -s ALLOW_MEMORY_GROWTH=1 \
 	    -o bch.html --shell-file ./shell_bch.html 
 	
