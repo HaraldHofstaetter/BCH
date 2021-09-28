@@ -456,14 +456,19 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
             return m1;
             }
         case TERM: { 
-            int m1 = phi(y, m, w, ex->arg1, v);
             int p = ex->num;
+            for (int j=0; j<m; j++) {
+                y[j] = p*v[j];
+            }
+            int m1 = phi(y, m, w, ex->arg1, y);
             int q = ex->den;
-            for (int j=0; j<m1; j++) {
-                INTEGER h = y[j]*p;
-                INTEGER d = h/q;
-                check_for_divisibility_by_int(h, q, d);
-                y[j] = d;
+            if (q!=1) {
+                for (int j=0; j<m1; j++) {
+                    INTEGER h = y[j];
+                    INTEGER d = h/q;
+                    check_for_divisibility_by_int(h, q, d);
+                    y[j] = d;
+                }
             }
             return m1;
             }
