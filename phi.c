@@ -41,6 +41,8 @@ INTEGER FACTORIAL[33] =  {             1,
  263130836933693530*H+167218012160000000 };
 
 
+static const int HUGE_NUMBER = 1<<30;
+
 
 #ifdef USE_INT128_T
 int str_INTEGER(char *out, __int128_t x) {
@@ -118,6 +120,16 @@ static INTEGER gcd(INTEGER a, INTEGER b) {
     return a>=0 ? a : -a;
 }
 
+
+static inline int minimum(int a, int b) {
+    return a<=b ? a : b;
+}
+
+static inline int maximum(int a, int b) {
+    return a>=b ? a : b;
+}
+
+
 int str_RATIONAL(char *out, INTEGER p, INTEGER q) {
     INTEGER d = gcd(p, q);
     int pos = 0;
@@ -146,12 +158,14 @@ static expr_t* undefined_expr(void) {
     ex->arg2 = NULL;
     ex->num = 0;
     ex->den = 0;
+    ex->mindeg = HUGE_NUMBER;
     return ex;
 }
 
 expr_t* identity(void) {
     expr_t *ex = undefined_expr();
     ex->type = IDENTITY;
+    ex->mindeg = 0;
     return ex;
 }
 
@@ -159,14 +173,17 @@ expr_t* generator(uint8_t n) {
     expr_t *ex = undefined_expr();
     ex->type = GENERATOR;
     ex->num = n;
+    ex->mindeg = 1;
     return ex;
 }
+
 
 expr_t* sum(expr_t* arg1, expr_t* arg2) {
     expr_t *ex = undefined_expr();
     ex->type = SUM;
     ex->arg1 = arg1;
     ex->arg2 = arg2;
+    ex->mindeg = minimum(arg1->mindeg, arg2->mindeg);
     return ex;
 }
 
@@ -175,6 +192,7 @@ expr_t* difference(expr_t* arg1, expr_t* arg2) {
     ex->type = DIFFERENCE;
     ex->arg1 = arg1;
     ex->arg2 = arg2;
+    ex->mindeg = minimum(arg1->mindeg, arg2->mindeg);
     return ex;
 }
 
@@ -183,6 +201,7 @@ expr_t* product(expr_t* arg1, expr_t* arg2) {
     ex->type = PRODUCT;
     ex->arg1 = arg1;
     ex->arg2 = arg2;
+    ex->mindeg = minimum(HUGE_NUMBER, arg1->mindeg + arg2->mindeg);
     return ex;
 }
 
@@ -190,6 +209,7 @@ expr_t* negation(expr_t* arg) {
     expr_t *ex = undefined_expr();
     ex->type = NEGATION;
     ex->arg1 = arg;
+    ex->mindeg = arg->mindeg;
     return ex;
 }
 
@@ -203,6 +223,12 @@ expr_t* term(int num, int den, expr_t* arg) {
     ex->arg1 = arg;
     ex->num = num;
     ex->den = den;
+    if (num==0) {
+         ex->mindeg = HUGE_NUMBER;
+    }
+    else {
+         ex->mindeg = arg->mindeg;
+    }
     return ex;
 }
 
@@ -210,6 +236,7 @@ expr_t* exponential(expr_t* arg) {
     expr_t *ex = undefined_expr();
     ex->type = EXPONENTIAL;
     ex->arg1 = arg;
+    ex->mindeg = 0;
     return ex;
 }
 
@@ -217,6 +244,7 @@ expr_t* logarithm(expr_t* arg) {
     expr_t *ex = undefined_expr();
     ex->type = LOGARITHM;
     ex->arg1 = arg;
+    ex->mindeg = 1;
     return ex;
 }
 
@@ -442,11 +470,18 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
             }
             } 
         case PRODUCT: {
-            int m1 = phi(y, m, w, ex->arg2, v);
+            int md = ex->arg1->mindeg;
+            if (md>=m) {
+                return 0;
+            }
+            int m1 = phi(y+md, m-md, w+md, ex->arg2, v+md);
             if (m1==0) {
                 return 0;
             }
-            return phi(y, m1, w, ex->arg1, y);
+            for (int j=0; j<md; j++) {
+                y[j] = 0;
+            }
+            return phi(y, m1+md, w, ex->arg1, y);
             }
         case NEGATION: { 
             int m1 = phi(y, m, w, ex->arg1, v);
@@ -511,11 +546,15 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
             } 
             INTEGER h[m];
             int m1 = m; 
+            int mnew = m;
             for (int k=1; k<m; k++) {
                 for (int j=0; j<m1; j++) {
                     h[j] = z[j];
                 }
                 int m2 = phi(z, m1, w, ex->arg1, z);
+                if (k==1) {
+                    mnew = m2;
+                }
                 int m3 = 0;
                 for (int j=0; j<m2; j++) {
                     z[j] -= h[j];
@@ -530,7 +569,7 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
                     }
                 }
                 if (m3==0) {
-                    return m;
+                    return mnew;
                 }
                 m1 = m3;
                 int f = k%2 ? +k : -k; /* f = (-1)^(k+1)*k */ 
@@ -540,7 +579,7 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
                     y[j] += d;
                 }
             }
-            return m;
+            return mnew;
             }
         default:
             fprintf(stderr, "ERROR: unknown expr type %i\n", ex->type);
@@ -580,6 +619,11 @@ static void delta(INTEGER d[], int N, expr_t* ex) {
             }
             return;
         case IDENTITY:
+            d[0] = 1;
+            for (int n=1; n<=N; n++) {
+                d[n] = 0;
+            }
+            return;
         case NEGATION:
             delta(d, N, ex->arg1);
             return;
@@ -626,7 +670,7 @@ static void delta(INTEGER d[], int N, expr_t* ex) {
             INTEGER h1[N+1];
             delta(a, N, ex->arg1);
             if (a[0]!=0) {
-                fprintf(stderr, "ERROR: Logarithm expects argument with no constant\n");
+                fprintf(stderr, "ERROR: Exponential expects argument with no constant term\n");
                 exit(EXIT_FAILURE);
             }
             for (int n=0; n<=N; n++) {

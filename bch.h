@@ -94,6 +94,7 @@ typedef struct expr_t {
     struct expr_t *arg2;
     int num;
     int den;
+    int mindeg;
 } expr_t;
 
 expr_t* identity(void);
