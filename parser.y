@@ -11,6 +11,8 @@ typedef struct {
     int den;
 } rational_t;
 
+static int gcd(int a, int b);
+
 static char *gens;
 static int gens_tab[256];
 static int num_gens;
@@ -26,61 +28,81 @@ static expr_t* result;
 
 %token <rat> RAT 
 %token <gen> GEN 
-%token ID LOG EXP
+%token LOG EXP 
 %token '+' '-' '*' 
 %token '(' ')' '[' ']' ','
 %token END 
 
 %left '+' '-'
-%left '*'
+%left '*' 
 
-%type <expr> expr
+%type <expr> lie_expr prod_of_exp_of_lie_exprs
 
 %%
 
-line: expr END { result = $1; YYACCEPT; }
+line: lie_expr END { result = $1; YYACCEPT; }
 
-expr: GEN { if (gens_tab[(size_t) $1]==-1) {
-                gens_tab[(size_t) $1] = num_gens;
-                gens[num_gens] = $1;
-                num_gens++;
-            }
-            $$ = generator(gens_tab[(size_t) $1]); 
-          }
-    | ID                    { $$ = identity(); } 
-    | expr '+' expr         { $$ = sum($1, $3); }
-    | expr '-' expr         { $$ = difference($1, $3); } 
-    | expr '*' expr         { $$ = product($1, $3); }
-    | '-' RAT '*' expr      { if ($2.den==0) { 
-                                yyerror("zero denominator");
-                                YYABORT;
-                              }
-                              $$ = term(-$2.num, $2.den, $4); 
-                            }
-    | RAT '*' expr          { if ($1.den==0) { 
-                                yyerror("zero denominator");
-                                YYABORT;
-                              }
-                              $$ = term($1.num, $1.den, $3); 
-                            }
-    | '-' expr              { $$ = negation($2); }
-    | '+' expr              { $$ = $2; }
-    | EXP '(' expr ')'      { $$ = exponential($3); }
-    | LOG '(' expr ')'      { $$ = logarithm($3); }
-    | '[' expr ',' expr ']' { $$ = commutator($2, $4); }
-    | '(' expr ')'          { $$ = $2; }
+lie_expr: GEN { if (gens_tab[(size_t) $1]==-1) {
+                    gens_tab[(size_t) $1] = num_gens;
+                    gens[num_gens] = $1;
+                    num_gens++;
+                 }
+                 $$ = generator(gens_tab[(size_t) $1]); 
+              }
+    | lie_expr '+' lie_expr  { $$ = sum($1, $3); }
+    | lie_expr '-' lie_expr  { $$ = difference($1, $3); } 
+ /* | '-' RAT '*' lie_expr   { if ($2.den==0) { 
+                                   yyerror("zero denominator");
+                                   YYABORT;
+                               }
+                               int d = gcd($2.num, $2.den);
+                               $$ = term(-$2.num/d, $2.den/d, $4); 
+                             } */
+    | RAT '*' lie_expr       { if ($1.den==0) { 
+                                   yyerror("zero denominator");
+                                   YYABORT;
+                               }
+                               int d = gcd($1.num, $1.den);
+                               $$ = term($1.num/d, $1.den/d, $3); 
+                             } 
+    | '-' lie_expr           { $$ = negation($2); } 
+    | '+' lie_expr           { $$ = $2; }
+    | LOG '(' prod_of_exp_of_lie_exprs ')'   { $$ = logarithm($3); } 
+    | '[' lie_expr ',' lie_expr ']'          { $$ = commutator($2, $4); }
+    | '(' lie_expr ')'       { $$ = $2; }
+
+
+prod_of_exp_of_lie_exprs: prod_of_exp_of_lie_exprs  '*' prod_of_exp_of_lie_exprs {
+                                                 $$ = product($1, $3);
+                                               } 
+                        | EXP '(' lie_expr ')' { $$ = exponential($3); }
+
 
 %%
 
 
 void yyerror(char *s) 
 {
-    fprintf(stderr, "ERROR: while parsing expression: %s\n", s); 
+    fprintf(stderr, "ERROR: while parsing Lie expression: %s\n", s); 
     if (result!=0) {
         free_expr(result);
     }
     result = 0; 
 } 
+
+
+static int gcd(int a, int b) {
+    /* computes greatest common divisor of a and b
+     * METHOD: Euclid's classical algorithm
+     */
+    while (b!=0) {
+       INTEGER t = b; 
+       b = a%b; 
+       a = t; 
+    }
+    return a>=0 ? a : -a;
+}
+
 
 typedef struct yy_buffer_state * YY_BUFFER_STATE;
 /* extern int yyparse(); */

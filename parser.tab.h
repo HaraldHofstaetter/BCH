@@ -51,10 +51,9 @@ extern int yydebug;
   {
     RAT = 258,
     GEN = 259,
-    ID = 260,
-    LOG = 261,
-    EXP = 262,
-    END = 263
+    LOG = 260,
+    EXP = 261,
+    END = 262
   };
 #endif
 
@@ -62,13 +61,13 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 21 "parser.y"
+#line 23 "parser.y"
      
     char gen;
     rational_t rat;
     expr_t * expr;
 
-#line 72 "parser.tab.h"
+#line 71 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

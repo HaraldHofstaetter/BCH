@@ -22,7 +22,6 @@ static rational_t parse_rational(char *s);
 %%
 
 [a-zA-Z]   { yylval.gen = *yytext; return GEN; }
-"id"       { return ID;}
 "log"      { return LOG;}
 "exp"      { return EXP;}
 [\+\-\*\(\)\[\],]  { return yytext[0]; }
