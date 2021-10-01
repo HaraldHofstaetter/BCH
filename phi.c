@@ -129,6 +129,39 @@ static inline int maximum(int a, int b) {
     return a>=b ? a : b;
 }
 
+rat_t rat(int num, int den) {
+    if (den==0) {
+        fprintf(stderr, "ERROR: rat(): zero denominator\n");
+        exit(EXIT_FAILURE);
+    }
+    rat_t r;
+    if (den<0) {
+        num = -num;
+        den = -den;
+    }
+    int d = gcd(num, den); 
+    r.num = num/d;
+    r.den = den/d;
+    return r;
+}
+
+rat_t rat_add(rat_t a, rat_t b) {
+    return rat(a.num*b.den+b.num*a.den, a.den*b.den);
+}
+rat_t rat_sub(rat_t a, rat_t b) {
+    return rat(a.num*b.den-b.num*a.den, a.den*b.den);
+}
+rat_t rat_mul(rat_t a, rat_t b) {
+    return rat(a.num*b.num, a.den*b.den);
+}
+rat_t rat_div(rat_t a, rat_t b) {
+    return rat(a.den*b.den, a.num*b.num);
+}
+rat_t rat_neg(rat_t a) {
+    return rat(-a.num, a.den);
+}
+
+
 
 int str_RATIONAL(char *out, INTEGER p, INTEGER q) {
     INTEGER d = gcd(p, q);
@@ -151,79 +184,96 @@ void print_RATIONAL(INTEGER p, INTEGER q) {
     print_INTEGER(q/d);
 }
 
-static expr_t* undefined_expr(void) {
+expr_t* zero_element(void) {
     expr_t *ex = malloc(sizeof(expr_t));
-    ex->type = UNDEFINED;
+    ex->type = ZERO_ELEMENT;
     ex->arg1 = NULL;
     ex->arg2 = NULL;
-    ex->num = 0;
-    ex->den = 0;
+    ex->factor = rat(0,1);
+    ex->gen = -1;
+    ex->const_term = rat(0,1);
     ex->mindeg = HUGE_NUMBER;
     return ex;
 }
 
 expr_t* identity(void) {
-    expr_t *ex = undefined_expr();
+    expr_t *ex = zero_element();
     ex->type = IDENTITY;
-    ex->mindeg = 0;
+    ex->const_term = rat(1,1);
+    ex->mindeg = HUGE_NUMBER;
     return ex;
 }
 
 expr_t* generator(uint8_t n) {
-    expr_t *ex = undefined_expr();
+    expr_t *ex = zero_element();
     ex->type = GENERATOR;
-    ex->num = n;
+    ex->gen = n;
+    ex->const_term = rat(0,1);
     ex->mindeg = 1;
     return ex;
 }
 
-
 expr_t* sum(expr_t* arg1, expr_t* arg2) {
-    expr_t *ex = undefined_expr();
+    expr_t *ex = zero_element();
     ex->type = SUM;
     ex->arg1 = arg1;
     ex->arg2 = arg2;
+    ex->const_term = rat_add(arg1->const_term, arg2->const_term);
     ex->mindeg = minimum(arg1->mindeg, arg2->mindeg);
     return ex;
 }
 
 expr_t* difference(expr_t* arg1, expr_t* arg2) {
-    expr_t *ex = undefined_expr();
+    expr_t *ex = zero_element();
     ex->type = DIFFERENCE;
     ex->arg1 = arg1;
     ex->arg2 = arg2;
+    ex->const_term = rat_sub(arg1->const_term, arg2->const_term);
     ex->mindeg = minimum(arg1->mindeg, arg2->mindeg);
     return ex;
 }
 
 expr_t* product(expr_t* arg1, expr_t* arg2) {
-    expr_t *ex = undefined_expr();
+    expr_t *ex = zero_element();
     ex->type = PRODUCT;
     ex->arg1 = arg1;
     ex->arg2 = arg2;
-    ex->mindeg = minimum(HUGE_NUMBER, arg1->mindeg + arg2->mindeg);
+    ex->const_term = rat_mul(arg1->const_term, arg2->const_term);
+    if ((arg1->const_term.num!=0)&&(arg2->const_term.num!=0)) {
+        ex->mindeg = minimum(arg1->mindeg, arg2->mindeg);
+    }
+    else if ((arg1->const_term.num==0)&&(arg2->const_term.num!=0)) {
+        ex->mindeg = arg2->mindeg;
+    }
+    else if ((arg2->const_term.num==0)&&(arg1->const_term.num!=0)) {
+        ex->mindeg = arg1->mindeg;
+    }
+    else {
+        ex->mindeg = minimum(HUGE_NUMBER, arg1->mindeg + arg2->mindeg);
+    }
     return ex;
 }
 
 expr_t* negation(expr_t* arg) {
-    expr_t *ex = undefined_expr();
+    expr_t *ex = zero_element();
     ex->type = NEGATION;
     ex->arg1 = arg;
+    ex->const_term = rat_neg(arg->const_term);
     ex->mindeg = arg->mindeg;
     return ex;
 }
 
-expr_t* term(int num, int den, expr_t* arg) {
-    if (den==0) { 
-        fprintf(stderr, "ERROR: zero denominator");
+expr_t* term(rat_t factor, expr_t* arg) {
+    if (factor.den==0) { 
+        fprintf(stderr, "ERROR: zero denominator\n");
         exit(EXIT_FAILURE);
     }
-    expr_t *ex = undefined_expr();
+    expr_t *ex = zero_element();
     ex->type = TERM;
     ex->arg1 = arg;
-    ex->num = num;
-    ex->den = den;
-    if (num==0) {
+    ex->factor = factor;
+    ex->const_term = rat_mul(factor, arg->const_term);
+    if (factor.num==0) {
          ex->mindeg = HUGE_NUMBER;
     }
     else {
@@ -233,18 +283,28 @@ expr_t* term(int num, int den, expr_t* arg) {
 }
 
 expr_t* exponential(expr_t* arg) {
-    expr_t *ex = undefined_expr();
+    if (arg->const_term.num!=0) {
+        fprintf(stderr, "ERROR: exponential expects argument with no constant term\n");
+        exit(EXIT_FAILURE);
+    }
+    expr_t *ex = zero_element();
     ex->type = EXPONENTIAL;
     ex->arg1 = arg;
-    ex->mindeg = 0;
+    ex->const_term = rat(1, 1);
+    ex->mindeg = arg->mindeg; 
     return ex;
 }
 
 expr_t* logarithm(expr_t* arg) {
-    expr_t *ex = undefined_expr();
+    if (!((arg->const_term.num==1) && (arg->const_term.den==1))) {
+        fprintf(stderr, "ERROR: logarithm expects argument with constant term == 1\n");
+        exit(EXIT_FAILURE);
+    }
+    expr_t *ex = zero_element();
     ex->type = LOGARITHM;
     ex->arg1 = arg;
-    ex->mindeg = 1;
+    ex->const_term = rat(0, 1);
+    ex->mindeg = arg->mindeg; 
     return ex;
 }
 
@@ -268,6 +328,14 @@ int str_expr(char *out, expr_t* ex, char* gens) {
         gens = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     }
     switch(ex->type) {
+        case ZERO_ELEMENT:
+            if (out) {
+                pos += sprintf(out+pos, "0");
+            }
+            else {
+                pos += 1;
+            }
+            break;
         case IDENTITY:
             if (out) {
                 pos += sprintf(out+pos, "Id");
@@ -278,7 +346,7 @@ int str_expr(char *out, expr_t* ex, char* gens) {
             break;
         case GENERATOR: 
             if (out) {
-                pos += sprintf(out+pos, "%c", gens[ex->num]);
+                pos += sprintf(out+pos, "%c", gens[ex->gen]);
             }
             else {
                 pos += 1;
@@ -297,15 +365,31 @@ int str_expr(char *out, expr_t* ex, char* gens) {
             }
             break;
         case DIFFERENCE:
-            if (out) {
-                pos += sprintf(out+pos, "(");
-                pos += str_expr(out+pos, ex->arg1, gens);
-                pos += sprintf(out+pos, "-");
-                pos += str_expr(out+pos, ex->arg2, gens);
-                pos += sprintf(out+pos, ")");
+            if ((ex->arg1->type==PRODUCT)&&(ex->arg1->type==PRODUCT)
+                    &&(ex->arg1->arg1==ex->arg2->arg2)
+                    &&(ex->arg1->arg2==ex->arg2->arg1)) { /* Commutator */
+                if (out) {
+                    pos += sprintf(out+pos, "[");
+                    pos += str_expr(out+pos, ex->arg1->arg1, gens);
+                    pos += sprintf(out+pos, ",");
+                    pos += str_expr(out+pos, ex->arg1->arg2, gens);
+                    pos += sprintf(out+pos, "]");
+                }
+                else {
+                    pos += 3 + str_expr(NULL, ex->arg1->arg1, gens)+str_expr(NULL, ex->arg1->arg2, gens);
+                }
             }
             else {
-                pos += 3 + str_expr(NULL, ex->arg1, gens)+str_expr(NULL, ex->arg2, gens);
+                if (out) {
+                    pos += sprintf(out+pos, "(");
+                    pos += str_expr(out+pos, ex->arg1, gens);
+                    pos += sprintf(out+pos, "-");
+                    pos += str_expr(out+pos, ex->arg2, gens);
+                    pos += sprintf(out+pos, ")");
+                }
+                else {
+                    pos += 3 + str_expr(NULL, ex->arg1, gens)+str_expr(NULL, ex->arg2, gens);
+                }
             }
             break;
         case PRODUCT: 
@@ -329,11 +413,11 @@ int str_expr(char *out, expr_t* ex, char* gens) {
             break;
         case TERM: 
             if (out) {
-                pos += sprintf(out+pos, "(%i/%i)*", ex->num, ex->den);
+                pos += sprintf(out+pos, "(%i/%i)*", ex->factor.num, ex->factor.den);
                 pos += str_expr(out+pos, ex->arg1, gens);
             }
             else {
-                pos += snprintf(NULL, 0, "(%i/%i)*", ex->num, ex->den)
+                pos += snprintf(NULL, 0, "(%i/%i)*", ex->factor.num, ex->factor.den)
                        + str_expr(NULL, ex->arg1, gens);
             }
             break;
@@ -374,26 +458,26 @@ void print_expr(expr_t* ex, char* gens) {
 
 
 
-static inline void check_for_divisibility_by_int(INTEGER p, int q, INTEGER d) {
+static inline void check_for_divisibility_by_int(INTEGER p, int q, INTEGER d, char *s) {
     if (q*d!=p) {
         int q1 = (q>0?q:-q)/gcd(p,q);
-        fprintf(stderr, "ERROR: dividend not divisble by %i\n", q1);
+        fprintf(stderr, "ERROR: dividend not divisble by %i %s\n", q1, s);
         exit(EXIT_FAILURE);
     }
 }
 
-static inline void check_for_divisibility_by_long_int(INTEGER p, long int q, INTEGER d) {
+static inline void check_for_divisibility_by_long_int(INTEGER p, long int q, INTEGER d, char *s) {
     if (q*d!=p) {
         long int q1 = (q>0?q:-q)/gcd(p,q);
-        fprintf(stderr, "ERROR: dividend not divisble by %li\n", q1);
+        fprintf(stderr, "ERROR: dividend not divisble by %li %s\n", q1, s);
         exit(EXIT_FAILURE);
     }
 }
 
-static inline void check_for_divisibility_by_INTEGER(INTEGER p, INTEGER q, INTEGER d) {
+static inline void check_for_divisibility_by_INTEGER(INTEGER p, INTEGER q, INTEGER d, char *s) {
     if (q*d!=p) {
         long int q1 = (q>0?q:-q)/gcd(p,q);
-        fprintf(stderr, "ERROR: dividend not divisble by %li\n", q1);
+        fprintf(stderr, "ERROR: dividend not divisble by %li %s\n", q1, s);
         exit(EXIT_FAILURE);
     }
 }
@@ -403,6 +487,8 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
         return 0;
     }
     switch (ex->type) {
+        case ZERO_ELEMENT: 
+            return 0;
         case IDENTITY: 
             for (int j=0; j<m; j++) {
                 y[j] = v[j];
@@ -411,7 +497,7 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
         case GENERATOR: {
             int m1=0;
             for (int j=0; j<m-1; j++) {
-                if (w[j]==ex->num) {
+                if (w[j]==ex->gen) {
                     y[j] = v[j+1];
                     if (y[j]!=0) {
                         m1 = j+1;
@@ -470,7 +556,13 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
             }
             } 
         case PRODUCT: {
-            int md = ex->arg1->mindeg;
+            int md;
+            if (ex->arg1->const_term.num!=0) {
+                md = 0;
+            }
+            else {
+                md = ex->arg1->mindeg;
+            }
             if (md>=m) {
                 return 0;
             }
@@ -491,17 +583,17 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
             return m1;
             }
         case TERM: { 
-            int p = ex->num;
+            int p = ex->factor.num;
             for (int j=0; j<m; j++) {
                 y[j] = p*v[j];
             }
             int m1 = phi(y, m, w, ex->arg1, y);
-            int q = ex->den;
+            int q = ex->factor.den;
             if (q!=1) {
                 for (int j=0; j<m1; j++) {
                     INTEGER h = y[j];
                     INTEGER d = h/q;
-                    check_for_divisibility_by_int(h, q, d);
+                    check_for_divisibility_by_int(h, q, d, "in phi()/TERM");
                     y[j] = d;
                 }
             }
@@ -523,7 +615,7 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
                     long int f = FACTORIAL[k]; /* fits into long int => faster execution expected */
                     for (int j=0; j<m1; j++) {
                         INTEGER d = z[j]/f;
-                        check_for_divisibility_by_long_int(z[j], f, d);
+                        check_for_divisibility_by_long_int(z[j], f, d, "in phi()/EXPONENTIAL");
                         y[j] += d;
                     }
                 }
@@ -531,7 +623,7 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
                     INTEGER f = FACTORIAL[k];
                     for (int j=0; j<m1; j++) {
                         INTEGER d = z[j]/f;
-                        check_for_divisibility_by_INTEGER(z[j], f, d);
+                        check_for_divisibility_by_INTEGER(z[j], f, d, "in phi()/EXPONENTIAL");
                         y[j] += d;
                     }
                 }
@@ -546,15 +638,12 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
             } 
             INTEGER h[m];
             int m1 = m; 
-            int mnew = m;
+            int mret = m;
             for (int k=1; k<m; k++) {
                 for (int j=0; j<m1; j++) {
                     h[j] = z[j];
                 }
                 int m2 = phi(z, m1, w, ex->arg1, z);
-                if (k==1) {
-                    mnew = m2;
-                }
                 int m3 = 0;
                 for (int j=0; j<m2; j++) {
                     z[j] -= h[j];
@@ -568,18 +657,21 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
                         m3 = j+1;
                     }
                 }
+                if (k==1) {
+                    mret = m3;
+                }
                 if (m3==0) {
-                    return mnew;
+                    return mret;
                 }
                 m1 = m3;
                 int f = k%2 ? +k : -k; /* f = (-1)^(k+1)*k */ 
                 for (int j=0; j<m1; j++) {
                     INTEGER d = z[j]/f;
-                    check_for_divisibility_by_int(z[j], f, d);
+                    check_for_divisibility_by_int(z[j], f, d, "in phi()/LOGARITHM");
                     y[j] += d;
                 }
             }
-            return mnew;
+            return mret;
             }
         default:
             fprintf(stderr, "ERROR: unknown expr type %i\n", ex->type);
@@ -609,6 +701,11 @@ static inline INTEGER lcm1(INTEGER a, INTEGER b) {
 
 static void delta(INTEGER d[], int N, expr_t* ex) {
     switch (ex->type) {
+        case ZERO_ELEMENT:
+            for (int n=0; n<=N; n++) {
+                d[n] = 0;
+            }
+            return;
         case GENERATOR:
             d[0] = 0;
             if (N>=1) {
@@ -638,7 +735,7 @@ static void delta(INTEGER d[], int N, expr_t* ex) {
             return;
             }
         case TERM:
-            if (ex->num==0) {
+            if (ex->factor.num==0) {
                 for (int n=0; n<=N; n++) {
                     d[n] = 0;
                 }
@@ -646,8 +743,8 @@ static void delta(INTEGER d[], int N, expr_t* ex) {
             }
             delta(d, N, ex->arg1);
             for (int n=0; n<=N; n++) {
-                INTEGER x = ex->den*d[n];
-                d[n] = x/gcd(x, ex->num);
+                INTEGER x = ex->factor.den*d[n];
+                d[n] = x/gcd(x, ex->factor.num);
             }
             return;
         case PRODUCT: {
@@ -748,4 +845,40 @@ INTEGER common_denominator(int n, expr_t* ex) {
     return h;
 }
 
+
+static int is_product_of_exponentials_of_lie_elements(expr_t *ex) {
+    return ((ex->type==EXPONENTIAL)&&is_lie_element(ex->arg1))
+        || ((ex->type==PRODUCT)&&is_product_of_exponentials_of_lie_elements(ex->arg1)
+                               &&is_product_of_exponentials_of_lie_elements(ex->arg1));
+}
+
+
+int is_lie_element(expr_t* ex) {
+    switch (ex->type) {
+        case ZERO_ELEMENT:
+        case GENERATOR:
+                return 1;
+        case SUM:
+        case DIFFERENCE: /* Commutator */
+                if ((ex->arg1->type==PRODUCT)&&(ex->arg1->type==PRODUCT)
+                    &&(ex->arg1->arg1==ex->arg2->arg2)
+                    &&(ex->arg1->arg2==ex->arg2->arg1)
+                    &&is_lie_element(ex->arg1->arg1)
+                    &&is_lie_element(ex->arg1->arg2))
+                    return 1;
+                else {
+                    return is_lie_element(ex->arg1) && is_lie_element(ex->arg2);
+                }
+        case LOGARITHM:
+                return is_product_of_exponentials_of_lie_elements(ex->arg1);
+        case NEGATION:
+        case TERM:
+                return is_lie_element(ex->arg1);
+        case IDENTITY:
+        case PRODUCT:
+        case EXPONENTIAL:
+        default:
+            return 0;
+    }
+}
 

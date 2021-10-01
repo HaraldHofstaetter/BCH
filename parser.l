@@ -8,20 +8,17 @@ rational {natural}|({natural}\/{natural})
 %{
 #include"bch.h"
 
-typedef struct {
-    int num;
-    int den;
-} rational_t;
-
 #include"parser.tab.h"
 
-static rational_t parse_rational(char *s);
+static rat_t parse_rational(char *s);
 
 %}
 
 %%
 
 [a-zA-Z]   { yylval.gen = *yytext; return GEN; }
+"Id"       { return ID;}
+"Zero"     { return ZERO;}
 "log"      { return LOG;}
 "exp"      { return EXP;}
 [\+\-\*\(\)\[\],]  { return yytext[0]; }
@@ -31,9 +28,9 @@ static rational_t parse_rational(char *s);
 
 %%
 
-static rational_t parse_rational(char *s)
+static rat_t parse_rational(char *s)
 {
-    rational_t r;
+    rat_t r;
     char *t = s;
     while ((*t!='/')&&(*t!='\0')) { t++; }
     if (*t=='/') {

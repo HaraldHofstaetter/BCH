@@ -118,9 +118,9 @@ int main(int argc, char*argv[]) {
             break;
         case 5: /* log(exp(B/6)*exp(A/2)*exp(2/3*B+1/72*[B,[A,B]])*exp(A/2)*exp(B/6)) */
             ex = logarithm(product(product(product(product(
-                    exponential(term(1, 6, B)), exponential(term(1, 2, A))),
-                    exponential(sum(term(2, 3, B), term(1, 72, commutator(B, commutator(A, B)))))), 
-                    exponential(term(1, 2, A))), exponential(term(1, 6, B))));
+                    exponential(term(rat(1, 6), B)), exponential(term(rat(1, 2), A))),
+                    exponential(sum(term(rat(2, 3), B), term(rat(1, 72), commutator(B, commutator(A, B)))))), 
+                    exponential(term(rat(1, 2), A))), exponential(term(rat(1, 6), B))));
             LS = lie_series(2, ex, N, basis); 
             break;
         case 6: /* log(exp(A)*exp(B)) computed in Lie algebra over 3 generators */
@@ -132,8 +132,8 @@ int main(int argc, char*argv[]) {
             LS = lie_series(2, ex, N, basis); 
             break;
         case 8: /* same as case 1 but without specific optimizations */
-            ex = logarithm(product(product(exponential(term(1, 2, A)), exponential(B)), 
-                                   exponential(term(1, 2, A))));
+            ex = logarithm(product(product(exponential(term(rat(1, 2), A)), exponential(B)), 
+                                   exponential(term(rat(1, 2), A))));
             LS = lie_series(2, ex, N, basis); 
             break;
         }
@@ -148,6 +148,11 @@ int main(int argc, char*argv[]) {
              */
             exit(EXIT_FAILURE);
         }
+        if (!is_lie_element(ex)) {
+            fprintf(stderr, "ERROR: expression is not a Lie element.\n");
+            exit(EXIT_FAILURE);
+        }
+
         LS = lie_series(num_generators, ex, N, basis);
     }
 

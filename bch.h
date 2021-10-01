@@ -84,26 +84,41 @@ enum {
 void print_table(lie_series_t *LS, int what, char *generators);
 
 
+typedef struct rat_t {
+    int num;
+    int den;
+} rat_t;
 
-enum expr_type { UNDEFINED, IDENTITY, GENERATOR, SUM, DIFFERENCE, PRODUCT, 
+rat_t rat(int num, int den);
+rat_t rat_add(rat_t a, rat_t b);
+rat_t rat_sub(rat_t a, rat_t b);
+rat_t rat_mul(rat_t a, rat_t b);
+rat_t rat_div(rat_t a, rat_t b);
+rat_t rat_neg(rat_t a);
+
+
+enum expr_type { ZERO_ELEMENT, IDENTITY, GENERATOR, SUM, DIFFERENCE, PRODUCT, 
                  NEGATION, TERM, EXPONENTIAL, LOGARITHM };
 
 typedef struct expr_t {
     enum expr_type type;
-    struct expr_t *arg1;
-    struct expr_t *arg2;
-    int num;
-    int den;
-    int mindeg;
+    struct expr_t *arg1;  /* pointer to subexpression */
+    struct expr_t *arg2;  /* pointer to subexpression */
+    int gen;              /* for expr_type GENERATOR */
+    rat_t factor;         /* for expr_type TERM */
+    rat_t const_term;
+    int mindeg; /* minimal degree of nonconstant terms */
 } expr_t;
 
+expr_t* zero_element(void);
+expr_t* identity(void);
 expr_t* identity(void);
 expr_t* generator(uint8_t n);
 expr_t* sum(expr_t* arg1, expr_t* arg2);
 expr_t* difference(expr_t* arg1, expr_t* arg2);
 expr_t* product(expr_t* arg1, expr_t* arg2);
 expr_t* negation(expr_t* arg);
-expr_t* term(int num, int den, expr_t* arg);
+expr_t* term(rat_t factor, expr_t* arg);
 expr_t* exponential(expr_t* arg);
 expr_t* logarithm(expr_t* arg);
 expr_t* commutator(expr_t* arg1, expr_t* arg2);
@@ -116,6 +131,8 @@ expr_t* parse(char *inp, char *generators, int *num_generators);
 
 int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]);
 INTEGER common_denominator(int n, expr_t* ex);
+int is_lie_element(expr_t* ex);
+
 
 lie_series_t* lie_series(int K, expr_t* expr, int N, int basis);
 
