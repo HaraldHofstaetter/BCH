@@ -263,7 +263,7 @@ expr_t* negation(expr_t* arg) {
     return ex;
 }
 
-expr_t* term(rat_t factor, expr_t* arg) {
+expr_t* term_from_rat(rat_t factor, expr_t* arg) {
     if (factor.den==0) { 
         fprintf(stderr, "ERROR: zero denominator\n");
         exit(EXIT_FAILURE);
@@ -280,6 +280,13 @@ expr_t* term(rat_t factor, expr_t* arg) {
          ex->mindeg = arg->mindeg;
     }
     return ex;
+}
+
+expr_t* term(int num, int den, expr_t* arg) {
+    rat_t r;
+    r.num = num;
+    r.den = den;
+    return term_from_rat(r, arg);
 }
 
 expr_t* exponential(expr_t* arg) {

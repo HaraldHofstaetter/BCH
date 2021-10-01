@@ -47,8 +47,8 @@ expr: GEN  { if (gens_tab[(size_t) $1]==-1) {
     | expr '+' expr  { $$ = sum($1, $3); }
     | expr '-' expr  { $$ = difference($1, $3); } 
     | expr '*' expr  { $$ = product($1, $3); } 
- /* | '-' RAT '*' expr   { $$ = term(rat_neg($2), $4); } */
-    | RAT '*' expr   { $$ = term($1, $3); } 
+ /* | '-' RAT '*' expr   { $$ = term_from_rat(rat_neg($2), $4); } */
+    | RAT '*' expr   { $$ = term_from_rat($1, $3); } 
     | '-' expr       { $$ = negation($2); } 
     | '+' expr       { $$ = $2; }
     | LOG '(' expr ')'   { $$ = logarithm($3); } 
