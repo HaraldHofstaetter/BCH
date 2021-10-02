@@ -866,6 +866,7 @@ int is_lie_element(expr_t* ex) {
         case GENERATOR:
                 return 1;
         case SUM:
+                return is_lie_element(ex->arg1) && is_lie_element(ex->arg2);
         case DIFFERENCE: /* Commutator */
                 if ((ex->arg1->type==PRODUCT)&&(ex->arg1->type==PRODUCT)
                     &&(ex->arg1->arg1==ex->arg2->arg2)
