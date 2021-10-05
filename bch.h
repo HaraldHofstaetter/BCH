@@ -84,21 +84,13 @@ enum {
 void print_table(lie_series_t *LS, int what, char *generators);
 
 
+enum expr_type { ZERO_ELEMENT, IDENTITY, GENERATOR, SUM, DIFFERENCE, PRODUCT, 
+                 NEGATION, TERM, EXPONENTIAL, LOGARITHM };
+
 typedef struct rat_t {
     int num;
     int den;
 } rat_t;
-
-rat_t rat(int num, int den);
-rat_t rat_add(rat_t a, rat_t b);
-rat_t rat_sub(rat_t a, rat_t b);
-rat_t rat_mul(rat_t a, rat_t b);
-rat_t rat_div(rat_t a, rat_t b);
-rat_t rat_neg(rat_t a);
-
-
-enum expr_type { ZERO_ELEMENT, IDENTITY, GENERATOR, SUM, DIFFERENCE, PRODUCT, 
-                 NEGATION, TERM, EXPONENTIAL, LOGARITHM };
 
 typedef struct expr_t {
     enum expr_type type;
@@ -119,7 +111,6 @@ expr_t* difference(expr_t* arg1, expr_t* arg2);
 expr_t* product(expr_t* arg1, expr_t* arg2);
 expr_t* negation(expr_t* arg);
 expr_t* term(int num, int den, expr_t* arg);
-expr_t* term_from_rat(rat_t factor, expr_t* arg);
 expr_t* exponential(expr_t* arg);
 expr_t* logarithm(expr_t* arg);
 expr_t* commutator(expr_t* arg1, expr_t* arg2);
@@ -153,6 +144,15 @@ void free_goldberg(goldberg_t *G);
 
 
 /**********************************************/
+/* parse.y, phi.c: */
+rat_t rat(int num, int den);
+rat_t rat_add(rat_t a, rat_t b);
+rat_t rat_sub(rat_t a, rat_t b);
+rat_t rat_mul(rat_t a, rat_t b);
+rat_t rat_div(rat_t a, rat_t b);
+rat_t rat_neg(rat_t a);
+expr_t* term_from_rat(rat_t factor, expr_t* arg);
+
 /* lie_series.c: */
 double tic(void); 
 double toc(double t0);
