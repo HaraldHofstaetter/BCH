@@ -641,7 +641,7 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
             INTEGER z[m];
             for (int j=0; j<m; j++) {
                 z[j] = v[j];
-                y[j] = v[j];                    
+                y[j] = 0;                     
             } 
             INTEGER h[m];
             int m1 = m; 
