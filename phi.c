@@ -323,8 +323,8 @@ expr_t* commutator(expr_t* arg1, expr_t* arg2) {
 
 void free_expr(expr_t* ex) {
     if (ex) {
-        free(ex->arg1);
-        free(ex->arg2);
+        if (ex->arg1) free_expr(ex->arg1);
+        if (ex->arg2) free_expr(ex->arg2);
         free(ex);
     }
 }   
