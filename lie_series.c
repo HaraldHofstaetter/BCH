@@ -255,7 +255,7 @@ lie_series_t* symBCH(int N, int basis) {
     }
     for (int i=0; i<LS->dim; i++) {
         int nA = degree_of_generator(LS, i, 0);
-        LS->c[i] <<= N-1-nA; /* c[i] = c[i]*2^(N-1-nA) */
+        LS->c[i] *= (1<<(N-1-nA)); /* c[i] = c[i]*2^(N-1-nA) */
     }
     LS->denom <<= N-1; /* denom = denom*2^(N-1) */
     if (get_verbosity_level()>=1) {
