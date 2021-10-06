@@ -188,10 +188,7 @@ int main(int argc, char*argv[]) {
     }
 
     free_lie_series(LS);
-    free_expr(A);
-    free_expr(B);
-    free_expr(C);
-    free_expr(ex);
+    free_all_expressions();
 
     return EXIT_SUCCESS;
 }

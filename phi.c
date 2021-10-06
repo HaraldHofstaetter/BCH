@@ -184,8 +184,41 @@ void print_RATIONAL(INTEGER p, INTEGER q) {
     print_INTEGER(q/d);
 }
 
+
+typedef struct dealloc_list_t {
+    void *p;
+    struct dealloc_list_t *next;
+} dealloc_list_t;
+
+
+static dealloc_list_t *expr_dealloc_list = NULL;
+static int free_all_expressions_already_registered = 0;
+
+
+void free_all_expressions(void) {
+    dealloc_list_t *h = expr_dealloc_list;
+    while (h) {
+        dealloc_list_t *h0 = h;
+        h = h->next;
+        free(h0->p);
+        free(h0);
+    }
+    expr_dealloc_list = NULL;
+}
+
+
 expr_t* zero_element(void) {
     expr_t *ex = malloc(sizeof(expr_t));
+
+    if (free_all_expressions_already_registered==0) {
+        atexit(free_all_expressions);
+        free_all_expressions_already_registered = 1;
+    }
+    dealloc_list_t *h = malloc(sizeof(dealloc_list_t));
+    h->p = ex;
+    h->next = expr_dealloc_list;
+    expr_dealloc_list = h;
+
     ex->type = ZERO_ELEMENT;
     ex->arg1 = NULL;
     ex->arg2 = NULL;
@@ -320,14 +353,6 @@ expr_t* commutator(expr_t* arg1, expr_t* arg2) {
                       product(arg2, arg1));
 }
 
-
-void free_expr(expr_t* ex) {
-    if (ex) {
-        if (ex->arg1) free_expr(ex->arg1);
-        if (ex->arg2) free_expr(ex->arg2);
-        free(ex);
-    }
-}   
 
 int str_expr(char *out, expr_t* ex, char* gens) {
     int pos = 0;

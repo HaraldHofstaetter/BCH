@@ -117,7 +117,7 @@ expr_t* commutator(expr_t* arg1, expr_t* arg2);
 
 int str_expr(char *out, expr_t* ex, char *gens);
 void print_expr(expr_t* ex, char *gens);
-void free_expr(expr_t* ex);
+void free_all_expressions(void);
 
 expr_t* parse(char *inp, char *generators, int *num_generators);
 

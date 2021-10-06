@@ -63,9 +63,6 @@ expr: GEN  { if (gens_tab[(size_t) $1]==-1) {
 void yyerror(char *s) 
 {
     fprintf(stderr, "ERROR: while parsing expression: %s\n", s); 
-    if (result!=0) {
-        free_expr(result);
-    }
     result = 0; 
 } 
 

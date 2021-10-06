@@ -1663,9 +1663,7 @@ yyreturn:
 void yyerror(char *s) 
 {
     fprintf(stderr, "ERROR: while parsing expression: %s\n", s); 
-    if (result!=0) {
-        free_expr(result);
-    }
+    free_all_expressions();
     result = 0; 
 } 
 

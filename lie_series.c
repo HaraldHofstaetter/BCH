@@ -264,9 +264,7 @@ lie_series_t* symBCH(int N, int basis) {
             fflush(stdout);
         }
     }
-    free_expr(halfA);
-    free_expr(B);
-    free_expr(expr);
+    free_all_expressions();
     if (VERBOSITY_LEVEL>=1) {
         double t1 = toc(t0);
         printf("#total time=%g sec\n", t1);
