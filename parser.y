@@ -1,5 +1,6 @@
 %{
 #include<stdio.h>
+#include <stdlib.h> /* qsort */
 
 #include"bch.h" 
 
@@ -35,13 +36,7 @@ static expr_t* result;
 
 line: expr END { result = $1; YYACCEPT; }
 
-expr: GEN  { if (gens_tab[(size_t) $1]==-1) {
-                 gens_tab[(size_t) $1] = num_gens;
-                 gens[num_gens] = $1;
-                 num_gens++;
-              }
-              $$ = generator(gens_tab[(size_t) $1]); 
-           }
+expr: GEN  { $$ = generator(gens_tab[(size_t) $1]); }
     | ZERO { $$ = zero_element(); }
     | ID   { $$ = identity(); }
     | expr '+' expr  { $$ = sum($1, $3); }
@@ -72,6 +67,15 @@ typedef struct yy_buffer_state * YY_BUFFER_STATE;
 extern YY_BUFFER_STATE yy_scan_string(char * str);
 extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 
+
+static int compare_chars(const void *a, const void *b)
+{
+  const char *da = (const char *) a;
+  const char *db = (const char *) b;
+  return (*da > *db) - (*da < *db);
+}
+
+
 expr_t* parse(char *inp, char *generators, int *num_generators) {
     for (int i=0; i<256; i++) {
         gens_tab[i] = -1;
@@ -80,6 +84,31 @@ expr_t* parse(char *inp, char *generators, int *num_generators) {
     result = 0;
     gens = generators;
 
+    /* Pass 1: determine all generator symbols in input string*/
+    YY_BUFFER_STATE buffer0 = yy_scan_string(inp);
+    int tok;
+    while ((tok = yylex())) {
+        if (tok == END) {
+            break;
+        }
+        if (tok == GEN) {
+            if (gens_tab[(size_t) yylval.gen]==-1) {
+                 gens_tab[(size_t) yylval.gen] = num_gens;
+                 gens[num_gens] = yylval.gen;
+                 num_gens++;
+            }
+        }
+    }
+    yy_delete_buffer(buffer0);
+
+    /* sort generator symbols */
+    qsort(gens, num_gens, sizeof(char), compare_chars);
+    for (int i=0; i<num_gens; i++) {
+        gens_tab[(size_t) gens[i]] = i;
+    }
+    gens[num_gens] = '\0';
+    
+    /* Pass 2: parse input string */
     YY_BUFFER_STATE buffer = yy_scan_string(inp);
     yyparse();     
     yy_delete_buffer(buffer);
@@ -88,34 +117,7 @@ expr_t* parse(char *inp, char *generators, int *num_generators) {
         return 0;
     }
 
-    gens[num_gens] = '\0';
     *num_generators = num_gens;
     return result;
 }
-
-/*
-int main(void)  // main() for testing only
-{  
-    while(1) {
-    
-        char *inp = 0;
-        size_t len = 0;
-        getline(&inp, &len, stdin);
-        
-        char generators[56];
-        int num_generators;
-        expr_t* expr = parse(inp, generators, &num_generators);
-        free(inp);
-    
-        if (expr!=0) { 
-            printf("generators = %s # = %d\n", generators, num_generators); 
-            printf("expression = "); print_expr(expr, generators); printf("\n");
-            free_expr(expr);
-         } 
-    }
-
-    return 0; 
-} 
-*/
-
 

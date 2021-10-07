@@ -69,6 +69,7 @@
 #line 1 "parser.y"
 
 #include<stdio.h>
+#include <stdlib.h> /* qsort */
 
 #include"bch.h" 
 
@@ -81,7 +82,7 @@ static int num_gens;
 static expr_t* result;
 
 
-#line 85 "parser.tab.c"
+#line 86 "parser.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -143,13 +144,13 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 16 "parser.y"
+#line 17 "parser.y"
      
     char gen;
     rat_t rat;
     expr_t * expr;
 
-#line 153 "parser.tab.c"
+#line 154 "parser.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -525,8 +526,8 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    36,    36,    38,    45,    46,    47,    48,    49,    51,
-      52,    53,    54,    55,    56,    57
+       0,    37,    37,    39,    40,    41,    42,    43,    44,    46,
+      47,    48,    49,    50,    51,    52
 };
 #endif
 
@@ -1334,97 +1335,91 @@ yyreduce:
   switch (yyn)
     {
   case 2:
-#line 36 "parser.y"
+#line 37 "parser.y"
                { result = (yyvsp[-1].expr); YYACCEPT; }
-#line 1340 "parser.tab.c"
+#line 1341 "parser.tab.c"
     break;
 
   case 3:
-#line 38 "parser.y"
-           { if (gens_tab[(size_t) (yyvsp[0].gen)]==-1) {
-                 gens_tab[(size_t) (yyvsp[0].gen)] = num_gens;
-                 gens[num_gens] = (yyvsp[0].gen);
-                 num_gens++;
-              }
-              (yyval.expr) = generator(gens_tab[(size_t) (yyvsp[0].gen)]); 
-           }
-#line 1352 "parser.tab.c"
+#line 39 "parser.y"
+           { (yyval.expr) = generator(gens_tab[(size_t) (yyvsp[0].gen)]); }
+#line 1347 "parser.tab.c"
     break;
 
   case 4:
-#line 45 "parser.y"
+#line 40 "parser.y"
            { (yyval.expr) = zero_element(); }
-#line 1358 "parser.tab.c"
+#line 1353 "parser.tab.c"
     break;
 
   case 5:
-#line 46 "parser.y"
+#line 41 "parser.y"
            { (yyval.expr) = identity(); }
-#line 1364 "parser.tab.c"
+#line 1359 "parser.tab.c"
     break;
 
   case 6:
-#line 47 "parser.y"
+#line 42 "parser.y"
                      { (yyval.expr) = sum((yyvsp[-2].expr), (yyvsp[0].expr)); }
-#line 1370 "parser.tab.c"
+#line 1365 "parser.tab.c"
     break;
 
   case 7:
-#line 48 "parser.y"
+#line 43 "parser.y"
                      { (yyval.expr) = difference((yyvsp[-2].expr), (yyvsp[0].expr)); }
-#line 1376 "parser.tab.c"
+#line 1371 "parser.tab.c"
     break;
 
   case 8:
-#line 49 "parser.y"
+#line 44 "parser.y"
                      { (yyval.expr) = product((yyvsp[-2].expr), (yyvsp[0].expr)); }
-#line 1382 "parser.tab.c"
+#line 1377 "parser.tab.c"
     break;
 
   case 9:
-#line 51 "parser.y"
+#line 46 "parser.y"
                      { (yyval.expr) = term_from_rat((yyvsp[-2].rat), (yyvsp[0].expr)); }
-#line 1388 "parser.tab.c"
+#line 1383 "parser.tab.c"
     break;
 
   case 10:
-#line 52 "parser.y"
+#line 47 "parser.y"
                      { (yyval.expr) = negation((yyvsp[0].expr)); }
-#line 1394 "parser.tab.c"
+#line 1389 "parser.tab.c"
     break;
 
   case 11:
-#line 53 "parser.y"
+#line 48 "parser.y"
                      { (yyval.expr) = (yyvsp[0].expr); }
-#line 1400 "parser.tab.c"
+#line 1395 "parser.tab.c"
     break;
 
   case 12:
-#line 54 "parser.y"
+#line 49 "parser.y"
                          { (yyval.expr) = logarithm((yyvsp[-1].expr)); }
-#line 1406 "parser.tab.c"
+#line 1401 "parser.tab.c"
     break;
 
   case 13:
-#line 55 "parser.y"
+#line 50 "parser.y"
                          { (yyval.expr) = exponential((yyvsp[-1].expr)); }
-#line 1412 "parser.tab.c"
+#line 1407 "parser.tab.c"
     break;
 
   case 14:
-#line 56 "parser.y"
+#line 51 "parser.y"
                                      { (yyval.expr) = commutator((yyvsp[-3].expr), (yyvsp[-1].expr)); }
-#line 1418 "parser.tab.c"
+#line 1413 "parser.tab.c"
     break;
 
   case 15:
-#line 57 "parser.y"
+#line 52 "parser.y"
                          { (yyval.expr) = (yyvsp[-1].expr); }
-#line 1424 "parser.tab.c"
+#line 1419 "parser.tab.c"
     break;
 
 
-#line 1428 "parser.tab.c"
+#line 1423 "parser.tab.c"
 
       default: break;
     }
@@ -1656,14 +1651,13 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 60 "parser.y"
+#line 55 "parser.y"
 
 
 
 void yyerror(char *s) 
 {
     fprintf(stderr, "ERROR: while parsing expression: %s\n", s); 
-    free_all_expressions();
     result = 0; 
 } 
 
@@ -1673,6 +1667,15 @@ typedef struct yy_buffer_state * YY_BUFFER_STATE;
 extern YY_BUFFER_STATE yy_scan_string(char * str);
 extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 
+
+static int compare_chars(const void *a, const void *b)
+{
+  const char *da = (const char *) a;
+  const char *db = (const char *) b;
+  return (*da > *db) - (*da < *db);
+}
+
+
 expr_t* parse(char *inp, char *generators, int *num_generators) {
     for (int i=0; i<256; i++) {
         gens_tab[i] = -1;
@@ -1681,6 +1684,31 @@ expr_t* parse(char *inp, char *generators, int *num_generators) {
     result = 0;
     gens = generators;
 
+    /* Pass 1: determine all generator symbols in input string*/
+    YY_BUFFER_STATE buffer0 = yy_scan_string(inp);
+    int tok;
+    while ((tok = yylex())) {
+        if (tok == END) {
+            break;
+        }
+        if (tok == GEN) {
+            if (gens_tab[(size_t) yylval.gen]==-1) {
+                 gens_tab[(size_t) yylval.gen] = num_gens;
+                 gens[num_gens] = yylval.gen;
+                 num_gens++;
+            }
+        }
+    }
+    yy_delete_buffer(buffer0);
+
+    /* sort generator symbols */
+    qsort(gens, num_gens, sizeof(char), compare_chars);
+    for (int i=0; i<num_gens; i++) {
+        gens_tab[(size_t) gens[i]] = i;
+    }
+    gens[num_gens] = '\0';
+    
+    /* Pass 2: parse input string */
     YY_BUFFER_STATE buffer = yy_scan_string(inp);
     yyparse();     
     yy_delete_buffer(buffer);
@@ -1689,34 +1717,7 @@ expr_t* parse(char *inp, char *generators, int *num_generators) {
         return 0;
     }
 
-    gens[num_gens] = '\0';
     *num_generators = num_gens;
     return result;
 }
-
-/*
-int main(void)  // main() for testing only
-{  
-    while(1) {
-    
-        char *inp = 0;
-        size_t len = 0;
-        getline(&inp, &len, stdin);
-        
-        char generators[56];
-        int num_generators;
-        expr_t* expr = parse(inp, generators, &num_generators);
-        free(inp);
-    
-        if (expr!=0) { 
-            printf("generators = %s # = %d\n", generators, num_generators); 
-            printf("expression = "); print_expr(expr, generators); printf("\n");
-            free_expr(expr);
-         } 
-    }
-
-    return 0; 
-} 
-*/
-
 
