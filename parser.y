@@ -106,7 +106,6 @@ expr_t* parse(char *inp, char *generators, int *num_generators) {
     for (int i=0; i<num_gens; i++) {
         gens_tab[(size_t) gens[i]] = i;
     }
-    gens[num_gens] = '\0';
     
     /* Pass 2: parse input string */
     YY_BUFFER_STATE buffer = yy_scan_string(inp);
