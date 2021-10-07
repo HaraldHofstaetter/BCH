@@ -3,7 +3,7 @@ all: bch
 CC = gcc 
 #CC = clang 
 
-CFLAGS = -O3 -fPIC -march=native  -fopenmp  -Wall 
+CFLAGS = -O3 -fPIC -march=native -fopenmp -Wall 
 #CFLAGS = -O3 -fPIC -march=native -fopenmp -fsanitize=signed-integer-overflow -fsanitize=undefined -Wall 
 
 #CFLAGS = -g -fPIC -Wall 
