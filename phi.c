@@ -498,18 +498,18 @@ static inline void check_for_divisibility_by_int(INTEGER p, int q, INTEGER d, ch
     }
 }
 
-static inline void check_for_divisibility_by_long_int(INTEGER p, long int q, INTEGER d, char *s) {
+static inline void check_for_divisibility_by_int64(INTEGER p, int64_t q, INTEGER d, char *s) {
     if (q*d!=p) {
-        long int q1 = (q>0?q:-q)/gcd(p,q);
-        fprintf(stderr, "ERROR: dividend not divisble by %li %s\n", q1, s);
+        int64_t q1 = (q>0?q:-q)/gcd(p,q);
+        fprintf(stderr, "ERROR: dividend not divisble by %" PRId64 " %s\n", q1, s);
         exit(EXIT_FAILURE);
     }
 }
 
 static inline void check_for_divisibility_by_INTEGER(INTEGER p, INTEGER q, INTEGER d, char *s) {
     if (q*d!=p) {
-        long int q1 = (q>0?q:-q)/gcd(p,q);
-        fprintf(stderr, "ERROR: dividend not divisble by %li %s\n", q1, s);
+        int64_t q1 = (q>0?q:-q)/gcd(p,q);
+        fprintf(stderr, "ERROR: dividend not divisble by %" PRId64 " %s\n", q1, s);
         exit(EXIT_FAILURE);
     }
 }
@@ -644,10 +644,10 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
                     return m;
                 }
                 if (k<=20) {
-                    long int f = FACTORIAL[k]; /* fits into long int => faster execution expected */
+                    int64_t f = FACTORIAL[k]; /* fits into int64 => faster execution expected */
                     for (int j=0; j<m1; j++) {
                         INTEGER d = z[j]/f;
-                        check_for_divisibility_by_long_int(z[j], f, d, "in phi()/EXPONENTIAL");
+                        check_for_divisibility_by_int64(z[j], f, d, "in phi()/EXPONENTIAL");
                         y[j] += d;
                     }
                 }
