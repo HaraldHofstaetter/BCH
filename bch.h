@@ -145,7 +145,7 @@ void free_goldberg(goldberg_t *G);
 
 
 /**********************************************/
-/* parse.y, phi.c: */
+/* parse.y, expr.c: */
 rat_t rat(int num, int den);
 rat_t rat_add(rat_t a, rat_t b);
 rat_t rat_sub(rat_t a, rat_t b);
