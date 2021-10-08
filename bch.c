@@ -85,6 +85,8 @@ int main(int argc, char*argv[]) {
     }
 
     int basis = get_arg(argc, argv, "basis", 0, 0, 5);
+    int table_output = get_arg(argc, argv, "table_output", -1, 0, 1);
+    char *generators = get_string_arg(argc, argv, "generators", default_generators);
 
     expr_t *A = generator(0);
     expr_t *B = generator(1);
@@ -156,21 +158,24 @@ int main(int argc, char*argv[]) {
         LS = lie_series(num_generators, ex, N, basis);
     }
 
-    char *g = get_string_arg(argc, argv, "generators", default_generators);
-    if (strlen(g)<LS->K) {
-        fprintf(stderr, "WARNING: expected generators of length %i, got \"%s\"\n", LS->K, g);
-        g = default_generators;
+    if (strlen(generators)<LS->K) {
+        fprintf(stderr, "WARNING: expected generators of length %i, got \"%s\"\n", LS->K, generators);
+        generators = default_generators;
     }
 
-    if ( (get_verbosity_level()>0) || (get_arg(argc, argv, "print_statistics", 0, 0, 1)) ) {
+    if (get_verbosity_level()>0) {
         print_statistics(LS);
         print_statistics_n(LS, N);
     }
 
+    if (table_output==-1) {
+        table_output = LS->dim<=200 ? 0 : 1;
+    }
+
     /* output result: */
-    switch(get_arg(argc, argv, "table_output", LS->dim<=200 ? 0 : 1, 0, 1)) {
+    switch(table_output) {
         case 0:
-            print_lie_series(LS, g);
+            print_lie_series(LS, generators);
             printf("\n");
             break;
         case 1: {
@@ -182,7 +187,7 @@ int main(int argc, char*argv[]) {
                 PRINT_FOLIAGE         *get_arg(argc, argv, "print_foliage",       0, 0, 1) |
                 PRINT_BASIS_ELEMENT   *get_arg(argc, argv, "print_basis_element", 0, 0, 1) |
                 PRINT_COEFFICIENT     *get_arg(argc, argv, "print_coefficient",   1, 0, 1); 
-            print_table(LS, what, g);
+            print_table(LS, what, generators);
             break;
         }
     }
