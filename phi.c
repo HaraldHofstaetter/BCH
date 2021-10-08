@@ -44,7 +44,7 @@ INTEGER FACTORIAL[33] =  {             1,
 static inline void check_for_divisibility_by_int(INTEGER p, int q, INTEGER d, char *s) {
     if (q*d!=p) {
         int q1 = (q>0?q:-q)/gcd_INTEGER(p,q);
-        fprintf(stderr, "ERROR: dividend not divisble by %i %s\n", q1, s);
+        fprintf(stderr, "PANIC: dividend not divisble by %i %s\n", q1, s);
         abort();
     }
 }
@@ -52,7 +52,7 @@ static inline void check_for_divisibility_by_int(INTEGER p, int q, INTEGER d, ch
 static inline void check_for_divisibility_by_int64(INTEGER p, int64_t q, INTEGER d, char *s) {
     if (q*d!=p) {
         int64_t q1 = (q>0?q:-q)/gcd_INTEGER(p,q);
-        fprintf(stderr, "ERROR: dividend not divisble by %" PRId64 " %s\n", q1, s);
+        fprintf(stderr, "PANIC: dividend not divisble by %" PRId64 " %s\n", q1, s);
         abort();
     }
 }
@@ -60,7 +60,7 @@ static inline void check_for_divisibility_by_int64(INTEGER p, int64_t q, INTEGER
 static inline void check_for_divisibility_by_INTEGER(INTEGER p, INTEGER q, INTEGER d, char *s) {
     if (q*d!=p) {
         int64_t q1 = (q>0?q:-q)/gcd_INTEGER(p,q);
-        fprintf(stderr, "ERROR: dividend not divisble by %" PRId64 " %s\n", q1, s);
+        fprintf(stderr, "PANIC: dividend not divisble by %" PRId64 " %s\n", q1, s);
         abort();
     }
 }
@@ -257,7 +257,7 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
             return mret;
             }
         default:
-            fprintf(stderr, "ERROR: unknown expr type %i\n", ex->type);
+            fprintf(stderr, "PANIC: unknown expr type %i\n", ex->type);
             abort();
     }
 }
@@ -350,7 +350,7 @@ static void delta(INTEGER d[], int N, expr_t* ex) {
             INTEGER h1[N+1];
             delta(a, N, ex->arg1);
             if (a[0]!=0) {
-                fprintf(stderr, "ERROR: delta(): exponential expects argument with no constant term\n");
+                fprintf(stderr, "PANIC: delta(): exponential expects argument with no constant term\n");
                 abort();
             }
             for (int n=0; n<=N; n++) {
@@ -379,7 +379,7 @@ static void delta(INTEGER d[], int N, expr_t* ex) {
             INTEGER h1[N+1];
             delta(a, N, ex->arg1);
             if (a[0]!=1) {
-                fprintf(stderr, "ERROR: delta(): logarithm expects argument with constant term 1\n");
+                fprintf(stderr, "PANIC: delta(): logarithm expects argument with constant term 1\n");
                 abort();
             }
             a[0] = 0;
@@ -403,7 +403,7 @@ static void delta(INTEGER d[], int N, expr_t* ex) {
             return;
             }                          
         default:
-            fprintf(stderr, "ERROR: unknown expr type %i\n", ex->type);
+            fprintf(stderr, "PANIC: unknown expr type %i\n", ex->type);
             abort();
     }
 }

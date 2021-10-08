@@ -307,7 +307,7 @@ INTEGER goldberg_coefficient(int n, uint8_t w[], goldberg_t *G) {
             a = c+1;
         }
     }
-    fprintf(stderr, "ERROR: partition not found"); 
+    fprintf(stderr, "PANIC: partition not found"); 
     abort();
 }
 

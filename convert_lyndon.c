@@ -390,7 +390,7 @@ void compute_BCH_terms_of_even_degree_N(lie_series_t *LS) {
             if (k&1) {
                 INTEGER d = LS->c[q]/beta_den[l];
                 if (d*beta_den[l]!=LS->c[q]) {
-                    fprintf(stderr, "ERROR: divisibility check failed in compute_BCH_terms_of_degree_N");
+                    fprintf(stderr, "PANIC: divisibility check failed in compute_BCH_terms_of_degree_N");
                     abort();
                 }
                 LS->c[i] += beta_num[l]*d; 

@@ -20,7 +20,7 @@ static void integer_lu(int n, int64_t *A) {
     for (int k=0; k<n; k++) {
         int64_t s = A[k+n*k];
         if ((s!=1) && (s!=-1)) {
-            fprintf(stderr, "ERROR: integer LU factorization does not exist\n"); 
+            fprintf(stderr, "PANIC: integer LU factorization does not exist\n"); 
             abort();
         }
         for (int i=k+1; i<n; i++) {
@@ -156,12 +156,12 @@ void compute_rightnormed_BCH_terms_of_even_degrees(lie_series_t *LS) {
                         }
                     }
                     if (q>LS->ii[n-k]) {
-                        fprintf(stderr, "ERROR: basis element not found in compute_rightnormed_BCH_terms_of_even_degrees");
+                        fprintf(stderr, "PANIC: basis element not found in compute_rightnormed_BCH_terms_of_even_degrees");
                         abort();
                     }
                     INTEGER d = LS->c[q]/beta_den[l];
                     if (d*beta_den[l]!=LS->c[q]) {
-                        fprintf(stderr, "ERROR: divisibility check failed in compute_rightnormed_BCH_terms_of_even_degrees");
+                        fprintf(stderr, "PANIC: divisibility check failed in compute_rightnormed_BCH_terms_of_even_degrees");
                         abort();
                     }
                     LS->c[i] -= beta_num[l]*d; 

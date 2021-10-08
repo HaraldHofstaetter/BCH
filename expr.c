@@ -106,7 +106,7 @@ static inline int maximum(int a, int b) {
 
 rat_t rat(int num, int den) {
     if (den==0) {
-        fprintf(stderr, "ERROR: rat(): zero denominator\n");
+        fprintf(stderr, "PANIC: rat(): zero denominator\n");
         abort();
     }
     rat_t r;
@@ -456,7 +456,7 @@ int str_expr(char *out, expr_t* ex, char* gens) {
             }
             break;
         default:
-            fprintf(stderr, "ERROR: unknown expr type %i\n", ex->type);
+            fprintf(stderr, "PANIC: unknown expr type %i\n", ex->type);
             abort();
     }
     return pos;
