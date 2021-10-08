@@ -13,7 +13,7 @@ MAKE_SHARED_LIB = $(CC) -fopenmp -shared
 
 SHARED_LIB = libbch.so
 
-OBJS = phi.o lie_series.o lyndon.o rightnormed.o goldberg.o \
+OBJS = phi.o expr.o lie_series.o lyndon.o rightnormed.o goldberg.o \
        convert_lyndon.o convert_rightnormed.o convert_hall.o \
        parser.tab.o lex.yy.o
 
@@ -56,7 +56,7 @@ bch_hall_20.txt: bch
 
 wasm: bch.wasm bch.js bch.html
 
-SRCS_WASM = bch.c phi.c lie_series.c lyndon.c rightnormed.c goldberg.c \
+SRCS_WASM = bch.c phi.c expr.c lie_series.c lyndon.c rightnormed.c goldberg.c \
        convert_lyndon.c convert_rightnormed.c convert_hall.c \
        parser.tab.c lex.yy.c
 

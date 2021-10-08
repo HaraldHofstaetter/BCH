@@ -16,6 +16,7 @@ int str_INTEGER(char *out, INTEGER x);
 int str_RATIONAL(char *out, INTEGER p, INTEGER q);
 void print_INTEGER(INTEGER x);
 void print_RATIONAL(INTEGER p, INTEGER q);
+INTEGER gcd_INTEGER(INTEGER a, INTEGER b);
 
 
 typedef struct lie_series_t {
