@@ -115,7 +115,7 @@ static size_t find_lyndon_word_index(uint32_t *WI, size_t l, size_t r, size_t wi
         }
     }
     fprintf(stderr, "ERROR: Lyndon word index not found: %li\n", wi);
-    exit(EXIT_FAILURE);
+    abort();
 }
 
 

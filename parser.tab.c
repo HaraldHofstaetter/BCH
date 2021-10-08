@@ -1712,10 +1712,6 @@ expr_t* parse(char *inp, char *generators, int *num_generators) {
     yyparse();     
     yy_delete_buffer(buffer);
 
-    if (result==0) { 
-        return 0;
-    }
-
     *num_generators = num_gens;
     return result;
 }

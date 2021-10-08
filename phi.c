@@ -132,7 +132,7 @@ static inline int maximum(int a, int b) {
 rat_t rat(int num, int den) {
     if (den==0) {
         fprintf(stderr, "ERROR: rat(): zero denominator\n");
-        exit(EXIT_FAILURE);
+        abort();
     }
     rat_t r;
     if (den<0) {
@@ -247,6 +247,7 @@ expr_t* generator(uint8_t n) {
 }
 
 expr_t* sum(expr_t* arg1, expr_t* arg2) {
+    if ((arg1==NULL)||(arg2==NULL)) return NULL;
     expr_t *ex = zero_element();
     ex->type = SUM;
     ex->arg1 = arg1;
@@ -257,6 +258,7 @@ expr_t* sum(expr_t* arg1, expr_t* arg2) {
 }
 
 expr_t* difference(expr_t* arg1, expr_t* arg2) {
+    if ((arg1==NULL)||(arg2==NULL)) return NULL;
     expr_t *ex = zero_element();
     ex->type = DIFFERENCE;
     ex->arg1 = arg1;
@@ -267,6 +269,7 @@ expr_t* difference(expr_t* arg1, expr_t* arg2) {
 }
 
 expr_t* product(expr_t* arg1, expr_t* arg2) {
+    if ((arg1==NULL)||(arg2==NULL)) return NULL;
     expr_t *ex = zero_element();
     ex->type = PRODUCT;
     ex->arg1 = arg1;
@@ -288,6 +291,7 @@ expr_t* product(expr_t* arg1, expr_t* arg2) {
 }
 
 expr_t* negation(expr_t* arg) {
+    if (arg==NULL) return NULL;
     expr_t *ex = zero_element();
     ex->type = NEGATION;
     ex->arg1 = arg;
@@ -297,9 +301,10 @@ expr_t* negation(expr_t* arg) {
 }
 
 expr_t* term_from_rat(rat_t factor, expr_t* arg) {
+    if (arg==NULL) return NULL;
     if (factor.den==0) { 
         fprintf(stderr, "ERROR: zero denominator\n");
-        exit(EXIT_FAILURE);
+        return NULL;
     }
     expr_t *ex = zero_element();
     ex->type = TERM;
@@ -323,9 +328,10 @@ expr_t* term(int num, int den, expr_t* arg) {
 }
 
 expr_t* exponential(expr_t* arg) {
+    if (arg==NULL) return NULL;
     if (arg->const_term.num!=0) {
         fprintf(stderr, "ERROR: exponential expects argument with no constant term\n");
-        exit(EXIT_FAILURE);
+        return NULL;
     }
     expr_t *ex = zero_element();
     ex->type = EXPONENTIAL;
@@ -336,9 +342,10 @@ expr_t* exponential(expr_t* arg) {
 }
 
 expr_t* logarithm(expr_t* arg) {
+    if (arg==NULL) return NULL;
     if (!((arg->const_term.num==1) && (arg->const_term.den==1))) {
         fprintf(stderr, "ERROR: logarithm expects argument with constant term == 1\n");
-        exit(EXIT_FAILURE);
+        return NULL;
     }
     expr_t *ex = zero_element();
     ex->type = LOGARITHM;
@@ -475,7 +482,7 @@ int str_expr(char *out, expr_t* ex, char* gens) {
             break;
         default:
             fprintf(stderr, "ERROR: unknown expr type %i\n", ex->type);
-            exit(EXIT_FAILURE);
+            abort();
     }
     return pos;
 }
@@ -494,7 +501,7 @@ static inline void check_for_divisibility_by_int(INTEGER p, int q, INTEGER d, ch
     if (q*d!=p) {
         int q1 = (q>0?q:-q)/gcd(p,q);
         fprintf(stderr, "ERROR: dividend not divisble by %i %s\n", q1, s);
-        exit(EXIT_FAILURE);
+        abort();
     }
 }
 
@@ -502,7 +509,7 @@ static inline void check_for_divisibility_by_int64(INTEGER p, int64_t q, INTEGER
     if (q*d!=p) {
         int64_t q1 = (q>0?q:-q)/gcd(p,q);
         fprintf(stderr, "ERROR: dividend not divisble by %" PRId64 " %s\n", q1, s);
-        exit(EXIT_FAILURE);
+        abort();
     }
 }
 
@@ -510,7 +517,7 @@ static inline void check_for_divisibility_by_INTEGER(INTEGER p, INTEGER q, INTEG
     if (q*d!=p) {
         int64_t q1 = (q>0?q:-q)/gcd(p,q);
         fprintf(stderr, "ERROR: dividend not divisble by %" PRId64 " %s\n", q1, s);
-        exit(EXIT_FAILURE);
+        abort();
     }
 }
 
@@ -707,7 +714,7 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
             }
         default:
             fprintf(stderr, "ERROR: unknown expr type %i\n", ex->type);
-            exit(EXIT_FAILURE);
+            abort();
     }
 }
 
@@ -799,8 +806,8 @@ static void delta(INTEGER d[], int N, expr_t* ex) {
             INTEGER h1[N+1];
             delta(a, N, ex->arg1);
             if (a[0]!=0) {
-                fprintf(stderr, "ERROR: Exponential expects argument with no constant term\n");
-                exit(EXIT_FAILURE);
+                fprintf(stderr, "ERROR: delta(): exponential expects argument with no constant term\n");
+                abort();
             }
             for (int n=0; n<=N; n++) {
                 h[n] = a[n];
@@ -828,8 +835,8 @@ static void delta(INTEGER d[], int N, expr_t* ex) {
             INTEGER h1[N+1];
             delta(a, N, ex->arg1);
             if (a[0]!=1) {
-                fprintf(stderr, "ERROR: Logarithm expects argument with constant term 1\n");
-                exit(EXIT_FAILURE);
+                fprintf(stderr, "ERROR: delta(): logarithm expects argument with constant term 1\n");
+                abort();
             }
             a[0] = 0;
             for (int n=0; n<=N; n++) {
@@ -853,7 +860,7 @@ static void delta(INTEGER d[], int N, expr_t* ex) {
             }                          
         default:
             fprintf(stderr, "ERROR: unknown expr type %i\n", ex->type);
-            exit(EXIT_FAILURE);
+            abort();
     }
 }
 
