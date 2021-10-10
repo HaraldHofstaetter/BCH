@@ -184,23 +184,23 @@ void free_all_expressions(void) {
 
 static rat_t constant_term(expr_t* ex) {
     switch (ex->type) {
-        case zero_element:  return rat(0, 1);
-        case generator:     return rat(0, 1);
-        case identity:      return rat(1, 1);
-        case sum:           return add_r(constant_term(ex->arg1), constant_term(ex->arg2));
-        case difference:    return sub_r(constant_term(ex->arg1), constant_term(ex->arg2));
-        case product:       return mul_r(constant_term(ex->arg1), constant_term(ex->arg2));
-        case negation:      return neg_r(constant_term(ex->arg1));
-        case term:          return mul_r(ex->factor, constant_term(ex->arg1));
-        case exponential:   return rat(1, 1);
-        case logarithm:     return rat(0, 1);
-        default:            fprintf(stderr, "panic: unknown expr type %i\n", ex->type);
+        case ZERO_ELEMENT:  return rat(0, 1);
+        case GENERATOR:     return rat(0, 1);
+        case IDENTITY:      return rat(1, 1);
+        case SUM:           return add_r(constant_term(ex->arg1), constant_term(ex->arg2));
+        case DIFFERENCE:    return sub_r(constant_term(ex->arg1), constant_term(ex->arg2));
+        case PRODUCT:       return mul_r(constant_term(ex->arg1), constant_term(ex->arg2));
+        case NEGATION:      return neg_r(constant_term(ex->arg1));
+        case TERM:          return mul_r(ex->factor, constant_term(ex->arg1));
+        case EXPONENTIAL:   return rat(1, 1);
+        case LOGARITHM:     return rat(0, 1);
+        default:            fprintf(stderr, "PANIC: unknown expr type %i\n", ex->type);
                             abort();           
     }
 }
 
 
-static int mindeg_nonconst(expr_t *ex) {
+int mindeg_nonconst(expr_t *ex) {
     if (ex->mindeg!=0) {
         return ex->mindeg;
     }
