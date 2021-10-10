@@ -99,8 +99,7 @@ typedef struct expr_t {
     struct expr_t *arg2;  /* pointer to subexpression */
     int gen;              /* for expr_type GENERATOR */
     rat_t factor;         /* for expr_type TERM */
-    rat_t const_term;
-    int mindeg; /* minimal degree of nonconstant terms */
+    int mindeg;           /* minimal degree */
 } expr_t;
 
 expr_t* zero_element(void);
@@ -147,12 +146,12 @@ void free_goldberg(goldberg_t *G);
 /**********************************************/
 /* parse.y, expr.c: */
 rat_t rat(int num, int den);
-rat_t rat_add(rat_t a, rat_t b);
-rat_t rat_sub(rat_t a, rat_t b);
-rat_t rat_mul(rat_t a, rat_t b);
-rat_t rat_div(rat_t a, rat_t b);
-rat_t rat_neg(rat_t a);
-expr_t* term_from_rat(rat_t factor, expr_t* arg);
+rat_t add_r(rat_t a, rat_t b);
+rat_t sub_r(rat_t a, rat_t b);
+rat_t mul_r(rat_t a, rat_t b);
+rat_t div_r(rat_t a, rat_t b);
+rat_t neg_r(rat_t a);
+expr_t* term_r(rat_t factor, expr_t* arg);
 
 /* lie_series.c: */
 double tic(void); 

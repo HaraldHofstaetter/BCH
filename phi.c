@@ -139,13 +139,7 @@ int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]) {
             }
             } 
         case PRODUCT: {
-            int md;
-            if (ex->arg1->const_term.num!=0) {
-                md = 0;
-            }
-            else {
-                md = ex->arg1->mindeg;
-            }
+            int  md = ex->arg1->mindeg;
             if (md>=m) {
                 return 0;
             }

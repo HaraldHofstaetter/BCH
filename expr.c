@@ -120,19 +120,19 @@ rat_t rat(int num, int den) {
     return r;
 }
 
-rat_t rat_add(rat_t a, rat_t b) {
+rat_t add_r(rat_t a, rat_t b) {
     return rat(a.num*b.den+b.num*a.den, a.den*b.den);
 }
-rat_t rat_sub(rat_t a, rat_t b) {
+rat_t sub_r(rat_t a, rat_t b) {
     return rat(a.num*b.den-b.num*a.den, a.den*b.den);
 }
-rat_t rat_mul(rat_t a, rat_t b) {
+rat_t mul_r(rat_t a, rat_t b) {
     return rat(a.num*b.num, a.den*b.den);
 }
 rat_t rat_div(rat_t a, rat_t b) {
     return rat(a.den*b.den, a.num*b.num);
 }
-rat_t rat_neg(rat_t a) {
+rat_t neg_r(rat_t a) {
     return rat(-a.num, a.den);
 }
 
@@ -182,6 +182,45 @@ void free_all_expressions(void) {
 }
 
 
+static rat_t constant_term(expr_t* ex) {
+    switch (ex->type) {
+        case zero_element:  return rat(0, 1);
+        case generator:     return rat(0, 1);
+        case identity:      return rat(1, 1);
+        case sum:           return add_r(constant_term(ex->arg1), constant_term(ex->arg2));
+        case difference:    return sub_r(constant_term(ex->arg1), constant_term(ex->arg2));
+        case product:       return mul_r(constant_term(ex->arg1), constant_term(ex->arg2));
+        case negation:      return neg_r(constant_term(ex->arg1));
+        case term:          return mul_r(ex->factor, constant_term(ex->arg1));
+        case exponential:   return rat(1, 1);
+        case logarithm:     return rat(0, 1);
+        default:            fprintf(stderr, "panic: unknown expr type %i\n", ex->type);
+                            abort();           
+    }
+}
+
+
+static int mindeg_nonconst(expr_t *ex) {
+    if (ex->mindeg!=0) {
+        return ex->mindeg;
+    }
+    switch (ex->type) {
+        case ZERO_ELEMENT:  return HUGE_NUMBER;
+        case GENERATOR:     return 1;
+        case IDENTITY:      return HUGE_NUMBER;
+        case SUM:           return minimum(mindeg_nonconst(ex->arg1), mindeg_nonconst(ex->arg2));
+        case DIFFERENCE:    return minimum(mindeg_nonconst(ex->arg1), mindeg_nonconst(ex->arg2));
+        case PRODUCT:       return minimum(mindeg_nonconst(ex->arg1), mindeg_nonconst(ex->arg2));
+        case NEGATION:      return mindeg_nonconst(ex->arg1);
+        case TERM:          return ex->factor.num==0 ? HUGE_NUMBER : mindeg_nonconst(ex->arg1);
+        case EXPONENTIAL:   return ex->arg1->mindeg;
+        case LOGARITHM:     return mindeg_nonconst(ex->arg1); 
+        default:            fprintf(stderr, "PANIC: unknown expr type %i\n", ex->type);
+                            abort();           
+    }
+}
+
+
 expr_t* zero_element(void) {
     expr_t *ex = malloc(sizeof(expr_t));
 
@@ -199,7 +238,6 @@ expr_t* zero_element(void) {
     ex->arg2 = NULL;
     ex->factor = rat(0,1);
     ex->gen = -1;
-    ex->const_term = rat(0,1);
     ex->mindeg = HUGE_NUMBER;
     return ex;
 }
@@ -207,8 +245,7 @@ expr_t* zero_element(void) {
 expr_t* identity(void) {
     expr_t *ex = zero_element();
     ex->type = IDENTITY;
-    ex->const_term = rat(1,1);
-    ex->mindeg = HUGE_NUMBER;
+    ex->mindeg = 0;
     return ex;
 }
 
@@ -216,7 +253,6 @@ expr_t* generator(uint8_t n) {
     expr_t *ex = zero_element();
     ex->type = GENERATOR;
     ex->gen = n;
-    ex->const_term = rat(0,1);
     ex->mindeg = 1;
     return ex;
 }
@@ -227,7 +263,6 @@ expr_t* sum(expr_t* arg1, expr_t* arg2) {
     ex->type = SUM;
     ex->arg1 = arg1;
     ex->arg2 = arg2;
-    ex->const_term = rat_add(arg1->const_term, arg2->const_term);
     ex->mindeg = minimum(arg1->mindeg, arg2->mindeg);
     return ex;
 }
@@ -238,7 +273,6 @@ expr_t* difference(expr_t* arg1, expr_t* arg2) {
     ex->type = DIFFERENCE;
     ex->arg1 = arg1;
     ex->arg2 = arg2;
-    ex->const_term = rat_sub(arg1->const_term, arg2->const_term);
     ex->mindeg = minimum(arg1->mindeg, arg2->mindeg);
     return ex;
 }
@@ -249,19 +283,7 @@ expr_t* product(expr_t* arg1, expr_t* arg2) {
     ex->type = PRODUCT;
     ex->arg1 = arg1;
     ex->arg2 = arg2;
-    ex->const_term = rat_mul(arg1->const_term, arg2->const_term);
-    if ((arg1->const_term.num!=0)&&(arg2->const_term.num!=0)) {
-        ex->mindeg = minimum(arg1->mindeg, arg2->mindeg);
-    }
-    else if ((arg1->const_term.num==0)&&(arg2->const_term.num!=0)) {
-        ex->mindeg = arg2->mindeg;
-    }
-    else if ((arg2->const_term.num==0)&&(arg1->const_term.num!=0)) {
-        ex->mindeg = arg1->mindeg;
-    }
-    else {
-        ex->mindeg = minimum(HUGE_NUMBER, arg1->mindeg + arg2->mindeg);
-    }
+    ex->mindeg = minimum(HUGE_NUMBER, arg1->mindeg + arg2->mindeg);
     return ex;
 }
 
@@ -270,12 +292,11 @@ expr_t* negation(expr_t* arg) {
     expr_t *ex = zero_element();
     ex->type = NEGATION;
     ex->arg1 = arg;
-    ex->const_term = rat_neg(arg->const_term);
     ex->mindeg = arg->mindeg;
     return ex;
 }
 
-expr_t* term_from_rat(rat_t factor, expr_t* arg) {
+expr_t* term_r(rat_t factor, expr_t* arg) {
     if (arg==NULL) return NULL;
     if (factor.den==0) { 
         fprintf(stderr, "ERROR: zero denominator\n");
@@ -285,7 +306,6 @@ expr_t* term_from_rat(rat_t factor, expr_t* arg) {
     ex->type = TERM;
     ex->arg1 = arg;
     ex->factor = factor;
-    ex->const_term = rat_mul(factor, arg->const_term);
     if (factor.num==0) {
          ex->mindeg = HUGE_NUMBER;
     }
@@ -299,34 +319,33 @@ expr_t* term(int num, int den, expr_t* arg) {
     rat_t r;
     r.num = num;
     r.den = den;
-    return term_from_rat(r, arg);
+    return term_r(r, arg);
 }
 
 expr_t* exponential(expr_t* arg) {
     if (arg==NULL) return NULL;
-    if (arg->const_term.num!=0) {
+    if (constant_term(arg).num!=0) {
         fprintf(stderr, "ERROR: exponential expects argument with no constant term\n");
         return NULL;
     }
     expr_t *ex = zero_element();
     ex->type = EXPONENTIAL;
     ex->arg1 = arg;
-    ex->const_term = rat(1, 1);
-    ex->mindeg = arg->mindeg; 
+    ex->mindeg = 0; 
     return ex;
 }
 
 expr_t* logarithm(expr_t* arg) {
     if (arg==NULL) return NULL;
-    if (!((arg->const_term.num==1) && (arg->const_term.den==1))) {
+    rat_t ct = constant_term(arg);
+    if (!((ct.num==1) && (ct.den==1))) {
         fprintf(stderr, "ERROR: logarithm expects argument with constant term == 1\n");
         return NULL;
     }
     expr_t *ex = zero_element();
     ex->type = LOGARITHM;
     ex->arg1 = arg;
-    ex->const_term = rat(0, 1);
-    ex->mindeg = arg->mindeg; 
+    ex->mindeg = mindeg_nonconst(arg); 
     return ex;
 }
 

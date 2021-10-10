@@ -1378,7 +1378,7 @@ yyreduce:
 
   case 9:
 #line 46 "parser.y"
-                     { (yyval.expr) = term_from_rat((yyvsp[-2].rat), (yyvsp[0].expr)); }
+                     { (yyval.expr) = term_r((yyvsp[-2].rat), (yyvsp[0].expr)); }
 #line 1383 "parser.tab.c"
     break;
 
