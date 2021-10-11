@@ -5,6 +5,7 @@
 #include<stddef.h>
 
 #define USE_INT128_T 1
+#define USE_QUADMATH 1
 
 #ifdef USE_INT128_T
 typedef __int128_t INTEGER; 
@@ -12,7 +13,12 @@ typedef __int128_t INTEGER;
 typedef int64_t INTEGER;
 #endif
 
+#ifdef USE_QUADMATH
+#include <quadmath.h>
+typedef __float128 FLOAT;
+#else
 typedef double FLOAT;
+#endif
 
 int str_INTEGER(char *out, INTEGER x);
 int str_RATIONAL(char *out, INTEGER p, INTEGER q);
@@ -155,14 +161,40 @@ void free_goldberg(goldberg_t *G);
 
 
 /**********************************************/
-/* parse.y, expr.c: */
-rat_t rat(int num, int den);
-rat_t add_r(rat_t a, rat_t b);
-rat_t sub_r(rat_t a, rat_t b);
-rat_t mul_r(rat_t a, rat_t b);
-rat_t div_r(rat_t a, rat_t b);
-rat_t neg_r(rat_t a);
-expr_t* term_r(rat_t factor, expr_t* arg);
+/* floating point operations: */
+
+#ifdef USE_QUADMATH
+
+static inline FLOAT i2f(int x) {return ((FLOAT) x);}
+static inline FLOAT i64_to_f(int64_t x) {return ((FLOAT) x);}
+static inline FLOAT r2f(rat_t x) {return ((FLOAT) x.num)/((FLOAT) x.den);}
+static inline FLOAT add_f(FLOAT a, FLOAT b) {return a+b;}
+static inline FLOAT sub_f(FLOAT a, FLOAT b) {return a-b;}
+static inline FLOAT mul_f(FLOAT a, FLOAT b) {return a*b;}
+static inline FLOAT div_f(FLOAT a, FLOAT b) {return a/b;}
+static inline FLOAT neg_f(FLOAT a) {return -a;}
+
+static inline FLOAT zero_f(void) { return 0.0q; }
+static inline FLOAT one_f(void) { return 1.0q; }
+static inline FLOAT eps_f(void) { return 1e-30q; }
+
+static inline int is_zero_f(FLOAT x) { return fabsq(x)<eps_f(); }
+static inline int is_one_f(FLOAT x)  { return fabsq(x-1.0q)<eps_f(); }
+static inline int gt_f(FLOAT x, FLOAT y) { return x > y; }
+
+#include <stdio.h>
+static inline int str_FLOAT(char *out, FLOAT x) {
+    /* TODO use quadmath_snprintf */
+    return out==NULL ? snprintf(NULL, 0, "%g", (double) x) : sprintf(out, "%g", (double) x); 
+}
+static inline void print_FLOAT(FLOAT x) { 
+    char buf[128];
+    str_FLOAT(buf, x);
+    printf("%s", buf); 
+}
+static inline FLOAT parse_FLOAT(char *in) { return strtoflt128(in, NULL); }
+
+#else
 
 static inline FLOAT i2f(int x) {return ((FLOAT) x);}
 static inline FLOAT i64_to_f(int64_t x) {return ((FLOAT) x);}
@@ -187,6 +219,19 @@ static inline int str_FLOAT(char *out, FLOAT x) {
 }
 static inline void print_FLOAT(FLOAT x) { printf("%g", x); }
 static inline FLOAT parse_FLOAT(char *in) { FLOAT d; sscanf(in, "%lf", &d ); return d; }
+
+#endif
+
+
+/* parse.y, expr.c: */
+rat_t rat(int num, int den);
+rat_t add_r(rat_t a, rat_t b);
+rat_t sub_r(rat_t a, rat_t b);
+rat_t mul_r(rat_t a, rat_t b);
+rat_t div_r(rat_t a, rat_t b);
+rat_t neg_r(rat_t a);
+expr_t* term_r(rat_t factor, expr_t* arg);
+
 
 /* lie_series.c: */
 double tic(void); 
