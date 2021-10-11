@@ -17,10 +17,12 @@ static expr_t* result;
 %union {     
     char gen;
     rat_t rat;
+    FLOAT flt;
     expr_t * expr;
 };
 
 %token <rat> RAT 
+%token <flt> FLT 
 %token <gen> GEN 
 %token LOG EXP ID ZERO
 %token '+' '-' '*' 
@@ -44,6 +46,7 @@ expr: GEN  { $$ = generator(gens_tab[(size_t) $1]); }
     | expr '*' expr  { $$ = product($1, $3); } 
  /* | '-' RAT '*' expr   { $$ = term_r(neg_r($2), $4); } */
     | RAT '*' expr   { $$ = term_r($1, $3); } 
+    | FLT '*' expr   { $$ = term_f($1, $3); } 
     | '-' expr       { $$ = negation($2); } 
     | '+' expr       { $$ = $2; }
     | LOG '(' expr ')'   { $$ = logarithm($3); } 

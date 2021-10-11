@@ -182,7 +182,8 @@ void free_all_expressions(void) {
 }
 
 
-static rat_t constant_term(expr_t* ex) {
+static rat_t constant_term(expr_t* ex) { 
+    /* should only be called if ex is not contaminated with floats */
     switch (ex->type) {
         case ZERO_ELEMENT:  return rat(0, 1);
         case GENERATOR:     return rat(0, 1);
@@ -194,11 +195,31 @@ static rat_t constant_term(expr_t* ex) {
         case TERM:          return mul_r(ex->factor, constant_term(ex->arg1));
         case EXPONENTIAL:   return rat(1, 1);
         case LOGARITHM:     return rat(0, 1);
+        case TERM_F:        fprintf(stderr, "PANIC: invalid type TERM_F %i\n", ex->type);
+                            abort();           
         default:            fprintf(stderr, "PANIC: unknown expr type %i\n", ex->type);
                             abort();           
     }
 }
 
+static FLOAT constant_term_f(expr_t* ex) {
+    switch (ex->type) {
+        case ZERO_ELEMENT:  return zero_f();
+        case GENERATOR:     return zero_f();
+        case IDENTITY:      return one_f();
+        case SUM:           return add_f(constant_term_f(ex->arg1), constant_term_f(ex->arg2));
+        case DIFFERENCE:    return sub_f(constant_term_f(ex->arg1), constant_term_f(ex->arg2));
+        case PRODUCT:       return mul_f(constant_term_f(ex->arg1), constant_term_f(ex->arg2));
+        case NEGATION:      return neg_f(constant_term_f(ex->arg1));
+        case TERM:
+        case TERM_F:        return mul_f(ex->factor_f, constant_term_f(ex->arg1));
+        case EXPONENTIAL:   return one_f();
+        case LOGARITHM:     return zero_f();
+        default:            fprintf(stderr, "PANIC: unknown expr type %i\n", ex->type);
+                            abort();           
+    }
+}
+    
 
 int mindeg_nonconst(expr_t *ex) {
     if (ex->mindeg!=0) {
@@ -213,11 +234,16 @@ int mindeg_nonconst(expr_t *ex) {
         case PRODUCT:       return minimum(mindeg_nonconst(ex->arg1), mindeg_nonconst(ex->arg2));
         case NEGATION:      return mindeg_nonconst(ex->arg1);
         case TERM:          return ex->factor.num==0 ? HUGE_NUMBER : mindeg_nonconst(ex->arg1);
+        case TERM_F:        return ex->factor_f==0 ? HUGE_NUMBER : mindeg_nonconst(ex->arg1);
         case EXPONENTIAL:   return ex->arg1->mindeg;
         case LOGARITHM:     return mindeg_nonconst(ex->arg1); 
         default:            fprintf(stderr, "PANIC: unknown expr type %i\n", ex->type);
                             abort();           
     }
+}
+
+static void contaminate_with_floats(expr_t* ex) {
+    ex->factor.den = 0;
 }
 
 
@@ -260,6 +286,9 @@ expr_t* generator(uint8_t n) {
 expr_t* sum(expr_t* arg1, expr_t* arg2) {
     if ((arg1==NULL)||(arg2==NULL)) return NULL;
     expr_t *ex = zero_element();
+    if (is_contaminated_with_floats(arg1)||is_contaminated_with_floats(arg2)) {
+        contaminate_with_floats(ex);
+    }
     ex->type = SUM;
     ex->arg1 = arg1;
     ex->arg2 = arg2;
@@ -270,6 +299,9 @@ expr_t* sum(expr_t* arg1, expr_t* arg2) {
 expr_t* difference(expr_t* arg1, expr_t* arg2) {
     if ((arg1==NULL)||(arg2==NULL)) return NULL;
     expr_t *ex = zero_element();
+    if (is_contaminated_with_floats(arg1)||is_contaminated_with_floats(arg2)) {
+        contaminate_with_floats(ex);
+    }
     ex->type = DIFFERENCE;
     ex->arg1 = arg1;
     ex->arg2 = arg2;
@@ -280,6 +312,9 @@ expr_t* difference(expr_t* arg1, expr_t* arg2) {
 expr_t* product(expr_t* arg1, expr_t* arg2) {
     if ((arg1==NULL)||(arg2==NULL)) return NULL;
     expr_t *ex = zero_element();
+    if (is_contaminated_with_floats(arg1)||is_contaminated_with_floats(arg2)) {
+        contaminate_with_floats(ex);
+    }
     ex->type = PRODUCT;
     ex->arg1 = arg1;
     ex->arg2 = arg2;
@@ -290,9 +325,28 @@ expr_t* product(expr_t* arg1, expr_t* arg2) {
 expr_t* negation(expr_t* arg) {
     if (arg==NULL) return NULL;
     expr_t *ex = zero_element();
+    if (is_contaminated_with_floats(arg)) {
+        contaminate_with_floats(ex);
+    }
     ex->type = NEGATION;
     ex->arg1 = arg;
     ex->mindeg = arg->mindeg;
+    return ex;
+}
+
+expr_t* term_f(FLOAT factor, expr_t* arg) {
+    if (arg==NULL) return NULL;
+    expr_t *ex = zero_element();
+    ex->type = TERM_F;
+    ex->arg1 = arg;
+    ex->factor_f = factor;
+    contaminate_with_floats(ex);
+    if (factor==0) {
+         ex->mindeg = HUGE_NUMBER;
+    }
+    else {
+         ex->mindeg = arg->mindeg;
+    }
     return ex;
 }
 
@@ -302,10 +356,14 @@ expr_t* term_r(rat_t factor, expr_t* arg) {
         fprintf(stderr, "ERROR: zero denominator\n");
         return NULL;
     }
+    if (is_contaminated_with_floats(arg)) {
+        return term_f(r2f(factor), arg);
+    }
     expr_t *ex = zero_element();
     ex->type = TERM;
     ex->arg1 = arg;
     ex->factor = factor;
+    ex->factor_f = r2f(factor); 
     if (factor.num==0) {
          ex->mindeg = HUGE_NUMBER;
     }
@@ -324,11 +382,15 @@ expr_t* term(int num, int den, expr_t* arg) {
 
 expr_t* exponential(expr_t* arg) {
     if (arg==NULL) return NULL;
-    if (constant_term(arg).num!=0) {
+    if ((!is_contaminated_with_floats(arg) && constant_term(arg).num!=0)
+            || !is_zero_f(constant_term_f(arg))){
         fprintf(stderr, "ERROR: exponential expects argument with no constant term\n");
         return NULL;
     }
     expr_t *ex = zero_element();
+    if (is_contaminated_with_floats(arg)) {
+        contaminate_with_floats(ex);
+    }
     ex->type = EXPONENTIAL;
     ex->arg1 = arg;
     ex->mindeg = 0; 
@@ -337,12 +399,17 @@ expr_t* exponential(expr_t* arg) {
 
 expr_t* logarithm(expr_t* arg) {
     if (arg==NULL) return NULL;
-    rat_t ct = constant_term(arg);
-    if (!((ct.num==1) && (ct.den==1))) {
+    rat_t ct; 
+    if ((!is_contaminated_with_floats(arg) && (ct = constant_term(arg)  
+                                           , !((ct.num==1) && (ct.den==1))))
+            || !is_one_f(constant_term_f(arg))) {
         fprintf(stderr, "ERROR: logarithm expects argument with constant term == 1\n");
         return NULL;
     }
     expr_t *ex = zero_element();
+    if (is_contaminated_with_floats(arg)) {
+        contaminate_with_floats(ex);
+    }
     ex->type = LOGARITHM;
     ex->arg1 = arg;
     ex->mindeg = mindeg_nonconst(arg); 
@@ -446,11 +513,29 @@ int str_expr(char *out, expr_t* ex, char* gens) {
             break;
         case TERM: 
             if (out) {
-                pos += sprintf(out+pos, "(%i/%i)*", ex->factor.num, ex->factor.den);
+                if (ex->factor.den==1) {
+                    pos += sprintf(out+pos, "%i*", ex->factor.num);
+                }
+                else {
+                    pos += sprintf(out+pos, "%i/%i*", ex->factor.num, ex->factor.den);
+                }
                 pos += str_expr(out+pos, ex->arg1, gens);
             }
             else {
-                pos += snprintf(NULL, 0, "(%i/%i)*", ex->factor.num, ex->factor.den)
+                pos += (ex->factor.den==1 ? 
+                        snprintf(NULL, 0, "%i*", ex->factor.num) :
+                        snprintf(NULL, 0, "%i/%i*", ex->factor.num, ex->factor.den) )
+                       + str_expr(NULL, ex->arg1, gens);
+            }
+            break;
+        case TERM_F: 
+            if (out) {
+                pos += str_FLOAT(out+pos, ex->factor_f);
+                pos += sprintf(out+pos, "*");
+                pos += str_expr(out+pos, ex->arg1, gens);
+            }
+            else {
+                pos += str_FLOAT(NULL, ex->factor_f) + 1   
                        + str_expr(NULL, ex->arg1, gens);
             }
             break;
@@ -518,6 +603,7 @@ int is_lie_element(expr_t* ex) {
                 return is_product_of_exponentials_of_lie_elements(ex->arg1);
         case NEGATION:
         case TERM:
+        case TERM_F:
                 return is_lie_element(ex->arg1);
         case IDENTITY:
         case PRODUCT:

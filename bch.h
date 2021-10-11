@@ -12,6 +12,8 @@ typedef __int128_t INTEGER;
 typedef int64_t INTEGER;
 #endif
 
+typedef double FLOAT;
+
 int str_INTEGER(char *out, INTEGER x);
 int str_RATIONAL(char *out, INTEGER p, INTEGER q);
 void print_INTEGER(INTEGER x);
@@ -34,6 +36,7 @@ typedef struct lie_series_t {
     uint8_t **R;   /* R[i] ... ith rightnormed basis element corresponding to ith Lyndon word */
     INTEGER denom;
     INTEGER *c;
+    FLOAT *c_f;
 } lie_series_t;
 
 
@@ -86,7 +89,7 @@ void print_table(lie_series_t *LS, int what, char *generators);
 
 
 enum expr_type { ZERO_ELEMENT, IDENTITY, GENERATOR, SUM, DIFFERENCE, PRODUCT, 
-                 NEGATION, TERM, EXPONENTIAL, LOGARITHM };
+                 NEGATION, TERM, TERM_F, EXPONENTIAL, LOGARITHM };
 
 typedef struct rat_t {
     int num;
@@ -99,6 +102,7 @@ typedef struct expr_t {
     struct expr_t *arg2;  /* pointer to subexpression */
     int gen;              /* for expr_type GENERATOR */
     rat_t factor;         /* for expr_type TERM */
+    FLOAT factor_f;       /* for expr_type TERM */
     int mindeg;           /* minimal degree */
 } expr_t;
 
@@ -111,6 +115,7 @@ expr_t* difference(expr_t* arg1, expr_t* arg2);
 expr_t* product(expr_t* arg1, expr_t* arg2);
 expr_t* negation(expr_t* arg);
 expr_t* term(int num, int den, expr_t* arg);
+expr_t* term_f(FLOAT x, expr_t* arg);
 expr_t* exponential(expr_t* arg);
 expr_t* logarithm(expr_t* arg);
 expr_t* commutator(expr_t* arg1, expr_t* arg2);
@@ -124,6 +129,12 @@ expr_t* parse(char *inp, char *generators, int *num_generators);
 int phi(INTEGER y[], int m, uint8_t w[], expr_t* ex, INTEGER v[]);
 INTEGER common_denominator(int n, expr_t* ex);
 int is_lie_element(expr_t* ex);
+
+int phi_f(FLOAT y[], int m, uint8_t w[], expr_t* ex, FLOAT v[]);
+void init_phi_f(int n);
+static inline int is_contaminated_with_floats(expr_t* ex) {
+    return ex->factor.den==0;
+}
 
 
 lie_series_t* lie_series(int K, expr_t* expr, int N, int basis);
@@ -152,6 +163,30 @@ rat_t mul_r(rat_t a, rat_t b);
 rat_t div_r(rat_t a, rat_t b);
 rat_t neg_r(rat_t a);
 expr_t* term_r(rat_t factor, expr_t* arg);
+
+static inline FLOAT i2f(int x) {return ((FLOAT) x);}
+static inline FLOAT i64_to_f(int64_t x) {return ((FLOAT) x);}
+static inline FLOAT r2f(rat_t x) {return ((FLOAT) x.num)/((FLOAT) x.den);}
+static inline FLOAT add_f(FLOAT a, FLOAT b) {return a+b;}
+static inline FLOAT sub_f(FLOAT a, FLOAT b) {return a-b;}
+static inline FLOAT mul_f(FLOAT a, FLOAT b) {return a*b;}
+static inline FLOAT div_f(FLOAT a, FLOAT b) {return a/b;}
+static inline FLOAT neg_f(FLOAT a) {return -a;}
+
+static inline FLOAT zero_f(void) { return 0.0; }
+static inline FLOAT one_f(void) { return 1.0; }
+
+#include <math.h>
+static inline int is_zero_f(FLOAT x) { return fabs(x)<1e-14; }
+static inline int is_one_f(FLOAT x)  { return fabs(x-1.0)<1e-14; }
+static inline int gt_f(FLOAT x, FLOAT y) { return x > y; }
+
+#include <stdio.h>
+static inline int str_FLOAT(char *out, FLOAT x) { 
+    return out==NULL ? snprintf(NULL, 0, "%g", x) : sprintf(out, "%g", x); 
+}
+static inline void print_FLOAT(FLOAT x) { printf("%g", x); }
+static inline FLOAT parse_FLOAT(char *in) { FLOAT d; sscanf(in, "%lf", &d ); return d; }
 
 /* lie_series.c: */
 double tic(void); 

@@ -57,6 +57,29 @@ static void integer_lu_solve(int n, int64_t *A, INTEGER *x) {
 }
 
 
+static void integer_lu_solve_f(int n, int64_t *A, FLOAT *x) {    
+    /* forward substitution */
+    for (int i=1; i<n; i++) {
+        FLOAT s=0;
+        for (int j=0; j<i; j++) {
+            s = add_f(s, mul_f(i64_to_f(A[i+n*j]), x[j]));
+        }
+        x[i] = sub_f(x[i], s);
+    }
+
+    /* back substitution */
+    x[n-1] = mul_f(x[n-1], i64_to_f(A[n-1+n*(n-1)]));
+    for (int i=n-2; i>=0; i--) {
+        FLOAT s=0;
+        for (int j=i+1; j<n; j++) {
+            s = add_f(s, mul_f(i64_to_f(A[i+n*j]), x[j]));
+        }
+        x[i] = mul_f(sub_f(x[i], s), i64_to_f(A[i+n*i]));
+    }
+}
+
+
+
 void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_degrees_only) {
     double t0 = tic();
     uint32_t *DI  = multi_degree_indices( LS->K, LS->dim, LS->W, LS->nn);
@@ -79,8 +102,7 @@ void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_degrees_
                 continue;
             }
 
-            /* set up matrix and right-hand side */
-            INTEGER *x = calloc(m, sizeof(INTEGER));
+            /* set up matrix */
             int64_t *A = calloc(m*m, sizeof(int64_t));
             int jj=0;
             for (int j=i1; j<=i2; j++) {
@@ -92,30 +114,68 @@ void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_degrees_
                             ii++;
                         }
                     }
-                    x[jj] = LS->c[j];
                     jj++;
                 }
             }
-
             integer_lu(m, A);
-            integer_lu_solve(m, A, x);
 
-            /* copy result */
-            jj=0;
-            for (int j=i1; j<=i2; j++) {
-                if (DI[j]==h) {
-                    LS->c[j] = x[jj];
-                    jj++;
+            if (LS->c) {
+                /* set up right-hand side */
+                INTEGER *x = calloc(m, sizeof(INTEGER));
+                jj=0;
+                for (int j=i1; j<=i2; j++) {
+                    if (DI[j]==h) {
+                        x[jj] = LS->c[j];
+                        jj++;
+                    }
                 }
-            }
+                integer_lu_solve(m, A, x);
 
-            free(x);
+                /* copy result */
+                jj=0;
+                for (int j=i1; j<=i2; j++) {
+                    if (DI[j]==h) {
+                        LS->c[j] = x[jj];
+                        jj++;
+                    }
+                }
+                free(x);
+            }
+            else {
+                /* set up right-hand side */
+                FLOAT *x = calloc(m, sizeof(FLOAT));
+                jj=0;
+                for (int j=i1; j<=i2; j++) {
+                    if (DI[j]==h) {
+                        x[jj] = LS->c_f[j];
+                        jj++;
+                    }
+                }
+                integer_lu_solve_f(m, A, x);
+
+                /* copy result */
+                jj=0;
+                for (int j=i1; j<=i2; j++) {
+                    if (DI[j]==h) {
+                        LS->c_f[j] = x[jj];
+                        jj++;
+                    }
+                }
+                free(x);
+            }
             free(A);
         }
     }
     else {
-        for (int j=LS->ii[n-1]; j<=LS->ii[n]-1; j++) {
-            LS->c[j] = 0;
+        if (LS->c) {
+            for (int j=LS->ii[n-1]; j<=LS->ii[n]-1; j++) {
+                LS->c[j] = 0;
+            }
+        }
+        else {
+            for (int j=LS->ii[n-1]; j<=LS->ii[n]-1; j++) {
+                LS->c_f[j] = 0;
+            }
         }
     }
     }

@@ -86,8 +86,8 @@ static void compute_goldberg_coefficients(lie_series_t *LS, int N) {
 
 
 static void compute_word_coefficients(lie_series_t *LS, int N, expr_t* ex) {
-    /* computes coefficients of Lyndon words LS->W[] up to length N<=LS->N
-     * in expression ex and stores them in LS->c[]
+    /* computes rational coefficients of Lyndon words LS->W[] 
+     * up to length N<=LS->N in expression ex and stores them in LS->c[]
      */
     if (get_verbosity_level()>=1) {
         printf("#expression="); print_expr(ex, 0); printf("\n"); 
@@ -140,7 +140,67 @@ static void compute_word_coefficients(lie_series_t *LS, int N, expr_t* ex) {
             fflush(stdout);
         }
     }
+}   
+
+
+static void compute_word_coefficients_f(lie_series_t *LS, int N, expr_t* ex) {
+    /* computes floating point coefficients of Lyndon words LS->W[] 
+     * up to length N<=LS->N in expression ex and stores them in LS->c_f[]
+     */
+    if (get_verbosity_level()>=1) {
+        printf("#expression="); print_expr(ex, 0); printf("\n"); 
+        if (get_verbosity_level()>=2) {
+            fflush(stdout);
+        }
+    }
+    double t0 = tic();
+
+    init_phi_f(N);
+
+    size_t i1 = LS->ii[N-1];
+    size_t i2 = LS->ii[N]-1;
+
+    FLOAT e[N+1];
+
+    /* c[0] needs special handling */
+    FLOAT t1[2];
+    e[0] = zero_f();
+    e[1] = one_f();
+    int  m = phi_f(t1, 2, LS->W[0], ex, e);
+    LS->c_f[0] = m>0 ? t1[0] : zero_f();
+
+    /* now the other coeffs */
+    for (int j=0; j<N; j++){
+        e[j] = zero_f();
+    }
+    e[N] = one_f();
+
+    #pragma omp parallel 
+    {
+
+    size_t JW[N];
+    FLOAT t[N+1];
+
+    #pragma omp for schedule(dynamic,256) 
+    for (int i=i1; i<=i2; i++) {
+            uint8_t *w = LS->W[i];
+            int m = phi_f(t, N+1, w, ex, e);
+            size_t kW = get_right_factors(i, JW, N, LS->p1, LS->p2);
+            for (int k=0; k<=kW; k++) {
+                LS->c_f[JW[k]] = k<m ? t[k] : zero_f();
+            }
+    }
+    }
+
+    if (get_verbosity_level()>=1) {
+        double t1 = toc(t0);
+        printf("#compute coeffs of words: time=%g sec\n", t1);
+        if (get_verbosity_level()>=2) {
+            fflush(stdout);
+        }
+    }
 }    
+
 
 
 
@@ -150,9 +210,17 @@ lie_series_t* lie_series(int K, expr_t* expr, int N, int basis) {
     LS->K = K;
     LS->N = N;
     init_lyndon_words(LS);
-    LS->c = malloc(LS->dim*sizeof(INTEGER));
-    LS->denom = common_denominator(N, expr);
-    compute_word_coefficients(LS, N, expr);
+    if (is_contaminated_with_floats(expr)) {
+        LS->c = NULL;
+        LS->c_f = malloc(LS->dim*sizeof(FLOAT));
+        compute_word_coefficients_f(LS, N, expr);
+    }
+    else {
+        LS->c = malloc(LS->dim*sizeof(INTEGER));
+        LS->c_f = NULL;
+        LS->denom = common_denominator(N, expr);
+        compute_word_coefficients(LS, N, expr);
+    }
     if (basis==RIGHTNORMED_BASIS) {
         init_rightnormed(LS);
         convert_to_rightnormed_lie_series(LS, N, 0);
@@ -185,6 +253,7 @@ lie_series_t* BCH(int N, int basis) {
     LS->N = N;
     init_lyndon_words(LS);
     LS->c = malloc(LS->dim*sizeof(INTEGER));
+    LS->c_f = NULL;
     LS->denom = common_denominator(N, 0);
     if (basis==RIGHTNORMED_BASIS) {
         init_rightnormed(LS);
@@ -231,6 +300,7 @@ lie_series_t* symBCH(int N, int basis) {
                                      exponential(halfA)));
     init_lyndon_words(LS);
     LS->c = calloc(LS->dim, sizeof(INTEGER)); /* calloc initializes to zero */
+    LS->c_f = NULL;
     LS->denom = common_denominator(N, 0);
     if (get_verbosity_level()>=1) {
         printf("#NOTE: in the following expression, A stands for A/2\n");
@@ -290,6 +360,7 @@ void free_lie_series(lie_series_t *LS) {
         free(LS->R);
     }
     free(LS->c);
+    free(LS->c_f);
     free(LS);
 }
 
@@ -321,6 +392,10 @@ INTEGER denominator(lie_series_t *LS){
 
 INTEGER numerator_of_coefficient(lie_series_t *LS,  int i) {
     return LS->c[i];
+}
+
+FLOAT coefficient(lie_series_t *LS,  int i) {
+    return LS->c_f[i];
 }
 
 int degree(lie_series_t *LS, int i) {
@@ -404,26 +479,52 @@ void print_basis_element(lie_series_t *LS,  int i, char *g) {
 
 
 int str_coefficient(char *out, lie_series_t *LS,  int i) {
-    return str_RATIONAL(out, LS->c[i], LS->denom);
+    if (LS->c) {
+        return str_RATIONAL(out, LS->c[i], LS->denom);
+    }
+    else {
+        return str_FLOAT(out, LS->c_f[i]);
+    }
 }
 
 
 void print_coefficient(lie_series_t *LS,  int i) {
-    print_RATIONAL(LS->c[i], LS->denom);
+    if (LS->c) {
+        print_RATIONAL(LS->c[i], LS->denom);
+    }
+    else {
+        print_FLOAT(LS->c_f[i]);
+    }
 }
 
 
 void print_lie_series(lie_series_t *LS, char *g) {
-    for (int i=0; i<dimension(LS); i++) {
-        INTEGER num = numerator_of_coefficient(LS, i);
-        if (num!=0) {
-            if (num>0) {
-                printf("+");
+    if (LS->c) {
+        for (int i=0; i<dimension(LS); i++) {
+            INTEGER num = numerator_of_coefficient(LS, i);
+            if (num!=0) {
+                if (num>0) {
+                    printf("+");
+                }
+                print_coefficient(LS, i);
+                printf("*");
+                print_basis_element(LS, i, g);
             }
-            print_coefficient(LS, i);
-            printf("*");
-            print_basis_element(LS, i, g);
         }
+    }
+    else {
+        for (int i=0; i<dimension(LS); i++) {
+            FLOAT num = coefficient(LS, i);
+            if (!is_zero_f(num)) {
+                if (gt_f(num, zero_f())) {
+                    printf("+");
+                }
+                print_coefficient(LS, i);
+                printf("*");
+                print_basis_element(LS, i, g);
+            }
+        }
+        
     }
 }
 

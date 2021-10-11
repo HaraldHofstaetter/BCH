@@ -242,24 +242,45 @@ void convert_to_lie_series(lie_series_t *LS, int N) {
 
             P_run_4(X, P, LS->W[i[0]], LS->W[i[1]], LS->W[i[2]], LS->W[i[3]], stop);
 
-            for (int s=0; s<4 && x+s<jj_max; s++) {
-                size_t kW =  get_right_factors(i[s], JW, N, LS->p1, LS->p2);
-                int lA = 0; for (;LS->W[i[s]][lA]==0; lA++);
+            if (LS->c) {
+                for (int s=0; s<4 && x+s<jj_max; s++) {
+                    size_t kW =  get_right_factors(i[s], JW, N, LS->p1, LS->p2);
+                    int lA = 0; for (;LS->W[i[s]][lA]==0; lA++);
             
-                for (int y=0; y<=x+s-1; y++) {
-                    int j = jj[y];
-                    size_t kB = get_right_factors(j, JB, N, LS->p1, LS->p2);
-                    if (lA>=kB) {
-                        int d = X[r[y]][s];
-                        if (d!=0) {
-                            for (int k=0; k<=kB && k<=kW; k++) {
-                                LS->c[JW[k]] -= d*LS->c[JB[k]];
+                    for (int y=0; y<=x+s-1; y++) {
+                        int j = jj[y];
+                        size_t kB = get_right_factors(j, JB, N, LS->p1, LS->p2);
+                        if (lA>=kB) {
+                            int d = X[r[y]][s];
+                            if (d!=0) {
+                                for (int k=0; k<=kB && k<=kW; k++) {
+                                    LS->c[JW[k]] -= d*LS->c[JB[k]];
+                                }
                             }
                         }
                     }
                 }
             }
+            else {
+                for (int s=0; s<4 && x+s<jj_max; s++) {
+                    size_t kW =  get_right_factors(i[s], JW, N, LS->p1, LS->p2);
+                    int lA = 0; for (;LS->W[i[s]][lA]==0; lA++);
             
+                    for (int y=0; y<=x+s-1; y++) {
+                        int j = jj[y];
+                        size_t kB = get_right_factors(j, JB, N, LS->p1, LS->p2);
+                        if (lA>=kB) {
+                            int d = X[r[y]][s];
+                            if (d!=0) {
+                                FLOAT df = i2f(d);
+                                for (int k=0; k<=kB && k<=kW; k++) {
+                                    LS->c_f[JW[k]] = sub_f(LS->c_f[JW[k]], mul_f(df, LS->c_f[JB[k]]));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
         h_time2[k] = toc(h_time2[k]); 
 
@@ -283,14 +304,31 @@ void convert_to_lie_series(lie_series_t *LS, int N) {
             int lA = 0; 
             for (;w[lA]==0; lA++) ;
 
-            for (int y=0; y<=x-1; y++) {
-                int j = jj[y];
-                size_t kB = get_right_factors(j, JB, N, LS->p1, LS->p2);
-                if (lA>=kB) {
-                    int d = X[r[y]];
-                    if (d!=0) {
-                        for (int k=0; k<=kB && k<=kW; k++) {
-                            LS->c[JW[k]] -= d*LS->c[JB[k]];
+            if (LS->c) {
+                for (int y=0; y<=x-1; y++) {
+                    int j = jj[y];
+                    size_t kB = get_right_factors(j, JB, N, LS->p1, LS->p2);
+                    if (lA>=kB) {
+                        int d = X[r[y]];
+                        if (d!=0) {
+                            for (int k=0; k<=kB && k<=kW; k++) {
+                                LS->c[JW[k]] -= d*LS->c[JB[k]];
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                for (int y=0; y<=x-1; y++) {
+                    int j = jj[y];
+                    size_t kB = get_right_factors(j, JB, N, LS->p1, LS->p2);
+                    if (lA>=kB) {
+                        int d = X[r[y]];
+                        if (d!=0) {
+                            FLOAT df = i2f(d);
+                            for (int k=0; k<=kB && k<=kW; k++) {
+                                LS->c_f[JW[k]] = sub_f(LS->c_f[JW[k]], mul_f(df, LS->c_f[JB[k]]));
+                            }
                         }
                     }
                 }

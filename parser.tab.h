@@ -50,12 +50,13 @@ extern int yydebug;
   enum yytokentype
   {
     RAT = 258,
-    GEN = 259,
-    LOG = 260,
-    EXP = 261,
-    ID = 262,
-    ZERO = 263,
-    END = 264
+    FLT = 259,
+    GEN = 260,
+    LOG = 261,
+    EXP = 262,
+    ID = 263,
+    ZERO = 264,
+    END = 265
   };
 #endif
 
@@ -67,9 +68,10 @@ union YYSTYPE
      
     char gen;
     rat_t rat;
+    FLOAT flt;
     expr_t * expr;
 
-#line 73 "parser.tab.h"
+#line 75 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

@@ -4,13 +4,16 @@
 
 natural  [0-9]+
 rational {natural}|({natural}\/{natural})
+float    (([0-9]+[.][0-9]*)|([0-9]*[.][0-9]+))([eE][-+]?[0-9]+)?
+
+ /* (E(+|-)?[0-9]+)? */
 
 %{
 #include"bch.h"
 
 #include"parser.tab.h"
 
-static rat_t parse_rational(char *s);
+static rat_t parse_RATIONAL(char *s);
 
 %}
 
@@ -22,13 +25,14 @@ static rat_t parse_rational(char *s);
 "log"      { return LOG;}
 "exp"      { return EXP;}
 [\+\-\*\(\)\[\],]  { return yytext[0]; }
-{rational} { yylval.rat = parse_rational(yytext); return RAT; } 
+{rational} { yylval.rat = parse_RATIONAL(yytext); return RAT; } 
+{float}    { yylval.flt = parse_FLOAT(yytext); return FLT; }  
 [ \t]      { /* ignore whitespace */ }
 <<EOF>>    { return END; } 
 
 %%
 
-static rat_t parse_rational(char *s)
+static rat_t parse_RATIONAL(char *s)
 {
     rat_t r;
     char *t = s;
