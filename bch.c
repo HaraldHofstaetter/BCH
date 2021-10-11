@@ -150,8 +150,6 @@ int main(int argc, char*argv[]) {
              */
             exit(EXIT_FAILURE);
         }
-        print_expr(ex, default_generators);
-        printf("\n");
         if (!is_lie_element(ex)) {
             fprintf(stderr, "ERROR: expression is not a Lie element\n");
             exit(EXIT_FAILURE);
