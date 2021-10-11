@@ -523,7 +523,14 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int b
     HS->W = NULL;
     HS->R = NULL;
     HS->ii = NULL;
-    HS->c = calloc(LS->dim, sizeof(INTEGER));
+    if (LS->c) {
+        HS->c = calloc(LS->dim, sizeof(INTEGER));
+        HS->c_f = NULL;
+    }
+    else {
+        HS->c = NULL;
+        HS->c_f = calloc(LS->dim, sizeof(FLOAT));
+    }
 
     magma_element_t **H = malloc(LS->dim*sizeof(magma_element_t*));
     khash_t(str_int) *HT;
@@ -555,7 +562,12 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int b
         khint_t k = kh_get(str_int, HT, "0");
         assert(k != kh_end(HT));
         int i = kh_value(HT, k);
-        HS->c[i] = LS->c[0];
+        if (LS->c) {
+            HS->c[i] = LS->c[0];
+        }
+        else {
+            HS->c_f[i] = LS->c_f[0];
+        }
     }
 
     magma_element_t **L = malloc(LS->dim*sizeof(magma_element_t*));
@@ -576,17 +588,34 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int b
                 size_t nr = get_right_factors(i, I, N, LS->p1, LS->p2);
                 for (int r=0; r<=nr; r++) {
                     int ii = I[r];
-                    if (LS->c[ii]!=0) {
-                        khash_t(LinComb) *R = rewrite_magma_element(L[ii], H, HT, LUT);
-                        for (khint_t k=kh_begin(R); k!=kh_end(R); k++) {
-                            if (kh_exist(R, k)) {
-                                int64_t v = kh_value(R, k);
-                                if (v!=0) {
-                                    int j = kh_key(R, k);
-                                    HS->c[j] += v*LS->c[ii];
+                    if (LS->c) {
+                        if (LS->c[ii]!=0) {
+                            khash_t(LinComb) *R = rewrite_magma_element(L[ii], H, HT, LUT);
+                            for (khint_t k=kh_begin(R); k!=kh_end(R); k++) {
+                                if (kh_exist(R, k)) {
+                                    int64_t v = kh_value(R, k);
+                                    if (v!=0) {
+                                        int j = kh_key(R, k);
+                                        HS->c[j] += v*LS->c[ii];
+                                    }
                                 }
                             }
                         }
+                    }
+                    else {
+                        if (!is_zero_f(LS->c_f[ii])) {
+                            khash_t(LinComb) *R = rewrite_magma_element(L[ii], H, HT, LUT);
+                            for (khint_t k=kh_begin(R); k!=kh_end(R); k++) {
+                                if (kh_exist(R, k)) {
+                                    FLOAT v = i64_to_f(kh_value(R, k));
+                                    if (v!=0) {
+                                        int j = kh_key(R, k);
+                                        HS->c_f[j] = add_f(HS->c_f[j], mul_f(v, LS->c_f[ii]));
+                                    }
+                                }
+                            }
+                        }
+
                     }
                 }
             }
