@@ -600,7 +600,8 @@ void print_statistics(lie_series_t *LS) {
     for (int i=0; i<dimension(LS); i++) {
         int n = degree(LS, i);
         dim[n-1]++;
-        if (numerator_of_coefficient(LS, i)!=0) {
+        if ((LS->c&&numerator_of_coefficient(LS, i)!=0)
+                ||!lt_f(abs_f(coefficient(LS, i)), d2f(FLOAT_OUTPUT_THRESHOLD))){
             nonzero[n-1]++;
         }
     }
@@ -634,7 +635,8 @@ void print_statistics_n(lie_series_t *LS, int n) {
                 d *= n;
             }
             dim[j]++;
-            if (numerator_of_coefficient(LS, i)!=0) {
+            if ((LS->c&&numerator_of_coefficient(LS, i)!=0)
+                    ||!lt_f(abs_f(coefficient(LS, i)), d2f(FLOAT_OUTPUT_THRESHOLD))) {
                 nonzero[j]++;
             }
         }

@@ -179,6 +179,7 @@ FLOAT generic_parse_FLOAT(char *in);
 
 static inline FLOAT i2f(int x) {return ((FLOAT) x);}
 static inline FLOAT i64_to_f(int64_t x) {return ((FLOAT) x);}
+static inline FLOAT d2f(double x) {return ((FLOAT) x);}
 static inline FLOAT r2f(rat_t x) {return ((FLOAT) x.num)/((FLOAT) x.den);}
 static inline FLOAT add_f(FLOAT a, FLOAT b) {return a+b;}
 static inline FLOAT sub_f(FLOAT a, FLOAT b) {return a-b;}
@@ -304,6 +305,7 @@ static inline FLOAT parse_FLOAT(char *in) { return generic_parse_FLOAT(in); }
 
 static inline FLOAT i2f(int x) {return ((FLOAT) x);}
 static inline FLOAT i64_to_f(int64_t x) {return ((FLOAT) x);}
+static inline FLOAT d2f(double x) {return ((FLOAT) x);}
 static inline FLOAT r2f(rat_t x) {return ((FLOAT) x.num)/((FLOAT) x.den);}
 static inline FLOAT add_f(FLOAT a, FLOAT b) {return a+b;}
 static inline FLOAT sub_f(FLOAT a, FLOAT b) {return a-b;}
