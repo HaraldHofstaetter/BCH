@@ -66,6 +66,8 @@ void free_lie_series(lie_series_t *LS);
 
 void set_verbosity_level(int verbosity_level);
 int get_verbosity_level(void);
+void set_float_output_digits(int digits);
+void set_float_output_threshold(double threshold);
 
 int dimension(lie_series_t *LS);
 int maximum_degree(lie_series_t *LS);
@@ -173,6 +175,8 @@ FLOAT generic_parse_FLOAT(char *in);
 
 #if defined(USE_QUADMATH)
 
+/* https://gcc.gnu.org/onlinedocs/libquadmath/ */
+
 static inline FLOAT i2f(int x) {return ((FLOAT) x);}
 static inline FLOAT i64_to_f(int64_t x) {return ((FLOAT) x);}
 static inline FLOAT r2f(rat_t x) {return ((FLOAT) x.num)/((FLOAT) x.den);}
@@ -181,6 +185,7 @@ static inline FLOAT sub_f(FLOAT a, FLOAT b) {return a-b;}
 static inline FLOAT mul_f(FLOAT a, FLOAT b) {return a*b;}
 static inline FLOAT div_f(FLOAT a, FLOAT b) {return a/b;}
 static inline FLOAT neg_f(FLOAT a) {return -a;}
+static inline FLOAT abs_f(FLOAT x) {return fabsq(x);}
 
 static inline FLOAT zero_f(void) { return 0.0q; }
 static inline FLOAT one_f(void) { return 1.0q; }
@@ -191,9 +196,11 @@ static inline int is_one_f(FLOAT x)  { return fabsq(x-1.0q)<eps_f(); }
 static inline int lt_f(FLOAT x, FLOAT y) { return x < y; }
 
 #include <stdio.h>
+extern char *FLOAT_OUTPUT_FORMAT;
 static inline int str_FLOAT(char *out, FLOAT x) {
     /* TODO use quadmath_snprintf */
-    return out==NULL ? snprintf(NULL, 0, "%g", (double) x) : sprintf(out, "%g", (double) x); 
+    return out==NULL ? snprintf(NULL, 0, FLOAT_OUTPUT_FORMAT, (double) x) : 
+                        sprintf(out,     FLOAT_OUTPUT_FORMAT, (double) x) ; 
 }
 
 static inline void print_FLOAT(FLOAT x) { 
@@ -204,9 +211,10 @@ static inline void print_FLOAT(FLOAT x) {
 static inline FLOAT parse_FLOAT(char *in) { return strtoflt128(in, NULL); }
 
 #elif defined(USE_DOUBLEDOUBLE)
-
-/* https://github.com/JuliaMath/DoubleDouble.jl/blob/master/src/DoubleDouble.jl */
-
+/* extended-precision arithmetic using pairs of floating-point numbers based on:
+ * https://www.davidhbailey.com/dhbsoftware/ 
+ * https://github.com/JuliaMath/DoubleDouble.jl/blob/master/src/DoubleDouble.jl 
+ */
 static inline FLOAT doubledouble(double u, double v) { 
     double w = u + v;
     FLOAT x;
@@ -260,9 +268,11 @@ static inline FLOAT div_f(FLOAT x, FLOAT y) {
 }
 
 static inline FLOAT neg_f(FLOAT x) {return doubledouble(-x.hi, -x.lo); }
+static inline FLOAT abs_f(FLOAT x) { return x.hi>0 ? x : neg_f(x); }
 
 static inline FLOAT i2f(int x) {return doubledouble((double) x, 0.0);}
 static inline FLOAT i64_to_f(int64_t x) {return doubledouble((double) x, 0.0);}
+static inline FLOAT d2f(double x) {return doubledouble(x, 0.0);}
 static inline FLOAT r2f(rat_t x) {return div_f(i2f(x.num), i2f(x.den));}
 
 static inline FLOAT zero_f(void) { return doubledouble(0.0, 0.0); }
@@ -270,14 +280,15 @@ static inline FLOAT one_f(void) { return doubledouble(1.0, 0.0); }
 static inline FLOAT eps_f(void) { return doubledouble(1e-30, 0.0); }
 
 static inline int lt_f(FLOAT x, FLOAT y) { return x.hi + x.lo < y.hi + y.lo; }
-static inline FLOAT abs_f(FLOAT x) { return x.hi>0 ? x : neg_f(x); }
 static inline int is_zero_f(FLOAT x) { return lt_f(abs_f(x), eps_f()); }
 static inline int is_one_f(FLOAT x)  { return lt_f(abs_f(sub_f(x, i2f(1))), eps_f()); }
 
 
 #include <stdio.h>
+extern char *FLOAT_OUTPUT_FORMAT;
 static inline int str_FLOAT(char *out, FLOAT x) { 
-    return out==NULL ? snprintf(NULL, 0, "%g", x.hi) : sprintf(out, "%g", x.hi); 
+    return out==NULL ? snprintf(NULL, 0, FLOAT_OUTPUT_FORMAT, x.hi) : 
+                        sprintf(out,     FLOAT_OUTPUT_FORMAT, x.hi) ; 
 }
 
 /* TODO: better implementation */
@@ -299,6 +310,7 @@ static inline FLOAT sub_f(FLOAT a, FLOAT b) {return a-b;}
 static inline FLOAT mul_f(FLOAT a, FLOAT b) {return a*b;}
 static inline FLOAT div_f(FLOAT a, FLOAT b) {return a/b;}
 static inline FLOAT neg_f(FLOAT a) {return -a;}
+static inline FLOAT abs_f(FLOAT x) {return fabs(x);}
 
 static inline FLOAT zero_f(void) { return 0.0; }
 static inline FLOAT one_f(void) { return 1.0; }
@@ -309,9 +321,11 @@ static inline int is_one_f(FLOAT x)  { return fabs(x-1.0)<1e-14; }
 static inline int lt_f(FLOAT x, FLOAT y) { return x < y; }
 
 #include <stdio.h>
+extern char *FLOAT_OUTPUT_FORMAT;
 /* TODO: better implementation */
 static inline int str_FLOAT(char *out, FLOAT x) { 
-    return out==NULL ? snprintf(NULL, 0, "%g", x) : sprintf(out, "%g", x); 
+    return out==NULL ? snprintf(NULL, 0, FLOAT_OUTPUT_FORMAT, x) : 
+                       sprintf(out,      FLOAT_OUTPUT_FORMAT, x) ; 
 }
 
 static inline void print_FLOAT(FLOAT x) { printf("%g", x); }

@@ -10,6 +10,10 @@
 
 int VERBOSITY_LEVEL = 0;
 
+static char FLOAT_OUTPUT_FORMAT_0[64] = "% .8e";
+char* FLOAT_OUTPUT_FORMAT = FLOAT_OUTPUT_FORMAT_0;
+double FLOAT_OUTPUT_THRESHOLD = 1e-25; //eps_f();
+
 double tic(void) {
 #ifdef _OPENMP
     return omp_get_wtime();
@@ -373,6 +377,17 @@ int get_verbosity_level(void) {
     return VERBOSITY_LEVEL;
 }
 
+void set_float_output_digits(int digits) {
+    if (digits>=0&&digits<64) {        
+        sprintf(FLOAT_OUTPUT_FORMAT, "%% .%de", digits);
+    }
+}
+
+void set_float_output_threshold(double threshold) {
+    if (threshold>=0.0) {
+        FLOAT_OUTPUT_THRESHOLD = threshold;
+    }
+}
 
 int dimension(lie_series_t *LS) {
     return LS->dim;
@@ -493,7 +508,12 @@ void print_coefficient(lie_series_t *LS,  int i) {
         print_RATIONAL(LS->c[i], LS->denom);
     }
     else {
-        print_FLOAT(LS->c_f[i]);
+        if (lt_f(abs_f(LS->c_f[i]), d2f(FLOAT_OUTPUT_THRESHOLD))) {
+            print_FLOAT(zero_f());
+        }
+        else {
+            print_FLOAT(LS->c_f[i]);
+        }
     }
 }
 
@@ -513,18 +533,17 @@ void print_lie_series(lie_series_t *LS, char *g) {
         }
     }
     else {
+        char *save_format = FLOAT_OUTPUT_FORMAT;
+        FLOAT_OUTPUT_FORMAT = "%+g";
         for (int i=0; i<dimension(LS); i++) {
             FLOAT num = coefficient(LS, i);
-            if (!is_zero_f(num)) {
-                if (lt_f(zero_f(), num)) {
-                    printf("+");
-                }
+            if (!lt_f(abs_f(num), d2f(FLOAT_OUTPUT_THRESHOLD))) {
                 print_coefficient(LS, i);
                 printf("*");
                 print_basis_element(LS, i, g);
             }
         }
-        
+        FLOAT_OUTPUT_FORMAT = save_format;
     }
 }
 

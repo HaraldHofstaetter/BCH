@@ -46,6 +46,41 @@ long long int get_arg(int argc, char*argv[], char* varname,
 }
 
 static
+double get_double_arg(int argc, char*argv[], char* varname, 
+                      double default_value, 
+                      double min, 
+                      double max)
+{
+    for (int k=1; k<argc; k++) {
+        char* sep = strchr(argv[k], '=');
+        if (sep) {
+            *sep ='\0';
+            if (strcmp(argv[k], varname)==0) {
+                char *endptr;
+                double value = strtod(sep+1, &endptr);
+                if ((*endptr != '\0')||(endptr == sep+1)) {
+                    fprintf(stderr, "ERROR: expected %s=number\n", argv[k]);
+                    exit(EXIT_FAILURE);
+                }
+                if (value<min) {
+                    fprintf(stderr, "ERROR: expected %s>=%g, got %g\n", argv[k], min, value);
+                    exit(EXIT_FAILURE);
+                }
+                if (value>max) {
+                    fprintf(stderr, "ERROR: expected %s<=%g, got %g\n", argv[k], max, value);
+                    exit(EXIT_FAILURE);
+                }
+                *sep = '=';
+                return value;
+            }
+            *sep = '=';
+        }   
+    }
+    return default_value;
+}
+
+
+static
 char* get_string_arg(int argc, char*argv[], char* varname, char* default_value) {
     for (int k=1; k<argc; k++) {
         char* sep = strchr(argv[k], '=');
@@ -83,6 +118,9 @@ int main(int argc, char*argv[]) {
         free_goldberg(G);
         return EXIT_SUCCESS;
     }
+
+    set_float_output_digits(get_arg(argc, argv, "float_output_digits", 8, 1, 15));
+    set_float_output_threshold(get_double_arg(argc, argv, "float_output_threshold", 1.0e-25, 0.0, 1.0));
 
     int basis = get_arg(argc, argv, "basis", 0, 0, 5);
     int table_output = get_arg(argc, argv, "table_output", -1, 0, 1);
