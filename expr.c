@@ -529,7 +529,9 @@ int str_expr(char *out, expr_t* ex, char* gens) {
                        + str_expr(NULL, ex->arg1, gens);
             }
             break;
-        case TERM_F: 
+        case TERM_F: {
+            char *save_format = FLOAT_OUTPUT_FORMAT;
+            FLOAT_OUTPUT_FORMAT = "%g";
             if (out) {
                 pos += str_FLOAT(out+pos, ex->factor_f);
                 pos += sprintf(out+pos, "*");
@@ -539,7 +541,9 @@ int str_expr(char *out, expr_t* ex, char* gens) {
                 pos += str_FLOAT(NULL, ex->factor_f) + 1   
                        + str_expr(NULL, ex->arg1, gens);
             }
+            FLOAT_OUTPUT_FORMAT = save_format;
             break;
+            }
         case EXPONENTIAL:
             if (out) {
                 pos += sprintf(out+pos, "exp(");
