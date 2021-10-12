@@ -29,7 +29,7 @@ convert_hall.c convert_lyndon.c: khash.h
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(SHARED_LIB): $(OBJS)
-	$(MAKE_SHARED_LIB) -o $(SHARED_LIB) $(OBJS) -lquadmath 
+	$(MAKE_SHARED_LIB) -o $(SHARED_LIB) $(OBJS) #-lquadmath 
 
 bch: $(SHARED_LIB) bch.h bch.c 
 	$(CC) $(CFLAGS) bch.c -o bch -L. -lbch 
