@@ -234,7 +234,7 @@ int mindeg_nonconst(expr_t *ex) {
         case PRODUCT:       return minimum(mindeg_nonconst(ex->arg1), mindeg_nonconst(ex->arg2));
         case NEGATION:      return mindeg_nonconst(ex->arg1);
         case TERM:          return ex->factor.num==0 ? HUGE_NUMBER : mindeg_nonconst(ex->arg1);
-        case TERM_F:        return ex->factor_f==0 ? HUGE_NUMBER : mindeg_nonconst(ex->arg1);
+        case TERM_F:        return is_zero_f(ex->factor_f) ? HUGE_NUMBER : mindeg_nonconst(ex->arg1);
         case EXPONENTIAL:   return ex->arg1->mindeg;
         case LOGARITHM:     return mindeg_nonconst(ex->arg1); 
         default:            fprintf(stderr, "PANIC: unknown expr type %i\n", ex->type);
@@ -339,12 +339,13 @@ expr_t* term_f(FLOAT factor, expr_t* arg) {
     expr_t *ex = zero_element();
     ex->type = TERM_F;
     ex->arg1 = arg;
-    ex->factor_f = factor;
     contaminate_with_floats(ex);
-    if (factor==0) {
+    if (is_zero_f(factor)) {
+         ex->factor_f = zero_f();
          ex->mindeg = HUGE_NUMBER;
     }
     else {
+         ex->factor_f = factor;
          ex->mindeg = arg->mindeg;
     }
     return ex;

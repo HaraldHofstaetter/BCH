@@ -608,7 +608,7 @@ void convert_lyndon_to_hall_lie_series(lie_series_t *LS, lie_series_t *HS, int b
                             for (khint_t k=kh_begin(R); k!=kh_end(R); k++) {
                                 if (kh_exist(R, k)) {
                                     FLOAT v = i64_to_f(kh_value(R, k));
-                                    if (v!=0) {
+                                    if (!is_zero_f(v)) {
                                         int j = kh_key(R, k);
                                         HS->c_f[j] = add_f(HS->c_f[j], mul_f(v, LS->c_f[ii]));
                                     }

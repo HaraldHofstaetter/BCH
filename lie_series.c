@@ -516,7 +516,7 @@ void print_lie_series(lie_series_t *LS, char *g) {
         for (int i=0; i<dimension(LS); i++) {
             FLOAT num = coefficient(LS, i);
             if (!is_zero_f(num)) {
-                if (gt_f(num, zero_f())) {
+                if (lt_f(zero_f(), num)) {
                     printf("+");
                 }
                 print_coefficient(LS, i);

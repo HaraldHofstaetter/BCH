@@ -5,7 +5,8 @@
 #include<stddef.h>
 
 #define USE_INT128_T 1
-#define USE_QUADMATH 1
+//#define USE_QUADMATH 1
+#define USE_DOUBLEDOUBLE 1
 
 #ifdef USE_INT128_T
 typedef __int128_t INTEGER; 
@@ -13,9 +14,14 @@ typedef __int128_t INTEGER;
 typedef int64_t INTEGER;
 #endif
 
-#ifdef USE_QUADMATH
+#if defined(USE_QUADMATH)
 #include <quadmath.h>
 typedef __float128 FLOAT;
+#elif defined(USE_DOUBLEDOUBLE)
+typedef struct {
+    double hi;
+    double lo;
+} FLOAT;
 #else
 typedef double FLOAT;
 #endif
@@ -163,7 +169,9 @@ void free_goldberg(goldberg_t *G);
 /**********************************************/
 /* floating point operations: */
 
-#ifdef USE_QUADMATH
+FLOAT generic_parse_FLOAT(char *in);
+
+#if defined(USE_QUADMATH)
 
 static inline FLOAT i2f(int x) {return ((FLOAT) x);}
 static inline FLOAT i64_to_f(int64_t x) {return ((FLOAT) x);}
@@ -180,19 +188,106 @@ static inline FLOAT eps_f(void) { return 1e-30q; }
 
 static inline int is_zero_f(FLOAT x) { return fabsq(x)<eps_f(); }
 static inline int is_one_f(FLOAT x)  { return fabsq(x-1.0q)<eps_f(); }
-static inline int gt_f(FLOAT x, FLOAT y) { return x > y; }
+static inline int lt_f(FLOAT x, FLOAT y) { return x < y; }
 
 #include <stdio.h>
 static inline int str_FLOAT(char *out, FLOAT x) {
     /* TODO use quadmath_snprintf */
     return out==NULL ? snprintf(NULL, 0, "%g", (double) x) : sprintf(out, "%g", (double) x); 
 }
+
 static inline void print_FLOAT(FLOAT x) { 
     char buf[128];
     str_FLOAT(buf, x);
     printf("%s", buf); 
 }
 static inline FLOAT parse_FLOAT(char *in) { return strtoflt128(in, NULL); }
+
+#elif defined(USE_DOUBLEDOUBLE)
+
+/* https://github.com/JuliaMath/DoubleDouble.jl/blob/master/src/DoubleDouble.jl */
+
+static inline FLOAT doubledouble(double u, double v) { 
+    double w = u + v;
+    FLOAT x;
+    x.hi = w;
+    x.lo = (u-w) + v;
+    return x;
+}
+
+static inline double halfprec(double x) {
+    double p = x*1.34217729e8; /* half64 */
+    return (x-p)+p;
+}
+
+#include<math.h> /* fabs */
+
+static inline FLOAT add_f(FLOAT x, FLOAT y) {
+    double r = x.hi + y.hi;
+    double s = fabs(x.hi) > fabs(y.hi) ? (((x.hi - r) + y.hi) + y.lo) + x.lo : 
+                                         (((y.hi - r) + x.hi) + x.lo) + y.lo ;
+    return doubledouble(r, s);
+}
+
+static inline FLOAT sub_f(FLOAT x, FLOAT y) {
+    double r = x.hi - y.hi;
+    double s = fabs(x.hi) > fabs(y.hi) ? (((x.hi - r) - y.hi) - y.lo) + x.lo  : 
+                                         (((-y.hi - r) + x.hi) + x.lo) - y.lo ;
+    return doubledouble(r, s);
+}
+
+static inline FLOAT mul_f(FLOAT x, FLOAT y) {
+    double hx = halfprec(x.hi);
+    double lx = x.hi - hx;
+    double hy = halfprec(y.hi);
+    double ly = y.hi - hy;
+    double z = x.hi*y.hi;
+    FLOAT  c = doubledouble(z, ((hx*hy-z) + hx*ly + lx*hy) + lx*ly);
+    double cc = (x.hi*y.lo + x.lo*y.hi) + c.lo;
+    return doubledouble(c.hi, cc);
+}
+
+static inline FLOAT div_f(FLOAT x, FLOAT y) {
+    double c = x.hi/y.hi;
+    double hx = halfprec(c);
+    double lx = c - hx;
+    double hy = halfprec(y.hi);
+    double ly = y.hi - hy;
+    double z = c*y.hi;
+    FLOAT  u = doubledouble(z, ((hx*hy-z) + hx*ly + lx*hy) + lx*ly);
+    double cc = ((((x.hi - u.hi) - u.lo) + x.lo) - c*y.lo)/y.hi;
+    return doubledouble(c, cc);
+}
+
+static inline FLOAT neg_f(FLOAT x) {return doubledouble(-x.hi, -x.lo); }
+
+static inline FLOAT i2f(int x) {return doubledouble((double) x, 0.0);}
+static inline FLOAT i64_to_f(int64_t x) {return doubledouble((double) x, 0.0);}
+static inline FLOAT r2f(rat_t x) {return div_f(i2f(x.num), i2f(x.den));}
+
+static inline FLOAT zero_f(void) { return doubledouble(0.0, 0.0); }
+static inline FLOAT one_f(void) { return doubledouble(1.0, 0.0); }
+static inline FLOAT eps_f(void) { return doubledouble(1e-30, 0.0); }
+
+static inline int lt_f(FLOAT x, FLOAT y) { return x.hi + x.lo < y.hi + y.lo; }
+static inline FLOAT abs_f(FLOAT x) { return x.hi>0 ? x : neg_f(x); }
+static inline int is_zero_f(FLOAT x) { return lt_f(abs_f(x), eps_f()); }
+static inline int is_one_f(FLOAT x)  { return lt_f(abs_f(sub_f(x, i2f(1))), eps_f()); }
+
+
+#include <stdio.h>
+static inline int str_FLOAT(char *out, FLOAT x) { 
+    return out==NULL ? snprintf(NULL, 0, "%g", x.hi) : sprintf(out, "%g", x.hi); 
+}
+
+/* TODO: better implementation */
+static inline void print_FLOAT(FLOAT x) { 
+    char buf[128];
+    str_FLOAT(buf, x);
+    printf("%s", buf); 
+}
+
+static inline FLOAT parse_FLOAT(char *in) { return generic_parse_FLOAT(in); }
 
 #else
 
@@ -211,17 +306,18 @@ static inline FLOAT one_f(void) { return 1.0; }
 #include <math.h>
 static inline int is_zero_f(FLOAT x) { return fabs(x)<1e-14; }
 static inline int is_one_f(FLOAT x)  { return fabs(x-1.0)<1e-14; }
-static inline int gt_f(FLOAT x, FLOAT y) { return x > y; }
+static inline int lt_f(FLOAT x, FLOAT y) { return x < y; }
 
 #include <stdio.h>
+/* TODO: better implementation */
 static inline int str_FLOAT(char *out, FLOAT x) { 
     return out==NULL ? snprintf(NULL, 0, "%g", x) : sprintf(out, "%g", x); 
 }
+
 static inline void print_FLOAT(FLOAT x) { printf("%g", x); }
 static inline FLOAT parse_FLOAT(char *in) { FLOAT d; sscanf(in, "%lf", &d ); return d; }
 
 #endif
-
 
 /* parse.y, expr.c: */
 rat_t rat(int num, int den);
@@ -231,7 +327,6 @@ rat_t mul_r(rat_t a, rat_t b);
 rat_t div_r(rat_t a, rat_t b);
 rat_t neg_r(rat_t a);
 expr_t* term_r(rat_t factor, expr_t* arg);
-
 
 /* lie_series.c: */
 double tic(void); 

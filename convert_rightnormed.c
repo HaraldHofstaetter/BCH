@@ -60,7 +60,7 @@ static void integer_lu_solve(int n, int64_t *A, INTEGER *x) {
 static void integer_lu_solve_f(int n, int64_t *A, FLOAT *x) {    
     /* forward substitution */
     for (int i=1; i<n; i++) {
-        FLOAT s=0;
+        FLOAT s = zero_f();
         for (int j=0; j<i; j++) {
             s = add_f(s, mul_f(i64_to_f(A[i+n*j]), x[j]));
         }
@@ -70,7 +70,7 @@ static void integer_lu_solve_f(int n, int64_t *A, FLOAT *x) {
     /* back substitution */
     x[n-1] = mul_f(x[n-1], i64_to_f(A[n-1+n*(n-1)]));
     for (int i=n-2; i>=0; i--) {
-        FLOAT s=0;
+        FLOAT s = zero_f();
         for (int j=i+1; j<n; j++) {
             s = add_f(s, mul_f(i64_to_f(A[i+n*j]), x[j]));
         }
@@ -174,7 +174,7 @@ void convert_to_rightnormed_lie_series(lie_series_t *LS, int N, int odd_degrees_
         }
         else {
             for (int j=LS->ii[n-1]; j<=LS->ii[n]-1; j++) {
-                LS->c_f[j] = 0;
+                LS->c_f[j] = zero_f();
             }
         }
     }
